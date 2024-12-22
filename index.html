@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Email Autoresponder</title>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="styles/main.css" rel="stylesheet">
+    <link href="styles/dashboard.css" rel="stylesheet">
+</head>
+<body>
+    <div id="root"></div>
+    <script type="text/babel" src="components/auth/LoginForm.js"></script>
+    <script type="text/babel" src="components/auth/SignupForm.js"></script>
+    <script type="text/babel" src="components/auth/AuthGuard.js"></script>
+    <script type="text/babel" src="utils/auth.js"></script>
+    <script type="text/babel" src="utils/languageDetector.js"></script>
+    <script type="text/babel" src="utils/escalationManager.js"></script>
+    <script type="text/babel" src="components/Header.js"></script>
+    <script type="text/babel" src="components/Sidebar.js"></script>
+    <script type="text/babel" src="components/EmailList.js"></script>
+    <script type="text/babel" src="components/KnowledgeBase.js"></script>
+    <script type="text/babel" src="components/analytics/AnalyticsCharts.js"></script>
+    <script type="text/babel" src="utils/emailProcessor.js"></script>
+    <script type="text/babel" src="utils/aiAgent.js"></script>
+    <script type="text/babel" src="app.js"></script>
+    <script type="text/babel" src="components/Analytics.js"></script>
+    <script type="text/babel" src="utils/filePreview.js"></script>
+    <script type="text/babel" src="services/database/DatabaseService.js"></script>
+    <script type="text/babel" src="services/ai/OpenAIService.js"></script>
+    <script type="text/babel" src="services/email/EmailService.js"></script>
+    <script type="text/babel" src="tests/utils/aiAgent.test.js"></script>
+    <script type="text/babel" src="tests/utils/emailProcessor.test.js"></script>
+    <script type="text/babel" src="jest.config.js"></script>
+    <script type="text/babel" src="tests/setup.js"></script>
+</body>
+</html>
