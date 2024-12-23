@@ -13,4 +13,4 @@ async function getTokens(authCode) {
 }
 
 // Replace 'YOUR_AUTHORIZATION_CODE' with the code you received
-getTokens('YOUR_AUTHORIZATION_CODE');
+getTokens('4/0AanRRrutb1JAZPAzgFASP3x3ZawyYbExfQDcFyQ4P0g6_XS8k1gxbmljO9iwyzoR403hGw');
