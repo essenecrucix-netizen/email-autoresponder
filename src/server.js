@@ -12,7 +12,7 @@ app.use(bodyParser.json()); // Parse JSON bodies
 app.use(bodyParser.urlencoded({ extended: true })); // Parse URL-encoded bodies
 
 // Serve static files from the React frontend build
-app.use(express.static(path.join(__dirname, '../../build')));
+app.use(express.static(path.join(__dirname, '../build')));
 
 // Backend routes
 // Example: Health check endpoint
@@ -40,7 +40,7 @@ app.post('/api/process-email', async (req, res) => {
 
 // Catch-all route to serve the React app
 app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, '../../build', 'index.html'));
+    res.sendFile(path.join(__dirname, '../build', 'index.html'));
 });
 
 // Start the server
