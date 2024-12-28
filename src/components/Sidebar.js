@@ -1,3 +1,5 @@
+import React from 'react';
+
 function Sidebar() {
     const [activeItem, setActiveItem] = React.useState('dashboard');
 
@@ -28,3 +30,6 @@ function Sidebar() {
         </div>
     );
 }
+
+export default Sidebar; // Add default export
+

@@ -16,3 +16,5 @@ function Header() {
         </header>
     );
 }
+
+export default Header; // Export the Header component as the default export
