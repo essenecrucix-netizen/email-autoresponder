@@ -1,3 +1,7 @@
+import React from 'react'; // Ensure React is imported
+import Header from './components/Header'; // Import Header component
+import Sidebar from './components/Sidebar'; // Import Sidebar component
+
 function App() {
     return (
         <div className="app-container" data-name="app-container">
@@ -23,5 +27,4 @@ function App() {
     );
 }
 
-const root = ReactDOM.createRoot(document.getElementById('root'));
-root.render(<App />);
+export default App; // Export App as a default export
