@@ -3,7 +3,7 @@ const nodemailer = require('nodemailer');
 const fs = require('fs');
 const path = require('path');
 const DatabaseService = require('../database/DatabaseService');
-const OpenAIService = require('./OpenAIService'); // Assuming this exists
+const OpenAIService = require('../ai/OpenAIService'); // Assuming this exists
 
 function EmailService() {
     // Email configuration fetched from environment variables
