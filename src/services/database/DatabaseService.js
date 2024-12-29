@@ -16,7 +16,7 @@ function DatabaseService() {
             });
             return new AWS.DynamoDB.DocumentClient();
         } catch (error) {
-            reportError(error);
+            console.error('Failed to initialize DynamoDB:', error);
             throw new Error('Failed to initialize DynamoDB');
         }
     }
@@ -35,7 +35,7 @@ function DatabaseService() {
             await dynamodb.put(params).promise();
             return params.Item;
         } catch (error) {
-            reportError(error);
+            console.error(`Failed to create item in ${tableName}:`, error);
             throw new Error(`Failed to create item in ${tableName}`);
         }
     }
@@ -50,7 +50,7 @@ function DatabaseService() {
             const result = await dynamodb.get(params).promise();
             return result.Item;
         } catch (error) {
-            reportError(error);
+            console.error(`Failed to get item from ${tableName}:`, error);
             throw new Error(`Failed to get item from ${tableName}`);
         }
     }
@@ -86,7 +86,7 @@ function DatabaseService() {
             const result = await dynamodb.update(params).promise();
             return result.Attributes;
         } catch (error) {
-            reportError(error);
+            console.error(`Failed to update item in ${tableName}:`, error);
             throw new Error(`Failed to update item in ${tableName}`);
         }
     }
@@ -100,7 +100,7 @@ function DatabaseService() {
             };
             await dynamodb.delete(params).promise();
         } catch (error) {
-            reportError(error);
+            console.error(`Failed to delete item from ${tableName}:`, error);
             throw new Error(`Failed to delete item from ${tableName}`);
         }
     }
@@ -131,7 +131,7 @@ function DatabaseService() {
             const result = await dynamodb.query(params).promise();
             return result.Items;
         } catch (error) {
-            reportError(error);
+            console.error(`Failed to query items from ${tableName}:`, error);
             throw new Error(`Failed to query items from ${tableName}`);
         }
     }
@@ -144,3 +144,6 @@ function DatabaseService() {
         queryItems
     };
 }
+
+module.exports = DatabaseService;
+
