@@ -15,7 +15,7 @@ function EmailService() {
     };
 
     const ESCALATION_EMAIL = process.env.ESCALATION_EMAIL || "default-escalation@example.com";
-    const CLIENT_SECRET_PATH = path.join(__dirname, '../config/credentials.json');
+    const CLIENT_SECRET_PATH = path.join(__dirname, '../../config/credentials.json');
     console.log('Resolved path to credentials.json:', CLIENT_SECRET_PATH);
 
     const credentials = JSON.parse(fs.readFileSync(CLIENT_SECRET_PATH, 'utf-8'));
