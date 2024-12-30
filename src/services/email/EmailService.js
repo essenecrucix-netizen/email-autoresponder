@@ -16,17 +16,13 @@ function EmailService() {
 
     const ESCALATION_EMAIL = process.env.ESCALATION_EMAIL || "default-escalation@example.com";
 
-    // Correctly resolve the path to credentials.json
     const CLIENT_SECRET_PATH = path.resolve(__dirname, '../../config/credentials.json');
 
-    // Ensure the credentials file exists
     if (!fs.existsSync(CLIENT_SECRET_PATH)) {
         throw new Error(`Credentials file not found at path: ${CLIENT_SECRET_PATH}`);
     }
 
     const credentials = JSON.parse(fs.readFileSync(CLIENT_SECRET_PATH, 'utf-8'));
-
-    // Adjusted destructuring for "installed" property
     const { client_id, client_secret, redirect_uris } = credentials.installed;
     const oauth2Client = new google.auth.OAuth2(client_id, client_secret, redirect_uris[0]);
 
@@ -119,111 +115,91 @@ function EmailService() {
         }
     }
 
-    async function parseEmail(message) {
-        try {
-            return new Promise((resolve, reject) => {
-                let buffer = '';
-                message.on('body', (stream) => {
-                    stream.on('data', (chunk) => {
-                        buffer += chunk.toString('utf8');
+    async function monitorEmails() {
+        const accessToken = await getAccessToken();
+
+        const imap = new Imap({
+            user: EMAIL_CONFIG.user,
+            xoauth2: Buffer.from(`user=${EMAIL_CONFIG.user}\x01auth=Bearer ${accessToken}\x01\x01`).toString('base64'),
+            host: process.env.EMAIL_HOST || 'imap.gmail.com',
+            port: parseInt(process.env.EMAIL_PORT, 10) || 993,
+            tls: process.env.EMAIL_TLS === 'true',
+            tlsOptions: { rejectUnauthorized: false },
+            authTimeout: 30000,
+        });
+
+        return new Promise((resolve, reject) => {
+            imap.once('ready', () => {
+                console.log('IMAP connection ready.');
+                imap.openBox('INBOX', true, (err, box) => {
+                    if (err) {
+                        console.error('Error opening inbox:', err);
+                        reject(err);
+                        return;
+                    }
+                    console.log(`Mailbox opened. Total messages: ${box.messages.total}`);
+                    imap.on('mail', () => {
+                        console.log('New mail detected.');
+                        processNewEmails(imap); // Call processNewEmails for new emails
                     });
                 });
-                message.once('end', async () => {
-                    try {
-                        const parsed = await simpleParser(buffer);
-                        resolve(parsed);
-                    } catch (error) {
-                        reject(error);
-                    }
-                });
             });
-        } catch (error) {
-            console.error('Failed to parse email:', error);
-            throw error;
-        }
+
+            imap.once('error', (err) => {
+                console.error('IMAP connection error:', err);
+                reject(err);
+            });
+
+            imap.once('end', () => {
+                console.log('IMAP connection ended.');
+                resolve();
+            });
+
+            imap.connect();
+        });
     }
 
-    async function processNewEmails() {
+    async function processNewEmails(imap) {
         try {
-            const accessToken = await getAccessToken();
+            imap.search(['UNSEEN'], (err, results) => {
+                if (err) {
+                    console.error('Error searching unseen emails:', err);
+                    return;
+                }
 
-            const imap = new Imap({
-                user: EMAIL_CONFIG.user,
-                xoauth2: Buffer.from(`user=${EMAIL_CONFIG.user}\x01auth=Bearer ${accessToken}\x01\x01`).toString('base64'),
-                host: process.env.EMAIL_HOST || 'imap.gmail.com',
-                port: parseInt(process.env.EMAIL_PORT, 10) || 993,
-                tls: process.env.EMAIL_TLS === 'true',
-                tlsOptions: { rejectUnauthorized: false },
-                authTimeout: 30000,
-            });
+                if (!results || results.length === 0) {
+                    console.log('No unseen emails to process.');
+                    return;
+                }
 
-            return new Promise((resolve, reject) => {
-                imap.once('ready', () => {
-                    imap.openBox('INBOX', false, (err, box) => {
-                        if (err) {
-                            console.error('Error opening INBOX:', err);
-                            reject(err);
-                            return;
+                const fetch = imap.fetch(results, { bodies: '' });
+                fetch.on('message', (msg) => {
+                    msg.on('body', async (stream) => {
+                        try {
+                            const email = await parseEmail(stream);
+                            console.log('Processing email:', email.subject);
+                            // Add logic for classification, escalation, and reply here
+                        } catch (error) {
+                            console.error('Error processing email:', error);
                         }
-
-                        imap.search(['UNSEEN'], (err, results) => {
-                            if (err) {
-                                console.error('Error searching emails:', err);
-                                reject(err);
-                                return;
-                            }
-
-                            if (!results || results.length === 0) {
-                                console.log('No new emails to process.');
-                                resolve();
-                                return;
-                            }
-
-                            const fetch = imap.fetch(results, { bodies: '' });
-                            const emailQueue = [];
-
-                            fetch.on('message', (msg) => {
-                                msg.on('body', async (stream) => {
-                                    try {
-                                        const email = await parseEmail(stream);
-                                        emailQueue.push(email);
-                                    } catch (error) {
-                                        console.error('Error parsing email:', error);
-                                    }
-                                });
-                            });
-
-                            fetch.once('end', async () => {
-                                console.log('Processing email queue...');
-                                for (const email of emailQueue) {
-                                    console.log('Processing:', email.subject);
-                                    // Add email classification and response logic
-                                }
-                                imap.end();
-                                resolve();
-                            });
-                        });
                     });
                 });
 
-                imap.once('error', (err) => {
-                    console.error('IMAP error:', err);
-                    reject(err);
+                fetch.once('end', () => {
+                    console.log('Finished processing emails.');
                 });
-
-                imap.connect();
             });
         } catch (error) {
-            console.error('Error in processNewEmails:', error);
-            throw error;
+            console.error('Error processing emails:', error);
         }
     }
 
     return {
-        processNewEmails,
+        monitorEmails,
         sendReply,
         sendEscalationNotification,
     };
 }
 
 module.exports = EmailService;
+
