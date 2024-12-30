@@ -133,64 +133,75 @@ function EmailService() {
     }
 
     async function processNewEmails() {
-        const imap = new Imap({
-            user: EMAIL_CONFIG.user,
-            xoauth2: await getAccessToken(), // OAuth2 token for IMAP authentication
-            host: process.env.EMAIL_HOST || 'imap.gmail.com',
-            port: parseInt(process.env.EMAIL_PORT, 10) || 993,
-            tls: process.env.EMAIL_TLS === 'true',
-            authTimeout: 30000,
-        });
+        try {
+            const accessToken = await getAccessToken();
 
-        return new Promise((resolve, reject) => {
-            imap.once('ready', async () => {
-                try {
-                    imap.openBox('INBOX', false, async (err, box) => {
-                        if (err) throw err;
+            const imap = new Imap({
+                user: EMAIL_CONFIG.user,
+                xoauth2: accessToken, // Use resolved accessToken here
+                host: process.env.EMAIL_HOST || 'imap.gmail.com',
+                port: parseInt(process.env.EMAIL_PORT, 10) || 993,
+                tls: process.env.EMAIL_TLS === 'true',
+                tlsOptions: { rejectUnauthorized: false }, // Allow self-signed certificates
+                authTimeout: 30000,
+            });
 
-                        const results = await new Promise((resolve, reject) => {
-                            imap.search(['UNSEEN'], (err, results) => {
-                                if (err) reject(err);
-                                else resolve(results);
-                            });
-                        });
-
-                        const emailQueue = [];
-                        for (const msgId of results) {
-                            const fetch = imap.fetch(msgId, { bodies: '' });
-                            fetch.on('message', async (msg) => {
-                                try {
-                                    const email = await parseEmail(msg);
-                                    emailQueue.push(email);
-                                } catch (error) {
-                                    console.error('Error parsing email:', error);
-                                }
-                            });
+            return new Promise((resolve, reject) => {
+                imap.once('ready', () => {
+                    imap.openBox('INBOX', false, (err, box) => {
+                        if (err) {
+                            console.error('Error opening INBOX:', err);
+                            reject(err);
+                            return;
                         }
 
-                        fetch.once('end', async () => {
-                            console.log('Processing email queue...');
-                            for (const email of emailQueue) {
-                                console.log('Processing:', email.subject);
-                                // Add email processing logic here
+                        imap.search(['UNSEEN'], (err, results) => {
+                            if (err) {
+                                console.error('Error searching emails:', err);
+                                reject(err);
+                                return;
                             }
-                            imap.end();
-                            resolve();
+
+                            if (!results || results.length === 0) {
+                                console.log('No new emails to process.');
+                                resolve();
+                                return;
+                            }
+
+                            const fetch = imap.fetch(results, { bodies: '' });
+
+                            fetch.on('message', (msg) => {
+                                msg.on('body', async (stream) => {
+                                    try {
+                                        const email = await parseEmail(stream);
+                                        console.log('Processing email:', email.subject);
+                                        // Add logic for classification and reply here
+                                    } catch (error) {
+                                        console.error('Error processing email:', error);
+                                    }
+                                });
+                            });
+
+                            fetch.once('end', () => {
+                                console.log('Finished processing emails.');
+                                imap.end();
+                                resolve();
+                            });
                         });
                     });
-                } catch (error) {
-                    console.error('Error processing new emails:', error);
-                    reject(error);
-                }
-            });
+                });
 
-            imap.once('error', (err) => {
-                console.error('IMAP error:', err);
-                reject(err);
-            });
+                imap.once('error', (err) => {
+                    console.error('IMAP error:', err);
+                    reject(err);
+                });
 
-            imap.connect();
-        });
+                imap.connect();
+            });
+        } catch (error) {
+            console.error('Error in processNewEmails:', error);
+            throw error;
+        }
     }
 
     return {
@@ -201,5 +212,6 @@ function EmailService() {
 }
 
 module.exports = EmailService;
+
 
 
