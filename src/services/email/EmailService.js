@@ -138,11 +138,11 @@ function EmailService() {
 
             const imap = new Imap({
                 user: EMAIL_CONFIG.user,
-                xoauth2: accessToken, // Use resolved accessToken here
+                xoauth2: accessToken,
                 host: process.env.EMAIL_HOST || 'imap.gmail.com',
                 port: parseInt(process.env.EMAIL_PORT, 10) || 993,
                 tls: process.env.EMAIL_TLS === 'true',
-                tlsOptions: { rejectUnauthorized: false }, // Allow self-signed certificates
+                tlsOptions: { rejectUnauthorized: false },
                 authTimeout: 30000,
             });
 
@@ -169,21 +169,25 @@ function EmailService() {
                             }
 
                             const fetch = imap.fetch(results, { bodies: '' });
+                            const emailQueue = [];
 
                             fetch.on('message', (msg) => {
                                 msg.on('body', async (stream) => {
                                     try {
                                         const email = await parseEmail(stream);
-                                        console.log('Processing email:', email.subject);
-                                        // Add logic for classification and reply here
+                                        emailQueue.push(email);
                                     } catch (error) {
-                                        console.error('Error processing email:', error);
+                                        console.error('Error parsing email:', error);
                                     }
                                 });
                             });
 
-                            fetch.once('end', () => {
-                                console.log('Finished processing emails.');
+                            fetch.once('end', async () => {
+                                console.log('Processing email queue...');
+                                for (const email of emailQueue) {
+                                    console.log('Processing:', email.subject);
+                                    // Add email classification and response logic
+                                }
                                 imap.end();
                                 resolve();
                             });
@@ -212,6 +216,7 @@ function EmailService() {
 }
 
 module.exports = EmailService;
+
 
 
 
