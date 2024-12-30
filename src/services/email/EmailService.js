@@ -15,7 +15,15 @@ function EmailService() {
     };
 
     const ESCALATION_EMAIL = process.env.ESCALATION_EMAIL || "default-escalation@example.com";
-    const CLIENT_SECRET_PATH = path.join(__dirname, '../config/credentials.json');
+
+    // Correctly resolve the path to credentials.json
+    const CLIENT_SECRET_PATH = path.resolve(__dirname, '../../config/credentials.json');
+
+    // Ensure the credentials file exists
+    if (!fs.existsSync(CLIENT_SECRET_PATH)) {
+        throw new Error(`Credentials file not found at path: ${CLIENT_SECRET_PATH}`);
+    }
+
     const credentials = JSON.parse(fs.readFileSync(CLIENT_SECRET_PATH, 'utf-8'));
 
     // Adjusted destructuring for "installed" property
@@ -219,8 +227,3 @@ function EmailService() {
 }
 
 module.exports = EmailService;
-
-
-
-
-
