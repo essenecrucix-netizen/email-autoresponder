@@ -16,6 +16,8 @@ function EmailService() {
 
     const ESCALATION_EMAIL = process.env.ESCALATION_EMAIL || "default-escalation@example.com";
     const CLIENT_SECRET_PATH = path.join(__dirname, '../config/credentials.json');
+    console.log('Resolved path to credentials.json:', CLIENT_SECRET_PATH);
+
     const credentials = JSON.parse(fs.readFileSync(CLIENT_SECRET_PATH, 'utf-8'));
     const { client_id, client_secret, redirect_uris } = credentials.web;
     const oauth2Client = new google.auth.OAuth2(client_id, client_secret, redirect_uris[0]);
