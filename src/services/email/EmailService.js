@@ -4,8 +4,8 @@ const fs = require('fs');
 const path = require('path');
 const DatabaseService = require('../database/DatabaseService');
 const OpenAIService = require('../ai/OpenAIService');
-const Imap = require('imap'); // Ensure this is imported
-const { simpleParser } = require('mailparser'); // Import simpleParser
+const Imap = require('imap');
+const { simpleParser } = require('mailparser');
 
 function EmailService() {
     const EMAIL_CONFIG = {
@@ -41,24 +41,105 @@ function EmailService() {
     }
 
     async function sendEscalationNotification(email) {
-        // Your existing code for sending escalation notifications
+        try {
+            const accessToken = await getAccessToken();
+
+            const transporter = nodemailer.createTransport({
+                service: 'gmail',
+                auth: {
+                    type: 'OAuth2',
+                    user: EMAIL_CONFIG.user,
+                    clientId: client_id,
+                    clientSecret: client_secret,
+                    refreshToken: process.env.GOOGLE_REFRESH_TOKEN,
+                    accessToken,
+                },
+            });
+
+            const escalationMessage = `
+                <p><strong>Escalation Alert</strong></p>
+                <p>Email from: ${email.from}</p>
+                <p>Subject: ${email.subject}</p>
+                <p>Message: ${email.text}</p>
+            `;
+
+            await transporter.sendMail({
+                from: EMAIL_CONFIG.user,
+                to: ESCALATION_EMAIL,
+                subject: `Escalation: ${email.subject}`,
+                html: escalationMessage,
+            });
+
+            console.log(`Escalation email sent to ${ESCALATION_EMAIL}`);
+        } catch (error) {
+            console.error('Error sending escalation email:', error);
+            throw new Error('Failed to send escalation notification.');
+        }
     }
 
     async function sendReply(to, subject, content) {
-        // Your existing code for sending email replies
+        try {
+            const accessToken = await getAccessToken();
+
+            const transporter = nodemailer.createTransport({
+                service: 'gmail',
+                auth: {
+                    type: 'OAuth2',
+                    user: EMAIL_CONFIG.user,
+                    clientId: client_id,
+                    clientSecret: client_secret,
+                    refreshToken: process.env.GOOGLE_REFRESH_TOKEN,
+                    accessToken,
+                },
+            });
+
+            await transporter.sendMail({
+                from: EMAIL_CONFIG.user,
+                to,
+                subject: `Re: ${subject}`,
+                text: content,
+                html: content.replace(/\n/g, '<br>'),
+            });
+
+            console.log('Email reply sent successfully!');
+        } catch (error) {
+            console.error('Error sending email reply:', error);
+            throw new Error('Failed to send reply.');
+        }
     }
 
     async function parseEmail(message) {
-        // Your existing code for parsing email messages
+        try {
+            return new Promise((resolve, reject) => {
+                let buffer = '';
+                message.on('body', (stream) => {
+                    stream.on('data', (chunk) => {
+                        buffer += chunk.toString('utf8');
+                    });
+                });
+                message.once('end', async () => {
+                    try {
+                        const parsed = await simpleParser(buffer);
+                        resolve(parsed);
+                    } catch (error) {
+                        reject(error);
+                    }
+                });
+            });
+        } catch (error) {
+            console.error('Failed to parse email:', error);
+            throw error;
+        }
     }
 
     async function processNewEmails() {
         const imap = new Imap({
             user: EMAIL_CONFIG.user,
-            password: process.env.EMAIL_PASSWORD, // Only used if you're not using OAuth2
+            password: process.env.EMAIL_PASSWORD,
             host: process.env.EMAIL_HOST || 'imap.gmail.com',
             port: parseInt(process.env.EMAIL_PORT, 10) || 993,
             tls: process.env.EMAIL_TLS === 'true',
+            tlsOptions: { rejectUnauthorized: false }, // Allow self-signed certificates
             authTimeout: 30000,
         });
 
@@ -88,15 +169,15 @@ function EmailService() {
                             });
                         }
 
-                        fetch.once('end', async () => {
+                        imap.once('end', async () => {
                             console.log('Processing email queue...');
                             for (const email of emailQueue) {
                                 console.log('Processing:', email.subject);
                                 // Add email processing logic here
                             }
-                            imap.end();
-                            resolve();
                         });
+
+                        imap.end();
                     });
                 } catch (error) {
                     console.error('Error processing new emails:', error);
@@ -121,3 +202,4 @@ function EmailService() {
 }
 
 module.exports = EmailService;
+
