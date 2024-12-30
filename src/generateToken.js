@@ -1,10 +1,11 @@
 const fs = require('fs');
 const readline = require('readline');
 const { google } = require('googleapis');
+const path = require('path');
 
-// Path to your credentials file
-const CREDENTIALS_PATH = './src/config/credentials.json';
-const TOKEN_PATH = './src/config/token.json';
+// Absolute path to your credentials file
+const CREDENTIALS_PATH = path.join(__dirname, 'config', 'credentials.json');
+const TOKEN_PATH = path.join(__dirname, 'config', 'token.json');
 
 // Load client secrets from a local file.
 fs.readFile(CREDENTIALS_PATH, (err, content) => {
