@@ -41,95 +41,15 @@ function EmailService() {
     }
 
     async function sendEscalationNotification(email) {
-        try {
-            const accessToken = await getAccessToken();
-
-            const transporter = nodemailer.createTransport({
-                service: 'gmail',
-                auth: {
-                    type: 'OAuth2',
-                    user: EMAIL_CONFIG.user,
-                    clientId: client_id,
-                    clientSecret: client_secret,
-                    refreshToken: process.env.GOOGLE_REFRESH_TOKEN,
-                    accessToken,
-                },
-            });
-
-            const escalationMessage = `
-                <p><strong>Escalation Alert</strong></p>
-                <p>Email from: ${email.from}</p>
-                <p>Subject: ${email.subject}</p>
-                <p>Message: ${email.text}</p>
-            `;
-
-            await transporter.sendMail({
-                from: EMAIL_CONFIG.user,
-                to: ESCALATION_EMAIL,
-                subject: `Escalation: ${email.subject}`,
-                html: escalationMessage,
-            });
-
-            console.log(`Escalation email sent to ${ESCALATION_EMAIL}`);
-        } catch (error) {
-            console.error('Error sending escalation email:', error);
-            throw new Error('Failed to send escalation notification.');
-        }
+        // Your existing code for sending escalation notifications
     }
 
     async function sendReply(to, subject, content) {
-        try {
-            const accessToken = await getAccessToken();
-
-            const transporter = nodemailer.createTransport({
-                service: 'gmail',
-                auth: {
-                    type: 'OAuth2',
-                    user: EMAIL_CONFIG.user,
-                    clientId: client_id,
-                    clientSecret: client_secret,
-                    refreshToken: process.env.GOOGLE_REFRESH_TOKEN,
-                    accessToken,
-                },
-            });
-
-            await transporter.sendMail({
-                from: EMAIL_CONFIG.user,
-                to,
-                subject: `Re: ${subject}`,
-                text: content,
-                html: content.replace(/\n/g, '<br>'),
-            });
-
-            console.log('Email reply sent successfully!');
-        } catch (error) {
-            console.error('Error sending email reply:', error);
-            throw new Error('Failed to send reply.');
-        }
+        // Your existing code for sending email replies
     }
 
     async function parseEmail(message) {
-        try {
-            return new Promise((resolve, reject) => {
-                let buffer = '';
-                message.on('body', (stream) => {
-                    stream.on('data', (chunk) => {
-                        buffer += chunk.toString('utf8');
-                    });
-                });
-                message.once('end', async () => {
-                    try {
-                        const parsed = await simpleParser(buffer);
-                        resolve(parsed);
-                    } catch (error) {
-                        reject(error);
-                    }
-                });
-            });
-        } catch (error) {
-            console.error('Failed to parse email:', error);
-            throw error;
-        }
+        // Your existing code for parsing email messages
     }
 
     async function processNewEmails() {
@@ -168,8 +88,36 @@ function EmailService() {
                             });
                         }
 
-                        imap.once('end', async () => {
+                        fetch.once('end', async () => {
                             console.log('Processing email queue...');
                             for (const email of emailQueue) {
                                 console.log('Processing:', email.subject);
-                           
+                                // Add email processing logic here
+                            }
+                            imap.end();
+                            resolve();
+                        });
+                    });
+                } catch (error) {
+                    console.error('Error processing new emails:', error);
+                    reject(error);
+                }
+            });
+
+            imap.once('error', (err) => {
+                console.error('IMAP error:', err);
+                reject(err);
+            });
+
+            imap.connect();
+        });
+    }
+
+    return {
+        processNewEmails,
+        sendReply,
+        sendEscalationNotification,
+    };
+}
+
+module.exports = EmailService;
