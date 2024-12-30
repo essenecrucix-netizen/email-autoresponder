@@ -138,7 +138,7 @@ function EmailService() {
 
             const imap = new Imap({
                 user: EMAIL_CONFIG.user,
-                xoauth2: accessToken,
+                xoauth2: Buffer.from(`user=${EMAIL_CONFIG.user}\x01auth=Bearer ${accessToken}\x01\x01`).toString('base64'),
                 host: process.env.EMAIL_HOST || 'imap.gmail.com',
                 port: parseInt(process.env.EMAIL_PORT, 10) || 993,
                 tls: process.env.EMAIL_TLS === 'true',
