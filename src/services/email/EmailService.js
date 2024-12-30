@@ -1,3 +1,5 @@
+require('dotenv').config(); // Load environment variables from .env file
+
 const { google } = require('googleapis');
 const nodemailer = require('nodemailer');
 const fs = require('fs');
@@ -13,8 +15,7 @@ function EmailService() {
     };
 
     const ESCALATION_EMAIL = process.env.ESCALATION_EMAIL || "default-escalation@example.com";
-
-    const CLIENT_SECRET_PATH = path.join(__dirname, 'client_secret_91869882627-d8rq09r1ic00bp1egiamuncvtmi9h6b1.apps.googleusercontent.com.json');
+    const CLIENT_SECRET_PATH = path.join(__dirname, '../config/credentials.json');
     const credentials = JSON.parse(fs.readFileSync(CLIENT_SECRET_PATH, 'utf-8'));
     const { client_id, client_secret, redirect_uris } = credentials.web;
     const oauth2Client = new google.auth.OAuth2(client_id, client_secret, redirect_uris[0]);
@@ -216,6 +217,7 @@ function EmailService() {
 }
 
 module.exports = EmailService;
+
 
 
 
