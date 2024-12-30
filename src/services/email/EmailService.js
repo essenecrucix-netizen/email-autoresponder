@@ -135,11 +135,10 @@ function EmailService() {
     async function processNewEmails() {
         const imap = new Imap({
             user: EMAIL_CONFIG.user,
-            password: process.env.EMAIL_PASSWORD,
+            xoauth2: await getAccessToken(), // OAuth2 token for IMAP authentication
             host: process.env.EMAIL_HOST || 'imap.gmail.com',
             port: parseInt(process.env.EMAIL_PORT, 10) || 993,
             tls: process.env.EMAIL_TLS === 'true',
-            tlsOptions: { rejectUnauthorized: false }, // Allow self-signed certificates
             authTimeout: 30000,
         });
 
@@ -169,15 +168,15 @@ function EmailService() {
                             });
                         }
 
-                        imap.once('end', async () => {
+                        fetch.once('end', async () => {
                             console.log('Processing email queue...');
                             for (const email of emailQueue) {
                                 console.log('Processing:', email.subject);
                                 // Add email processing logic here
                             }
+                            imap.end();
+                            resolve();
                         });
-
-                        imap.end();
                     });
                 } catch (error) {
                     console.error('Error processing new emails:', error);
@@ -202,4 +201,5 @@ function EmailService() {
 }
 
 module.exports = EmailService;
+
 
