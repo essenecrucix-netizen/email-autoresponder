@@ -41,7 +41,10 @@ function DatabaseService() {
             const dynamodb = await initializeDynamoDB();
             const params = {
                 TableName: tableName,
-                Key: key,
+                Key: {
+                    ...key,
+                    emailUser: String(key.emailUser), // Ensure emailUser is a string
+                },
             };
             const result = await dynamodb.get(params).promise();
             return result.Item;
@@ -66,7 +69,10 @@ function DatabaseService() {
 
             const params = {
                 TableName: tableName,
-                Key: key,
+                Key: {
+                    ...key,
+                    emailUser: String(key.emailUser), // Ensure emailUser is a string
+                },
                 UpdateExpression: `SET ${updateExpression.join(', ')}, #updatedAt = :updatedAt`,
                 ExpressionAttributeNames: {
                     ...expressionAttributeNames,
@@ -93,7 +99,7 @@ function DatabaseService() {
             const params = {
                 TableName: 'LastProcessedUID',
                 Item: {
-                    emailUser,
+                    emailUser: String(emailUser), // Ensure emailUser is a string
                     uid,
                     updatedAt: new Date().toISOString(),
                 },
@@ -111,7 +117,10 @@ function DatabaseService() {
             const dynamodb = await initializeDynamoDB();
             const params = {
                 TableName: tableName,
-                Key: key,
+                Key: {
+                    ...key,
+                    emailUser: String(key.emailUser), // Ensure emailUser is a string
+                },
             };
             await dynamodb.delete(params).promise();
         } catch (error) {
@@ -157,7 +166,7 @@ function DatabaseService() {
         updateItem,
         deleteItem,
         queryItems,
-        updateLastProcessedUID, // Added this function
+        updateLastProcessedUID,
     };
 }
 
