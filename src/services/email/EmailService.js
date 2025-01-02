@@ -189,38 +189,50 @@ function EmailService() {
         });
     }
 
-    async function processNewEmails(imap, lastProcessedUID) {
+    async function processNewEmails(imap, startUID) {
         try {
             imap.search(['UNSEEN'], (err, results) => {
                 if (err) {
                     console.error('Error searching unseen emails:', err);
                     return;
                 }
-
-                const filteredResults = results.filter((uid) => uid > lastProcessedUID);
+    
+                const filteredResults = startUID
+                    ? results.filter((uid) => uid > startUID)
+                    : results;
+    
                 if (!filteredResults.length) {
                     console.log('No new unseen emails to process.');
                     return;
                 }
-
-                const fetch = imap.fetch(filteredResults, { bodies: '' });
-
-                fetch.on('message', (msg) => {
+    
+                const fetch = imap.fetch(filteredResults, { bodies: '', struct: true });
+    
+                fetch.on('message', (msg, seqno) => {
+                    let uid;
+                    msg.on('attributes', (attrs) => {
+                        uid = attrs.uid; // Extract UID from attributes
+                    });
+    
                     msg.on('body', async (stream) => {
                         try {
                             const email = await parseEmail(stream);
-                            console.log(`Processing email: ${email.subject}`);
-
-                            // Update the UID only after successful processing
-                            const maxUID = Math.max(...filteredResults);
-                            await database.updateLastProcessedUID(maxUID);
-                            console.log(`Updated last processed UID to ${maxUID}`);
+                            console.log(`Processing email (UID: ${uid}): ${email.subject}`);
+    
+                            if (uid) {
+                                await database.updateLastProcessedUID(EMAIL_CONFIG.user, uid);
+                                console.log(`Updated last processed UID to ${uid}`);
+                            } else {
+                                console.error('UID is undefined for this email.');
+                            }
+    
+                            // Add your classification, escalation, and reply logic here
                         } catch (error) {
                             console.error('Error processing email:', error);
                         }
                     });
                 });
-
+    
                 fetch.once('end', () => {
                     console.log('Finished processing new emails.');
                 });
@@ -228,7 +240,7 @@ function EmailService() {
         } catch (error) {
             console.error('Error processing emails:', error);
         }
-    }
+    }    
 
     return {
         monitorEmails,
