@@ -48,11 +48,71 @@ function EmailService() {
     }
 
     async function sendEscalationNotification(email) {
-        // Existing logic for escalation notifications
+        try {
+            const accessToken = await getAccessToken();
+
+            const transporter = nodemailer.createTransport({
+                service: 'gmail',
+                auth: {
+                    type: 'OAuth2',
+                    user: EMAIL_CONFIG.user,
+                    clientId: client_id,
+                    clientSecret: client_secret,
+                    refreshToken: process.env.GOOGLE_REFRESH_TOKEN,
+                    accessToken,
+                },
+            });
+
+            const escalationMessage = `
+                <p><strong>Escalation Alert</strong></p>
+                <p>Email from: ${email.from}</p>
+                <p>Subject: ${email.subject}</p>
+                <p>Message: ${email.text}</p>
+            `;
+
+            await transporter.sendMail({
+                from: EMAIL_CONFIG.user,
+                to: ESCALATION_EMAIL,
+                subject: `Escalation: ${email.subject}`,
+                html: escalationMessage,
+            });
+
+            console.log(`Escalation email sent to ${ESCALATION_EMAIL}`);
+        } catch (error) {
+            console.error('Error sending escalation email:', error);
+            throw new Error('Failed to send escalation notification.');
+        }
     }
 
     async function sendReply(to, subject, content) {
-        // Existing logic for sending replies
+        try {
+            const accessToken = await getAccessToken();
+
+            const transporter = nodemailer.createTransport({
+                service: 'gmail',
+                auth: {
+                    type: 'OAuth2',
+                    user: EMAIL_CONFIG.user,
+                    clientId: client_id,
+                    clientSecret: client_secret,
+                    refreshToken: process.env.GOOGLE_REFRESH_TOKEN,
+                    accessToken,
+                },
+            });
+
+            await transporter.sendMail({
+                from: EMAIL_CONFIG.user,
+                to,
+                subject: `Re: ${subject}`,
+                text: content,
+                html: content.replace(/\n/g, '<br>'),
+            });
+
+            console.log('Email reply sent successfully!');
+        } catch (error) {
+            console.error('Error sending email reply:', error);
+            throw new Error('Failed to send reply.');
+        }
     }
 
     async function parseEmail(messageStream) {
@@ -91,18 +151,26 @@ function EmailService() {
         });
 
         return new Promise((resolve, reject) => {
-            imap.once('ready', () => {
+            imap.once('ready', async () => {
                 console.log('IMAP connection ready.');
+
+                const lastProcessedUID = await database.getItem('LastProcessedUID', {
+                    emailUser: EMAIL_CONFIG.user,
+                });
+                const startUID = lastProcessedUID ? lastProcessedUID.uid : null;
+
+                console.log(`Last processed UID: ${startUID}`);
                 imap.openBox('INBOX', true, (err, box) => {
                     if (err) {
                         console.error('Error opening inbox:', err);
                         reject(err);
                         return;
                     }
+
                     console.log(`Mailbox opened. Total messages: ${box.messages.total}`);
                     imap.on('mail', () => {
                         console.log('New mail detected.');
-                        processNewEmails(imap);
+                        processNewEmails(imap, startUID);
                     });
                 });
             });
@@ -121,7 +189,7 @@ function EmailService() {
         });
     }
 
-    async function processNewEmails(imap) {
+    async function processNewEmails(imap, startUID) {
         try {
             imap.search(['UNSEEN'], (err, results) => {
                 if (err) {
@@ -129,18 +197,31 @@ function EmailService() {
                     return;
                 }
 
-                if (!results || results.length === 0) {
-                    console.log('No unseen emails to process.');
+                const filteredResults = startUID
+                    ? results.filter((uid) => uid > startUID)
+                    : results;
+
+                if (!filteredResults.length) {
+                    console.log('No new unseen emails to process.');
                     return;
                 }
 
-                const fetch = imap.fetch(results, { bodies: '' });
+                const fetch = imap.fetch(filteredResults, { bodies: '' });
+
                 fetch.on('message', (msg) => {
                     msg.on('body', async (stream) => {
                         try {
                             const email = await parseEmail(stream);
                             console.log('Processing email:', email.subject);
-                            // Add logic for classification, escalation, and reply here
+
+                            // Process email logic
+                            const maxUID = Math.max(...filteredResults);
+                            await database.createItem('LastProcessedUID', {
+                                emailUser: EMAIL_CONFIG.user,
+                                uid: maxUID,
+                            });
+
+                            console.log(`Updated last processed UID to ${maxUID}`);
                         } catch (error) {
                             console.error('Error processing email:', error);
                         }
@@ -148,7 +229,7 @@ function EmailService() {
                 });
 
                 fetch.once('end', () => {
-                    console.log('Finished processing emails.');
+                    console.log('Finished processing new emails.');
                 });
             });
         } catch (error) {

@@ -6,6 +6,9 @@ function DatabaseService() {
         secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY
     };
 
+    const LAST_PROCESSED_UID_TABLE = process.env.LAST_PROCESSED_UID_TABLE || 'LastProcessedUID'; // Table name for storing lastProcessedUID
+    const EMAIL_USER_KEY = process.env.EMAIL_USER; // Using email user as the primary key
+
     async function initializeDynamoDB() {
         try {
             const AWS = require('aws-sdk');
@@ -18,6 +21,46 @@ function DatabaseService() {
         } catch (error) {
             console.error('Failed to initialize DynamoDB:', error);
             throw new Error('Failed to initialize DynamoDB');
+        }
+    }
+
+    async function getLastProcessedUID() {
+        try {
+            const dynamodb = await initializeDynamoDB();
+            const params = {
+                TableName: LAST_PROCESSED_UID_TABLE,
+                Key: { emailUser: EMAIL_USER_KEY }
+            };
+            const result = await dynamodb.get(params).promise();
+            return result.Item?.lastProcessedUID || 0; // Default to 0 if no record exists
+        } catch (error) {
+            console.error('Failed to retrieve lastProcessedUID:', error);
+            throw new Error('Failed to retrieve lastProcessedUID');
+        }
+    }
+
+    async function updateLastProcessedUID(lastProcessedUID) {
+        try {
+            const dynamodb = await initializeDynamoDB();
+            const params = {
+                TableName: LAST_PROCESSED_UID_TABLE,
+                Key: { emailUser: EMAIL_USER_KEY },
+                UpdateExpression: 'SET #lastProcessedUID = :lastProcessedUID, #updatedAt = :updatedAt',
+                ExpressionAttributeNames: {
+                    '#lastProcessedUID': 'lastProcessedUID',
+                    '#updatedAt': 'updatedAt'
+                },
+                ExpressionAttributeValues: {
+                    ':lastProcessedUID': lastProcessedUID,
+                    ':updatedAt': new Date().toISOString()
+                },
+                ReturnValues: 'ALL_NEW'
+            };
+            const result = await dynamodb.update(params).promise();
+            return result.Attributes;
+        } catch (error) {
+            console.error('Failed to update lastProcessedUID:', error);
+            throw new Error('Failed to update lastProcessedUID');
         }
     }
 
@@ -141,9 +184,12 @@ function DatabaseService() {
         getItem,
         updateItem,
         deleteItem,
-        queryItems
+        queryItems,
+        getLastProcessedUID,
+        updateLastProcessedUID
     };
 }
 
 module.exports = DatabaseService;
+
 
