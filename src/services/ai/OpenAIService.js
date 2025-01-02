@@ -8,7 +8,7 @@ function OpenAIService() {
     let currentKeyIndex = 0;
 
     const API_CONFIG = {
-        model: 'gpt-4',
+        model: 'gpt-4o-mini',
         baseUrl: 'https://api.openai.com/v1',
     };
 
