@@ -99,18 +99,19 @@ function DatabaseService() {
             const params = {
                 TableName: 'LastProcessedUID',
                 Item: {
-                    emailUser: String(emailUser), // Ensure emailUser is a string
-                    uid,
+                    emailUser: emailUser,
+                    uid: uid,
                     updatedAt: new Date().toISOString(),
                 },
             };
+    
             await dynamodb.put(params).promise();
             console.log(`LastProcessedUID updated for ${emailUser} with UID ${uid}`);
         } catch (error) {
             console.error('Failed to update LastProcessedUID:', error);
             throw new Error('Failed to update LastProcessedUID');
         }
-    }
+    }        
 
     async function deleteItem(tableName, key) {
         try {

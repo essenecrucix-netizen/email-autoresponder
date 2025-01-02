@@ -26,11 +26,11 @@ function OpenAIService() {
     }
 
     async function createCompletion(systemPrompt, userPrompt) {
-        let attempts = 0;
         const maxAttempts = apiKeys.length;
-
-        while (attempts < maxAttempts) {
+    
+        for (let attempts = 0; attempts < maxAttempts; attempts++) {
             const apiKey = getCurrentApiKey();
+    
             try {
                 const response = await fetch(`${API_CONFIG.baseUrl}/chat/completions`, {
                     method: 'POST',
@@ -48,37 +48,25 @@ function OpenAIService() {
                         max_tokens: 500,
                     }),
                 });
-
-                if (response.status === 429) {
-                    console.warn(`Rate limit reached for API key ${apiKey}. Rotating API key.`);
-                    rotateApiKey();
-                    attempts++;
-                    continue;
-                }
-
+    
                 if (!response.ok) {
                     const errorText = await response.text();
-                    console.error(`OpenAI API error with key ${apiKey}: ${response.status} ${errorText}`);
-                    throw new Error(`OpenAI API error: ${response.status}`);
-                }
-
-                const data = await response.json();
-                return data.choices[0].message.content.trim();
-            } catch (error) {
-                console.error(`Error with API key ${apiKey}: ${error.message}`);
-                if (error.code === 'ECONNRESET' || error.code === 'ETIMEDOUT') {
-                    console.warn(`Network issue detected. Retrying with API key ${apiKey}.`);
-                }
-
-                if (attempts < maxAttempts - 1) {
+                    console.error(`OpenAI API error: ${response.status} ${errorText}`);
                     rotateApiKey();
-                    attempts++;
-                } else {
-                    throw new Error('All API keys exhausted. Unable to complete the request.');
+                    continue;
                 }
+    
+                const data = await response.json();
+                return data.choices?.[0]?.message?.content.trim();
+            } catch (error) {
+                console.error(`OpenAI API request failed for key ${apiKey}:`, error.message);
+                rotateApiKey();
             }
         }
-    }
+    
+        console.error('All OpenAI API keys exhausted.');
+        return 'Unable to process your request at this time.';
+    }    
 
     async function analyzeSentiment(text) {
         try {

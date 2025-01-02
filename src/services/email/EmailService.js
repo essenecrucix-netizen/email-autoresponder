@@ -189,18 +189,15 @@ function EmailService() {
         });
     }
 
-    async function processNewEmails(imap, startUID) {
+    async function processNewEmails(imap, lastProcessedUID) {
         try {
-            imap.search(['UNSEEN'], (err, results) => {
+            imap.search(['UNSEEN'], async (err, results) => {
                 if (err) {
                     console.error('Error searching unseen emails:', err);
                     return;
                 }
     
-                const filteredResults = startUID
-                    ? results.filter((uid) => uid > startUID)
-                    : results;
-    
+                const filteredResults = results.filter(uid => uid > lastProcessedUID);
                 if (!filteredResults.length) {
                     console.log('No new unseen emails to process.');
                     return;
@@ -208,40 +205,39 @@ function EmailService() {
     
                 const fetch = imap.fetch(filteredResults, { bodies: '' });
     
-                fetch.on('message', (msg) => {
-                    msg.on('body', async (stream) => {
+                fetch.on('message', (msg, seqno) => {
+                    msg.on('body', async stream => {
                         try {
                             const email = await parseEmail(stream);
-                            console.log(`Processing email (UID: ${email.uid}): ${email.subject}`);
+                            if (!email.subject || !email.text) {
+                                console.warn(`Email UID ${seqno} has incomplete data.`);
+                                return;
+                            }
     
-                            // Generate a response using OpenAI
-                            const question = email.text || email.html || ''; // Use plain text or HTML content
-                            const response = await openai.generateResponse(email.subject, question);
+                            console.log(`Processing email (UID: ${seqno}): ${email.subject}`);
+                            const response = await openai.generateResponse(email.text, email.subject);
     
-                            console.log(`Generated response: ${response}`);
+                            if (!response) {
+                                console.error(`OpenAI response is undefined for email UID ${seqno}. Skipping.`);
+                                return;
+                            }
     
-                            // Send the reply
-                            await sendReply(email.from, email.subject, response);
+                            await sendReply(email.from.text, email.subject, response);
+                            await database.updateLastProcessedUID(EMAIL_CONFIG.user, seqno);
     
-                            // Update last processed UID in DynamoDB
-                            const maxUID = Math.max(...filteredResults);
-                            await database.updateLastProcessedUID(EMAIL_CONFIG.user, maxUID);
-    
-                            console.log(`Updated last processed UID to ${maxUID}`);
+                            console.log(`Updated last processed UID to ${seqno}`);
                         } catch (error) {
-                            console.error('Error processing email:', error);
+                            console.error(`Error processing email UID ${seqno}:`, error);
                         }
                     });
                 });
     
-                fetch.once('end', () => {
-                    console.log('Finished processing new emails.');
-                });
+                fetch.once('end', () => console.log('Finished processing new emails.'));
             });
         } catch (error) {
             console.error('Error processing emails:', error);
         }
-    }                
+    }                    
 
     return {
         monitorEmails,
