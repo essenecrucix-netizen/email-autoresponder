@@ -154,12 +154,12 @@ function EmailService() {
             imap.once('ready', async () => {
                 console.log('IMAP connection ready.');
 
-                const lastProcessedUID = await database.getItem('LastProcessedUID', {
+                const lastProcessedUIDEntry = await database.getItem('LastProcessedUID', {
                     emailUser: EMAIL_CONFIG.user,
                 });
-                const startUID = lastProcessedUID ? lastProcessedUID.uid : null;
+                const lastProcessedUID = lastProcessedUIDEntry ? lastProcessedUIDEntry.uid : 0;
 
-                console.log(`Last processed UID: ${startUID}`);
+                console.log(`Last processed UID: ${lastProcessedUID}`);
                 imap.openBox('INBOX', true, (err, box) => {
                     if (err) {
                         console.error('Error opening inbox:', err);
@@ -170,7 +170,7 @@ function EmailService() {
                     console.log(`Mailbox opened. Total messages: ${box.messages.total}`);
                     imap.on('mail', () => {
                         console.log('New mail detected.');
-                        processNewEmails(imap, startUID);
+                        processNewEmails(imap, lastProcessedUID);
                     });
                 });
             });
@@ -189,7 +189,7 @@ function EmailService() {
         });
     }
 
-    async function processNewEmails(imap, startUID) {
+    async function processNewEmails(imap, lastProcessedUID) {
         try {
             imap.search(['UNSEEN'], (err, results) => {
                 if (err) {
@@ -197,10 +197,7 @@ function EmailService() {
                     return;
                 }
 
-                const filteredResults = startUID
-                    ? results.filter((uid) => uid > startUID)
-                    : results;
-
+                const filteredResults = results.filter((uid) => uid > lastProcessedUID);
                 if (!filteredResults.length) {
                     console.log('No new unseen emails to process.');
                     return;
@@ -212,15 +209,11 @@ function EmailService() {
                     msg.on('body', async (stream) => {
                         try {
                             const email = await parseEmail(stream);
-                            console.log('Processing email:', email.subject);
+                            console.log(`Processing email: ${email.subject}`);
 
-                            // Process email logic
+                            // Update the UID only after successful processing
                             const maxUID = Math.max(...filteredResults);
-                            await database.createItem('LastProcessedUID', {
-                                emailUser: EMAIL_CONFIG.user,
-                                uid: maxUID,
-                            });
-
+                            await database.updateLastProcessedUID(maxUID);
                             console.log(`Updated last processed UID to ${maxUID}`);
                         } catch (error) {
                             console.error('Error processing email:', error);
