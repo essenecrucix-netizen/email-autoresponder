@@ -208,21 +208,25 @@ function EmailService() {
     
                 const fetch = imap.fetch(filteredResults, { bodies: '' });
     
-                fetch.on('message', (msg, seqno) => {
+                fetch.on('message', (msg) => {
                     msg.on('body', async (stream) => {
                         try {
                             const email = await parseEmail(stream);
-                            console.log(`Processing email (UID: ${filteredResults[seqno - 1]}): ${email.subject}`);
+                            console.log(`Processing email (UID: ${email.uid}): ${email.subject}`);
     
-                            // Generate a response using OpenAIService
-                            const response = await openai.generateResponse(email.subject, email.text);
+                            // Generate a response using OpenAI
+                            const question = email.text || email.html || ''; // Use plain text or HTML content
+                            const response = await openai.generateResponse(email.subject, question);
     
-                            // Send a reply
-                            await sendReply(email.from.text, email.subject, response);
+                            console.log(`Generated response: ${response}`);
     
-                            // Update the last processed UID
+                            // Send the reply
+                            await sendReply(email.from, email.subject, response);
+    
+                            // Update last processed UID in DynamoDB
                             const maxUID = Math.max(...filteredResults);
                             await database.updateLastProcessedUID(EMAIL_CONFIG.user, maxUID);
+    
                             console.log(`Updated last processed UID to ${maxUID}`);
                         } catch (error) {
                             console.error('Error processing email:', error);
@@ -237,7 +241,7 @@ function EmailService() {
         } catch (error) {
             console.error('Error processing emails:', error);
         }
-    }            
+    }                
 
     return {
         monitorEmails,
