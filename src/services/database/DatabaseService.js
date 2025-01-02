@@ -87,6 +87,25 @@ function DatabaseService() {
         }
     }
 
+    async function updateLastProcessedUID(emailUser, uid) {
+        try {
+            const dynamodb = await initializeDynamoDB();
+            const params = {
+                TableName: 'LastProcessedUID',
+                Item: {
+                    emailUser,
+                    uid,
+                    updatedAt: new Date().toISOString(),
+                },
+            };
+            await dynamodb.put(params).promise();
+            console.log(`LastProcessedUID updated for ${emailUser} with UID ${uid}`);
+        } catch (error) {
+            console.error('Failed to update LastProcessedUID:', error);
+            throw new Error('Failed to update LastProcessedUID');
+        }
+    }
+
     async function deleteItem(tableName, key) {
         try {
             const dynamodb = await initializeDynamoDB();
@@ -138,6 +157,7 @@ function DatabaseService() {
         updateItem,
         deleteItem,
         queryItems,
+        updateLastProcessedUID, // Added this function
     };
 }
 
