@@ -1,66 +1,19 @@
 function DatabaseService() {
-    const DB_CONFIG = {
-        host: process.env.DB_HOST || 'localhost',
-        region: process.env.AWS_REGION || 'us-east-1',
-        accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY
-    };
+    const AWS = require('aws-sdk');
 
-    const LAST_PROCESSED_UID_TABLE = process.env.LAST_PROCESSED_UID_TABLE || 'LastProcessedUID'; // Table name for storing lastProcessedUID
-    const EMAIL_USER_KEY = process.env.EMAIL_USER; // Using email user as the primary key
+    // Explicitly configure AWS SDK with credentials and region
+    AWS.config.update({
+        region: process.env.AWS_REGION || 'us-west-2', // Default to 'us-west-2' if not set
+        accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+    });
 
     async function initializeDynamoDB() {
         try {
-            const AWS = require('aws-sdk');
-            AWS.config.update({
-                region: DB_CONFIG.region,
-                accessKeyId: DB_CONFIG.accessKeyId,
-                secretAccessKey: DB_CONFIG.secretAccessKey
-            });
             return new AWS.DynamoDB.DocumentClient();
         } catch (error) {
             console.error('Failed to initialize DynamoDB:', error);
             throw new Error('Failed to initialize DynamoDB');
-        }
-    }
-
-    async function getLastProcessedUID() {
-        try {
-            const dynamodb = await initializeDynamoDB();
-            const params = {
-                TableName: LAST_PROCESSED_UID_TABLE,
-                Key: { emailUser: EMAIL_USER_KEY }
-            };
-            const result = await dynamodb.get(params).promise();
-            return result.Item?.lastProcessedUID || 0; // Default to 0 if no record exists
-        } catch (error) {
-            console.error('Failed to retrieve lastProcessedUID:', error);
-            throw new Error('Failed to retrieve lastProcessedUID');
-        }
-    }
-
-    async function updateLastProcessedUID(lastProcessedUID) {
-        try {
-            const dynamodb = await initializeDynamoDB();
-            const params = {
-                TableName: LAST_PROCESSED_UID_TABLE,
-                Key: { emailUser: EMAIL_USER_KEY },
-                UpdateExpression: 'SET #lastProcessedUID = :lastProcessedUID, #updatedAt = :updatedAt',
-                ExpressionAttributeNames: {
-                    '#lastProcessedUID': 'lastProcessedUID',
-                    '#updatedAt': 'updatedAt'
-                },
-                ExpressionAttributeValues: {
-                    ':lastProcessedUID': lastProcessedUID,
-                    ':updatedAt': new Date().toISOString()
-                },
-                ReturnValues: 'ALL_NEW'
-            };
-            const result = await dynamodb.update(params).promise();
-            return result.Attributes;
-        } catch (error) {
-            console.error('Failed to update lastProcessedUID:', error);
-            throw new Error('Failed to update lastProcessedUID');
         }
     }
 
@@ -72,8 +25,8 @@ function DatabaseService() {
                 Item: {
                     ...item,
                     createdAt: new Date().toISOString(),
-                    updatedAt: new Date().toISOString()
-                }
+                    updatedAt: new Date().toISOString(),
+                },
             };
             await dynamodb.put(params).promise();
             return params.Item;
@@ -88,7 +41,7 @@ function DatabaseService() {
             const dynamodb = await initializeDynamoDB();
             const params = {
                 TableName: tableName,
-                Key: key
+                Key: key,
             };
             const result = await dynamodb.get(params).promise();
             return result.Item;
@@ -117,13 +70,13 @@ function DatabaseService() {
                 UpdateExpression: `SET ${updateExpression.join(', ')}, #updatedAt = :updatedAt`,
                 ExpressionAttributeNames: {
                     ...expressionAttributeNames,
-                    '#updatedAt': 'updatedAt'
+                    '#updatedAt': 'updatedAt',
                 },
                 ExpressionAttributeValues: {
                     ...expressionAttributeValues,
-                    ':updatedAt': new Date().toISOString()
+                    ':updatedAt': new Date().toISOString(),
                 },
-                ReturnValues: 'ALL_NEW'
+                ReturnValues: 'ALL_NEW',
             };
 
             const result = await dynamodb.update(params).promise();
@@ -139,7 +92,7 @@ function DatabaseService() {
             const dynamodb = await initializeDynamoDB();
             const params = {
                 TableName: tableName,
-                Key: key
+                Key: key,
             };
             await dynamodb.delete(params).promise();
         } catch (error) {
@@ -156,18 +109,18 @@ function DatabaseService() {
                 IndexName: indexName,
                 KeyConditionExpression: keyCondition.expression,
                 ExpressionAttributeValues: keyCondition.values,
-                ExpressionAttributeNames: keyCondition.names
+                ExpressionAttributeNames: keyCondition.names,
             };
 
             if (filterExpression) {
                 params.FilterExpression = filterExpression.expression;
                 params.ExpressionAttributeValues = {
                     ...params.ExpressionAttributeValues,
-                    ...filterExpression.values
+                    ...filterExpression.values,
                 };
                 params.ExpressionAttributeNames = {
                     ...params.ExpressionAttributeNames,
-                    ...filterExpression.names
+                    ...filterExpression.names,
                 };
             }
 
@@ -185,11 +138,7 @@ function DatabaseService() {
         updateItem,
         deleteItem,
         queryItems,
-        getLastProcessedUID,
-        updateLastProcessedUID
     };
 }
 
 module.exports = DatabaseService;
-
-
