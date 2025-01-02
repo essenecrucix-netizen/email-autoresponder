@@ -206,30 +206,24 @@ function EmailService() {
                     return;
                 }
     
-                // Sort UIDs in ascending order for sequential processing
-                filteredResults.sort((a, b) => a - b);
-    
-                const fetch = imap.fetch(filteredResults, { bodies: '', struct: true });
+                const fetch = imap.fetch(filteredResults, { bodies: '' });
     
                 fetch.on('message', (msg, seqno) => {
-                    let uid;
-                    msg.on('attributes', (attrs) => {
-                        uid = attrs.uid; // Extract UID from attributes
-                    });
-    
                     msg.on('body', async (stream) => {
                         try {
                             const email = await parseEmail(stream);
-                            console.log(`Processing email (UID: ${uid}): ${email.subject}`);
+                            console.log(`Processing email (UID: ${filteredResults[seqno - 1]}): ${email.subject}`);
     
-                            if (uid) {
-                                await database.updateLastProcessedUID(EMAIL_CONFIG.user, uid);
-                                console.log(`Updated last processed UID to ${uid}`);
-                            } else {
-                                console.error('UID is undefined for this email. Attributes: ', attrs);
-                            }
+                            // Generate a response using OpenAIService
+                            const response = await openai.generateResponse(email.subject, email.text);
     
-                            // Add classification, escalation, and reply logic here
+                            // Send a reply
+                            await sendReply(email.from.text, email.subject, response);
+    
+                            // Update the last processed UID
+                            const maxUID = Math.max(...filteredResults);
+                            await database.updateLastProcessedUID(EMAIL_CONFIG.user, maxUID);
+                            console.log(`Updated last processed UID to ${maxUID}`);
                         } catch (error) {
                             console.error('Error processing email:', error);
                         }
@@ -243,7 +237,7 @@ function EmailService() {
         } catch (error) {
             console.error('Error processing emails:', error);
         }
-    }        
+    }            
 
     return {
         monitorEmails,

@@ -1,35 +1,30 @@
-const fetch = require('node-fetch'); // Ensure this is installed
+const fetch = require('node-fetch');
 require('dotenv').config();
 
 function OpenAIService() {
-    // Fetch API keys from the environment variable
     let apiKeys = process.env.OPENAI_API_KEYS
         ? process.env.OPENAI_API_KEYS.split(',')
-        : [process.env.OPENAI_API_KEY]; // Fallback to a single API key
+        : [process.env.OPENAI_API_KEY];
     let currentKeyIndex = 0;
 
     const API_CONFIG = {
-        model: 'gpt-4', // Use the desired model
+        model: 'gpt-4',
         baseUrl: 'https://api.openai.com/v1',
     };
 
-    // Industry and Role Context Configuration
     const CONTEXT = {
         industry: process.env.INDUSTRY_CONTEXT || "systems integration",
         role: process.env.ROLE_CONTEXT || "CEO",
     };
 
-    // Get the current API key
     function getCurrentApiKey() {
         return apiKeys[currentKeyIndex];
     }
 
-    // Rotate to the next API key
     function rotateApiKey() {
         currentKeyIndex = (currentKeyIndex + 1) % apiKeys.length;
     }
 
-    // Handle OpenAI API requests with retry logic for rate limits
     async function createCompletion(systemPrompt, userPrompt) {
         let attempts = 0;
         const maxAttempts = apiKeys.length;
@@ -55,7 +50,6 @@ function OpenAIService() {
                 });
 
                 if (response.status === 429) {
-                    // Handle rate limit errors
                     console.warn(`Rate limit reached for API key ${apiKey}. Rotating API key.`);
                     rotateApiKey();
                     attempts++;
@@ -64,13 +58,18 @@ function OpenAIService() {
 
                 if (!response.ok) {
                     const errorText = await response.text();
-                    throw new Error(`OpenAI API error: ${response.status} ${errorText}`);
+                    console.error(`OpenAI API error with key ${apiKey}: ${response.status} ${errorText}`);
+                    throw new Error(`OpenAI API error: ${response.status}`);
                 }
 
                 const data = await response.json();
                 return data.choices[0].message.content.trim();
             } catch (error) {
                 console.error(`Error with API key ${apiKey}: ${error.message}`);
+                if (error.code === 'ECONNRESET' || error.code === 'ETIMEDOUT') {
+                    console.warn(`Network issue detected. Retrying with API key ${apiKey}.`);
+                }
+
                 if (attempts < maxAttempts - 1) {
                     rotateApiKey();
                     attempts++;
@@ -91,8 +90,9 @@ function OpenAIService() {
         }
     }
 
-    async function generateResponse(context, question) {
+    async function generateResponse(context = "", question = "What do you need help with?") {
         try {
+            if (!context) context = `General context for the ${CONTEXT.industry} industry.`;
             const systemPrompt = `You are a helpful customer service assistant working in the ${CONTEXT.industry} industry. You are assisting the ${CONTEXT.role}. Use this context to answer the question: ${context}`;
             return await createCompletion(systemPrompt, question);
         } catch (error) {
@@ -111,11 +111,24 @@ function OpenAIService() {
         }
     }
 
+    async function testGenerateResponse() {
+        try {
+            const testContext = "A customer is asking for assistance with a product.";
+            const testQuestion = "Can you help me reset my password?";
+            console.log("Testing generateResponse...");
+            const response = await generateResponse(testContext, testQuestion);
+            console.log("Response from OpenAI:", response);
+        } catch (error) {
+            console.error("Error during generateResponse test:", error);
+        }
+    }
+
     return {
         createCompletion,
         analyzeSentiment,
         generateResponse,
         detectLanguage,
+        testGenerateResponse, // Expose test function
     };
 }
 
