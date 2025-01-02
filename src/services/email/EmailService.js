@@ -206,6 +206,9 @@ function EmailService() {
                     return;
                 }
     
+                // Sort UIDs in ascending order for sequential processing
+                filteredResults.sort((a, b) => a - b);
+    
                 const fetch = imap.fetch(filteredResults, { bodies: '', struct: true });
     
                 fetch.on('message', (msg, seqno) => {
@@ -223,10 +226,10 @@ function EmailService() {
                                 await database.updateLastProcessedUID(EMAIL_CONFIG.user, uid);
                                 console.log(`Updated last processed UID to ${uid}`);
                             } else {
-                                console.error('UID is undefined for this email.');
+                                console.error('UID is undefined for this email. Attributes: ', attrs);
                             }
     
-                            // Add your classification, escalation, and reply logic here
+                            // Add classification, escalation, and reply logic here
                         } catch (error) {
                             console.error('Error processing email:', error);
                         }
@@ -240,7 +243,7 @@ function EmailService() {
         } catch (error) {
             console.error('Error processing emails:', error);
         }
-    }    
+    }        
 
     return {
         monitorEmails,
