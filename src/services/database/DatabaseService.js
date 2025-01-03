@@ -3,29 +3,20 @@ function DatabaseService() {
 
     // Explicitly configure AWS SDK with credentials and region
     AWS.config.update({
-        region: process.env.AWS_REGION || 'us-west-2', // Default to 'us-west-2' if not set
+        region: process.env.AWS_REGION || 'us-west-2',
         accessKeyId: process.env.AWS_ACCESS_KEY_ID,
         secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
     });
 
-    async function initializeDynamoDB() {
-        try {
-            return new AWS.DynamoDB.DocumentClient();
-        } catch (error) {
-            console.error('Failed to initialize DynamoDB:', error);
-            throw new Error('Failed to initialize DynamoDB');
-        }
-    }
+    const dynamodb = new AWS.DynamoDB.DocumentClient();
 
     async function createItem(tableName, item) {
         try {
-            const dynamodb = await initializeDynamoDB();
             const params = {
                 TableName: tableName,
                 Item: {
                     ...item,
                     createdAt: new Date().toISOString(),
-                    updatedAt: new Date().toISOString(),
                 },
             };
             await dynamodb.put(params).promise();
@@ -38,13 +29,9 @@ function DatabaseService() {
 
     async function getItem(tableName, key) {
         try {
-            const dynamodb = await initializeDynamoDB();
             const params = {
                 TableName: tableName,
-                Key: {
-                    ...key,
-                    emailUser: String(key.emailUser), // Ensure emailUser is a string
-                },
+                Key: key,
             };
             const result = await dynamodb.get(params).promise();
             return result.Item;
@@ -56,7 +43,6 @@ function DatabaseService() {
 
     async function updateItem(tableName, key, updateData) {
         try {
-            const dynamodb = await initializeDynamoDB();
             const updateExpression = [];
             const expressionAttributeNames = {};
             const expressionAttributeValues = {};
@@ -69,15 +55,9 @@ function DatabaseService() {
 
             const params = {
                 TableName: tableName,
-                Key: {
-                    ...key,
-                    emailUser: String(key.emailUser), // Ensure emailUser is a string
-                },
-                UpdateExpression: `SET ${updateExpression.join(', ')}, #updatedAt = :updatedAt`,
-                ExpressionAttributeNames: {
-                    ...expressionAttributeNames,
-                    '#updatedAt': 'updatedAt',
-                },
+                Key: key,
+                UpdateExpression: `SET ${updateExpression.join(', ')}, updatedAt = :updatedAt`,
+                ExpressionAttributeNames: expressionAttributeNames,
                 ExpressionAttributeValues: {
                     ...expressionAttributeValues,
                     ':updatedAt': new Date().toISOString(),
@@ -93,49 +73,10 @@ function DatabaseService() {
         }
     }
 
-    async function updateLastProcessedUID(emailUser, uid) {
+    async function queryItems(tableName, keyCondition, filterExpression = null) {
         try {
-            const dynamodb = await initializeDynamoDB();
-            const params = {
-                TableName: 'LastProcessedUID',
-                Item: {
-                    emailUser: emailUser,
-                    uid: uid,
-                    updatedAt: new Date().toISOString(),
-                },
-            };
-    
-            await dynamodb.put(params).promise();
-            console.log(`LastProcessedUID updated for ${emailUser} with UID ${uid}`);
-        } catch (error) {
-            console.error('Failed to update LastProcessedUID:', error);
-            throw new Error('Failed to update LastProcessedUID');
-        }
-    }        
-
-    async function deleteItem(tableName, key) {
-        try {
-            const dynamodb = await initializeDynamoDB();
             const params = {
                 TableName: tableName,
-                Key: {
-                    ...key,
-                    emailUser: String(key.emailUser), // Ensure emailUser is a string
-                },
-            };
-            await dynamodb.delete(params).promise();
-        } catch (error) {
-            console.error(`Failed to delete item from ${tableName}:`, error);
-            throw new Error(`Failed to delete item from ${tableName}`);
-        }
-    }
-
-    async function queryItems(tableName, indexName, keyCondition, filterExpression = null) {
-        try {
-            const dynamodb = await initializeDynamoDB();
-            const params = {
-                TableName: tableName,
-                IndexName: indexName,
                 KeyConditionExpression: keyCondition.expression,
                 ExpressionAttributeValues: keyCondition.values,
                 ExpressionAttributeNames: keyCondition.names,
@@ -161,13 +102,25 @@ function DatabaseService() {
         }
     }
 
+    async function deleteItem(tableName, key) {
+        try {
+            const params = {
+                TableName: tableName,
+                Key: key,
+            };
+            await dynamodb.delete(params).promise();
+        } catch (error) {
+            console.error(`Failed to delete item from ${tableName}:`, error);
+            throw new Error(`Failed to delete item from ${tableName}`);
+        }
+    }
+
     return {
         createItem,
         getItem,
         updateItem,
-        deleteItem,
         queryItems,
-        updateLastProcessedUID,
+        deleteItem,
     };
 }
 
