@@ -1,75 +1,86 @@
+import React from 'react';
+import AWS from 'aws-sdk';
+
+// Configure AWS S3
+AWS.config.update({
+    region: process.env.REACT_APP_AWS_REGION, // Replace with your AWS region
+    accessKeyId: process.env.REACT_APP_AWS_ACCESS_KEY_ID, // Replace with your AWS Access Key
+    secretAccessKey: process.env.REACT_APP_AWS_SECRET_ACCESS_KEY, // Replace with your AWS Secret Key
+});
+
+const s3 = new AWS.S3();
+const BUCKET_NAME = process.env.REACT_APP_S3_BUCKET_NAME; // Replace with your S3 bucket name
+
 function KnowledgeBase() {
     const [files, setFiles] = React.useState([]);
     const [uploading, setUploading] = React.useState(false);
     const [selectedFile, setSelectedFile] = React.useState(null);
     const [previewContent, setPreviewContent] = React.useState('');
 
+    // Load files from S3
+    async function loadFiles() {
+        try {
+            const params = {
+                Bucket: BUCKET_NAME,
+                Prefix: 'knowledge-base/',
+            };
+            const response = await s3.listObjectsV2(params).promise();
+            const fileKeys = response.Contents.map(item => item.Key);
+            setFiles(fileKeys);
+        } catch (error) {
+            console.error('Error loading files from S3:', error);
+        }
+    }
+
+    // Handle file upload to S3
     async function handleFileUpload(event) {
         try {
             setUploading(true);
             const file = event.target.files[0];
-            const reader = new FileReader();
-
-            reader.onload = async (e) => {
-                const content = e.target.result;
-                const trickleObjAPI = new TrickleObjectAPI();
-                
-                await trickleObjAPI.createObject('knowledge', {
-                    filename: file.name,
-                    content: content,
-                    type: file.type,
-                    size: file.size
-                });
-
-                await loadFiles();
+            const params = {
+                Bucket: BUCKET_NAME,
+                Key: `knowledge-base/${file.name}`,
+                Body: file,
+                ContentType: file.type,
             };
-
-            reader.readAsText(file);
+            await s3.upload(params).promise();
+            await loadFiles();
         } catch (error) {
-            reportError(error);
+            console.error('Error uploading file to S3:', error);
         } finally {
             setUploading(false);
         }
     }
 
-    async function loadFiles() {
+    // Handle file preview
+    async function previewFile(key) {
         try {
-            const trickleObjAPI = new TrickleObjectAPI();
-            const response = await trickleObjAPI.listObjects('knowledge', 100, true);
-            setFiles(response.items);
+            const params = {
+                Bucket: BUCKET_NAME,
+                Key: key,
+            };
+            const url = s3.getSignedUrl('getObject', params);
+            setSelectedFile({ key, url });
         } catch (error) {
-            reportError(error);
+            console.error('Error generating file preview:', error);
         }
     }
 
-    async function deleteFile(objectId) {
+    // Delete file from S3
+    async function deleteFile(key) {
         try {
-            const trickleObjAPI = new TrickleObjectAPI();
-            await trickleObjAPI.deleteObject('knowledge', objectId);
+            const params = {
+                Bucket: BUCKET_NAME,
+                Key: key,
+            };
+            await s3.deleteObject(params).promise();
             await loadFiles();
-            if (selectedFile?.objectId === objectId) {
+            if (selectedFile?.key === key) {
                 setSelectedFile(null);
                 setPreviewContent('');
             }
         } catch (error) {
-            reportError(error);
-        }
-    }
-
-    async function previewFile(file) {
-        try {
-            setSelectedFile(file);
-            if (file.objectData.type.includes('text')) {
-                setPreviewContent(file.objectData.content);
-            } else if (file.objectData.type.includes('pdf')) {
-                const pdfUrl = URL.createObjectURL(new Blob([file.objectData.content], { type: 'application/pdf' }));
-                setPreviewContent(pdfUrl);
-            } else {
-                setPreviewContent('Preview not available for this file type');
-            }
-        } catch (error) {
-            reportError(error);
-            setPreviewContent('Error loading preview');
+            console.error('Error deleting file from S3:', error);
         }
     }
 
@@ -78,11 +89,11 @@ function KnowledgeBase() {
     }, []);
 
     return (
-        <div className="knowledge-base-container grid grid-cols-2 gap-4" data-name="knowledge-base-container">
-            <div className="files-section" data-name="files-section">
+        <div className="knowledge-base-container grid grid-cols-2 gap-4">
+            <div className="files-section">
                 <div className="flex justify-between items-center mb-4">
-                    <h2 className="text-xl font-semibold" data-name="knowledge-base-title">Knowledge Base</h2>
-                    <div className="upload-section" data-name="upload-section">
+                    <h2 className="text-xl font-semibold">Knowledge Base</h2>
+                    <div className="upload-section">
                         <input
                             type="file"
                             onChange={handleFileUpload}
@@ -98,29 +109,24 @@ function KnowledgeBase() {
                         </label>
                     </div>
                 </div>
-                <div className="files-grid space-y-4" data-name="files-grid">
-                    {files.map((file) => (
-                        <div 
-                            key={file.objectId} 
+                <div className="files-grid space-y-4">
+                    {files.map((key) => (
+                        <div
+                            key={key}
                             className={`card flex justify-between items-center cursor-pointer ${
-                                selectedFile?.objectId === file.objectId ? 'border-blue-500 border-2' : ''
+                                selectedFile?.key === key ? 'border-blue-500 border-2' : ''
                             }`}
-                            onClick={() => previewFile(file)}
-                            data-name="file-item"
+                            onClick={() => previewFile(key)}
                         >
                             <div>
-                                <h3 className="font-medium">{file.objectData.filename}</h3>
-                                <p className="text-sm text-gray-500">
-                                    Size: {Math.round(file.objectData.size / 1024)} KB
-                                </p>
+                                <h3 className="font-medium">{key.split('/').pop()}</h3>
                             </div>
                             <button
                                 onClick={(e) => {
                                     e.stopPropagation();
-                                    deleteFile(file.objectId);
+                                    deleteFile(key);
                                 }}
                                 className="text-red-600 hover:text-red-800"
-                                data-name="delete-button"
                             >
                                 Delete
                             </button>
@@ -128,30 +134,24 @@ function KnowledgeBase() {
                     ))}
                 </div>
             </div>
-            <div className="preview-section" data-name="preview-section">
+            <div className="preview-section">
                 <div className="card h-full">
                     <h3 className="text-lg font-medium mb-4">File Preview</h3>
                     {selectedFile ? (
-                        <div className="preview-content" data-name="preview-content">
-                            {selectedFile.objectData.type.includes('pdf') ? (
-                                <iframe
-                                    src={previewContent}
-                                    className="w-full h-[600px]"
-                                    title="PDF Preview"
-                                />
-                            ) : (
-                                <pre className="whitespace-pre-wrap font-mono text-sm">
-                                    {previewContent}
-                                </pre>
-                            )}
-                        </div>
+                        selectedFile.url.includes('.pdf') ? (
+                            <iframe src={selectedFile.url} className="w-full h-[600px]" title="PDF Preview" />
+                        ) : (
+                            <a href={selectedFile.url} target="_blank" rel="noopener noreferrer">
+                                Download and Open
+                            </a>
+                        )
                     ) : (
-                        <div className="text-gray-500 text-center">
-                            Select a file to preview
-                        </div>
+                        <div className="text-gray-500 text-center">Select a file to preview</div>
                     )}
                 </div>
             </div>
         </div>
     );
 }
+
+export default KnowledgeBase;
