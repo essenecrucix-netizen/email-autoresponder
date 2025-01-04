@@ -1,86 +1,116 @@
 import React from 'react';
 import AWS from 'aws-sdk';
 
-// Configure AWS S3
+// Configure AWS
 AWS.config.update({
-    region: process.env.REACT_APP_AWS_REGION, // Replace with your AWS region
-    accessKeyId: process.env.REACT_APP_AWS_ACCESS_KEY_ID, // Replace with your AWS Access Key
-    secretAccessKey: process.env.REACT_APP_AWS_SECRET_ACCESS_KEY, // Replace with your AWS Secret Key
+    region: process.env.REACT_APP_AWS_REGION,
+    accessKeyId: process.env.REACT_APP_AWS_ACCESS_KEY_ID,
+    secretAccessKey: process.env.REACT_APP_AWS_SECRET_ACCESS_KEY,
 });
 
 const s3 = new AWS.S3();
-const BUCKET_NAME = process.env.REACT_APP_S3_BUCKET_NAME; // Replace with your S3 bucket name
+const dynamodb = new AWS.DynamoDB.DocumentClient();
+const BUCKET_NAME = process.env.REACT_APP_S3_BUCKET_NAME;
+const USER_ID = process.env.REACT_APP_USER_ID; // Replace with user-specific ID (e.g., from authentication)
 
 function KnowledgeBase() {
     const [files, setFiles] = React.useState([]);
     const [uploading, setUploading] = React.useState(false);
     const [selectedFile, setSelectedFile] = React.useState(null);
-    const [previewContent, setPreviewContent] = React.useState('');
 
-    // Load files from S3
+    // Load files from DynamoDB
     async function loadFiles() {
         try {
             const params = {
-                Bucket: BUCKET_NAME,
-                Prefix: 'knowledge-base/',
+                TableName: 'user_knowledge_files',
+                KeyConditionExpression: 'user_id = :user_id',
+                ExpressionAttributeValues: {
+                    ':user_id': USER_ID,
+                },
             };
-            const response = await s3.listObjectsV2(params).promise();
-            const fileKeys = response.Contents.map(item => item.Key);
-            setFiles(fileKeys);
+            const response = await dynamodb.query(params).promise();
+            setFiles(response.Items);
         } catch (error) {
-            console.error('Error loading files from S3:', error);
+            console.error('Error loading files from DynamoDB:', error);
         }
     }
 
-    // Handle file upload to S3
+    // Handle file upload to S3 and save metadata to DynamoDB
     async function handleFileUpload(event) {
         try {
             setUploading(true);
             const file = event.target.files[0];
-            const params = {
+            const s3Key = `${USER_ID}/${file.name}`;
+
+            // Upload file to S3
+            const uploadParams = {
                 Bucket: BUCKET_NAME,
-                Key: `knowledge-base/${file.name}`,
+                Key: s3Key,
                 Body: file,
                 ContentType: file.type,
             };
-            await s3.upload(params).promise();
+            await s3.upload(uploadParams).promise();
+
+            // Save file metadata to DynamoDB
+            const dbParams = {
+                TableName: 'user_knowledge_files',
+                Item: {
+                    user_id: USER_ID,
+                    s3_key: s3Key,
+                    filename: file.name,
+                    uploaded_at: new Date().toISOString(),
+                },
+            };
+            await dynamodb.put(dbParams).promise();
+
             await loadFiles();
         } catch (error) {
-            console.error('Error uploading file to S3:', error);
+            console.error('Error uploading file:', error);
         } finally {
             setUploading(false);
         }
     }
 
     // Handle file preview
-    async function previewFile(key) {
+    async function previewFile(file) {
         try {
             const params = {
                 Bucket: BUCKET_NAME,
-                Key: key,
+                Key: file.s3_key,
             };
             const url = s3.getSignedUrl('getObject', params);
-            setSelectedFile({ key, url });
+            setSelectedFile({ ...file, url });
         } catch (error) {
             console.error('Error generating file preview:', error);
         }
     }
 
-    // Delete file from S3
-    async function deleteFile(key) {
+    // Delete file from S3 and remove metadata from DynamoDB
+    async function deleteFile(file) {
         try {
-            const params = {
+            // Delete file from S3
+            const deleteParams = {
                 Bucket: BUCKET_NAME,
-                Key: key,
+                Key: file.s3_key,
             };
-            await s3.deleteObject(params).promise();
+            await s3.deleteObject(deleteParams).promise();
+
+            // Remove metadata from DynamoDB
+            const dbParams = {
+                TableName: 'user_knowledge_files',
+                Key: {
+                    user_id: USER_ID,
+                    s3_key: file.s3_key,
+                },
+            };
+            await dynamodb.delete(dbParams).promise();
+
             await loadFiles();
-            if (selectedFile?.key === key) {
+            if (selectedFile?.s3_key === file.s3_key) {
                 setSelectedFile(null);
-                setPreviewContent('');
             }
         } catch (error) {
-            console.error('Error deleting file from S3:', error);
+            console.error('Error deleting file:', error);
         }
     }
 
@@ -110,21 +140,21 @@ function KnowledgeBase() {
                     </div>
                 </div>
                 <div className="files-grid space-y-4">
-                    {files.map((key) => (
+                    {files.map((file) => (
                         <div
-                            key={key}
+                            key={file.s3_key}
                             className={`card flex justify-between items-center cursor-pointer ${
-                                selectedFile?.key === key ? 'border-blue-500 border-2' : ''
+                                selectedFile?.s3_key === file.s3_key ? 'border-blue-500 border-2' : ''
                             }`}
-                            onClick={() => previewFile(key)}
+                            onClick={() => previewFile(file)}
                         >
                             <div>
-                                <h3 className="font-medium">{key.split('/').pop()}</h3>
+                                <h3 className="font-medium">{file.filename}</h3>
                             </div>
                             <button
                                 onClick={(e) => {
                                     e.stopPropagation();
-                                    deleteFile(key);
+                                    deleteFile(file);
                                 }}
                                 className="text-red-600 hover:text-red-800"
                             >
