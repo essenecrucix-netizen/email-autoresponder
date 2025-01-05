@@ -1,4 +1,4 @@
-const dbService = require('/database/DatabaseService')();
+const dbService = require('./database/DatabaseService')();
 
 (async () => {
     try {
