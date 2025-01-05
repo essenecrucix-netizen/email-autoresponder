@@ -1,73 +1,86 @@
+import React, { useEffect, useState } from 'react';
+import axios from 'axios';
+
 function Analytics() {
-    const [analytics, setAnalytics] = React.useState({
-        totalEmails: 0,
-        averageResponseTime: 0,
-        satisfactionRate: 0,
-        responseDistribution: { automated: 0, escalated: 0 }
-    });
+    const [analytics, setAnalytics] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
 
     async function fetchAnalytics() {
         try {
-            const trickleObjAPI = new TrickleObjectAPI();
-            const emails = await trickleObjAPI.listObjects('email', 1000, true);
-            const responses = await trickleObjAPI.listObjects('email-response', 1000, true);
+            setLoading(true);
+            setError(null);
 
-            const stats = calculateStats(emails.items, responses.items);
-            setAnalytics(stats);
+            const response = await axios.get('/api/analytics');
+
+            if (response.status === 200) {
+                const stats = calculateStats(response.data.emails, response.data.responses);
+                setAnalytics(stats);
+            } else {
+                throw new Error(`Failed to fetch analytics: ${response.statusText}`);
+            }
         } catch (error) {
-            reportError(error);
+            console.error('Error fetching analytics:', error);
+            setError('Unable to load analytics. Please try again later.');
+        } finally {
+            setLoading(false);
         }
     }
 
     function calculateStats(emails, responses) {
-        const total = emails.length;
-        const automated = responses.length;
-        const escalated = emails.filter(e => e.objectData.needsEscalation).length;
+        const totalEmails = emails.length;
+        const automatedResponses = responses.filter(r => r.type === 'automated').length;
+        const escalatedResponses = emails.filter(e => e.needsEscalation).length;
+
+        const averageResponseTime = responses.length > 0
+            ? responses.reduce((sum, r) => sum + r.responseTime, 0) / responses.length
+            : 0;
 
         return {
-            totalEmails: total,
-            averageResponseTime: calculateAverageResponseTime(emails, responses),
-            satisfactionRate: 95,
-            responseDistribution: { automated, escalated }
+            totalEmails,
+            averageResponseTime: Math.round(averageResponseTime),
+            satisfactionRate: calculateSatisfactionRate(responses),
+            responseDistribution: {
+                automated: automatedResponses,
+                escalated: escalatedResponses
+            }
         };
     }
 
-    function calculateAverageResponseTime(emails, responses) {
-        if (responses.length === 0) return 0;
-        
-        const totalTime = responses.reduce((acc, response) => {
-            const email = emails.find(e => e.objectData.sender === response.objectData.recipient);
-            if (!email) return acc;
-            return acc + (new Date(response.createdAt) - new Date(email.createdAt));
-        }, 0);
-
-        return Math.round(totalTime / responses.length / 1000); // Convert to seconds
+    function calculateSatisfactionRate(responses) {
+        const positiveResponses = responses.filter(r => r.satisfaction === 'positive').length;
+        return responses.length > 0
+            ? Math.round((positiveResponses / responses.length) * 100)
+            : 0;
     }
 
-    React.useEffect(() => {
+    useEffect(() => {
         fetchAnalytics();
     }, []);
 
+    if (loading) {
+        return <p>Loading analytics...</p>;
+    }
+
+    if (error) {
+        return <p className="error-message">{error}</p>;
+    }
+
     return (
-        <div className="analytics-container" data-name="analytics-container">
-            <h2 className="text-xl font-semibold mb-4" data-name="analytics-title">Analytics Dashboard</h2>
-            <div className="grid grid-cols-2 gap-4" data-name="analytics-grid">
-                <div className="card" data-name="response-stats">
-                    <h3 className="text-lg font-medium mb-2">Response Statistics</h3>
-                    <div className="space-y-2">
-                        <p>Total Emails: {analytics.totalEmails}</p>
-                        <p>Average Response Time: {analytics.averageResponseTime}s</p>
-                        <p>Satisfaction Rate: {analytics.satisfactionRate}%</p>
-                    </div>
-                </div>
-                <div className="card" data-name="distribution-stats">
-                    <h3 className="text-lg font-medium mb-2">Response Distribution</h3>
-                    <div className="space-y-2">
-                        <p>Automated Responses: {analytics.responseDistribution.automated}</p>
-                        <p>Escalated to Human: {analytics.responseDistribution.escalated}</p>
-                    </div>
-                </div>
+        <div className="analytics-container">
+            <h2>Analytics Overview</h2>
+            <div>
+                <p>Total Emails Processed: {analytics.totalEmails}</p>
+                <p>Average Response Time: {analytics.averageResponseTime} seconds</p>
+                <p>Satisfaction Rate: {analytics.satisfactionRate}%</p>
+                <p>Response Distribution:</p>
+                <ul>
+                    <li>Automated: {analytics.responseDistribution.automated}</li>
+                    <li>Escalated: {analytics.responseDistribution.escalated}</li>
+                </ul>
             </div>
         </div>
     );
 }
+
+export default Analytics;

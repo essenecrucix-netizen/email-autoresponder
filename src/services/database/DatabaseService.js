@@ -73,116 +73,41 @@ function DatabaseService() {
         }
     }
 
-    async function queryItems(tableName, keyCondition, filterExpression = null) {
+    async function saveAnalyticsData(userId, metrics) {
         try {
-            const params = {
-                TableName: tableName,
-                KeyConditionExpression: keyCondition.expression,
-                ExpressionAttributeValues: keyCondition.values,
-                ExpressionAttributeNames: keyCondition.names,
-            };
-
-            if (filterExpression) {
-                params.FilterExpression = filterExpression.expression;
-                params.ExpressionAttributeValues = {
-                    ...params.ExpressionAttributeValues,
-                    ...filterExpression.values,
-                };
-                params.ExpressionAttributeNames = {
-                    ...params.ExpressionAttributeNames,
-                    ...filterExpression.names,
-                };
-            }
-
-            const result = await dynamodb.query(params).promise();
-            return result.Items;
-        } catch (error) {
-            console.error(`Failed to query items from ${tableName}:`, error);
-            throw new Error(`Failed to query items from ${tableName}`);
-        }
-    }
-
-    async function deleteItem(tableName, key) {
-        try {
-            const params = {
-                TableName: tableName,
-                Key: key,
-            };
-            await dynamodb.delete(params).promise();
-        } catch (error) {
-            console.error(`Failed to delete item from ${tableName}:`, error);
-            throw new Error(`Failed to delete item from ${tableName}`);
-        }
-    }
-
-    async function getUsersByRole(role) {
-        try {
-            const params = {
-                TableName: 'users',
-                IndexName: 'role-index', // Ensure this index is created
-                KeyConditionExpression: 'role = :role',
-                ExpressionAttributeValues: {
-                    ':role': role,
-                },
-            };
-            const result = await dynamodb.query(params).promise();
-            return result.Items;
-        } catch (error) {
-            console.error(`Failed to query users by role:`, error);
-            throw new Error(`Failed to query users by role`);
-        }
-    }
-
-    async function updateEmailSentiment(emailId, sentiment, needsEscalation) {
-        try {
-            const params = {
-                TableName: 'emails',
-                Key: { email_id: emailId },
-                UpdateExpression: 'SET sentiment = :sentiment, needs_escalation = :needsEscalation, updatedAt = :updatedAt',
-                ExpressionAttributeValues: {
-                    ':sentiment': sentiment,
-                    ':needsEscalation': needsEscalation,
-                    ':updatedAt': new Date().toISOString(),
-                },
-                ReturnValues: 'ALL_NEW',
-            };
-            const result = await dynamodb.update(params).promise();
-            return result.Attributes;
-        } catch (error) {
-            console.error(`Failed to update sentiment for email ${emailId}:`, error);
-            throw new Error(`Failed to update sentiment for email ${emailId}`);
-        }
-    }
-
-    async function incrementAnalyticsMetrics(analyticsId, metrics) {
-        try {
-            const updateExpression = [];
-            const expressionAttributeValues = {};
-
-            Object.entries(metrics).forEach(([field, value]) => {
-                updateExpression.push(`#${field} = #${field} + :${field}`);
-                expressionAttributeValues[`:${field}`] = value;
-            });
-
+            const analyticsId = `${userId}-${Date.now()}`; // Unique ID per user and timestamp
             const params = {
                 TableName: 'analytics',
-                Key: { analytics_id: analyticsId },
-                UpdateExpression: `SET ${updateExpression.join(', ')}, updatedAt = :updatedAt`,
-                ExpressionAttributeNames: Object.fromEntries(
-                    Object.keys(metrics).map(field => [`#${field}`, field])
-                ),
-                ExpressionAttributeValues: {
-                    ...expressionAttributeValues,
-                    ':updatedAt': new Date().toISOString(),
+                Item: {
+                    analytics_id: analyticsId,
+                    user_id: userId,
+                    metrics,
+                    createdAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString(),
                 },
-                ReturnValues: 'ALL_NEW',
             };
-
-            const result = await dynamodb.update(params).promise();
-            return result.Attributes;
+            await dynamodb.put(params).promise();
+            return params.Item;
         } catch (error) {
-            console.error(`Failed to increment analytics metrics:`, error);
-            throw new Error(`Failed to increment analytics metrics`);
+            console.error('Failed to save analytics data:', error);
+            throw new Error('Failed to save analytics data.');
+        }
+    }
+
+    async function getAnalyticsByUser(userId) {
+        try {
+            const params = {
+                TableName: 'analytics',
+                KeyConditionExpression: 'user_id = :userId',
+                ExpressionAttributeValues: {
+                    ':userId': userId,
+                },
+            };
+            const result = await dynamodb.query(params).promise();
+            return result.Items;
+        } catch (error) {
+            console.error('Failed to fetch analytics data:', error);
+            throw new Error('Failed to fetch analytics data.');
         }
     }
 
@@ -190,11 +115,8 @@ function DatabaseService() {
         createItem,
         getItem,
         updateItem,
-        queryItems,
-        deleteItem,
-        getUsersByRole,
-        updateEmailSentiment,
-        incrementAnalyticsMetrics,
+        saveAnalyticsData,
+        getAnalyticsByUser,
     };
 }
 
