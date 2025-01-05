@@ -1,4 +1,4 @@
-const dbService = require('./database/DatabaseService')();
+const dbService = require('/home/ec2-user/email-autoresponder/src/database/DatabaseService')();
 
 (async () => {
     try {
