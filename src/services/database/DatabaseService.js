@@ -98,18 +98,19 @@ function DatabaseService() {
         try {
             const params = {
                 TableName: 'analytics',
-                KeyConditionExpression: 'user_id = :userId',
+                IndexName: 'user_id-index', // Specify the index name
+                KeyConditionExpression: 'user_id = :userId', // Use the correct key schema element
                 ExpressionAttributeValues: {
-                    ':userId': userId,
+                    ':userId': userId, // Provide the value for the hash key
                 },
             };
             const result = await dynamodb.query(params).promise();
             return result.Items;
         } catch (error) {
-            console.error('Failed to fetch analytics data:', error);
+            console.error('Failed to fetch analytics data:', error.message, error.stack);
             throw new Error('Failed to fetch analytics data.');
         }
-    }
+    }    
 
     return {
         createItem,
