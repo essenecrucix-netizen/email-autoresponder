@@ -58,7 +58,7 @@ app.post('/api/process-email', async (req, res) => {
         await emailService.processNewEmails();
         res.json({ message: 'Emails processed successfully!' });
     } catch (error) {
-        console.error('Error processing emails:', error);
+        console.error('Error processing emails:', error.message, error.stack);
         res.status(500).json({ error: 'Failed to process emails' });
     } finally {
         isProcessingEmails = false;
@@ -67,8 +67,13 @@ app.post('/api/process-email', async (req, res) => {
 
 // Email queue status
 app.get('/api/email-queue-status', (req, res) => {
-    const queueStats = emailService.getQueueStats(); // Assuming getQueueStats is implemented
-    res.json(queueStats);
+    try {
+        const queueStats = emailService.getQueueStats(); // Assuming getQueueStats is implemented
+        res.json(queueStats);
+    } catch (error) {
+        console.error('Error fetching email queue status:', error.message, error.stack);
+        res.status(500).json({ error: 'Failed to fetch email queue status.' });
+    }
 });
 
 // Login endpoint
@@ -97,7 +102,7 @@ app.post('/api/login', async (req, res) => {
         const userResponse = { ...user, password_hash: undefined }; // Remove password hash
         res.json({ user: userResponse, token });
     } catch (error) {
-        console.error('Error during login:', error);
+        console.error('Error during login:', error.message, error.stack);
         res.status(500).json({ error: 'An error occurred during login.' });
     }
 });
@@ -139,8 +144,21 @@ app.post('/api/signup', async (req, res) => {
 
         res.status(201).json({ message: 'User created successfully. Please log in.' });
     } catch (error) {
-        console.error('Error during signup:', error);
+        console.error('Error during signup:', error.message, error.stack);
         res.status(500).json({ error: 'An error occurred during signup.' });
+    }
+});
+
+// Get analytics by user
+app.get('/api/analytics', authenticateToken, async (req, res) => {
+    try {
+        const userId = req.user.userId; // Extract user ID from the token
+        const database = DatabaseService();
+        const analytics = await database.getAnalyticsByUser(userId);
+        res.status(200).json(analytics);
+    } catch (error) {
+        console.error('Error fetching analytics:', error.message, error.stack);
+        res.status(500).json({ error: 'Failed to fetch analytics data.' });
     }
 });
 
