@@ -8,36 +8,30 @@ function LoginForm() {
 
     async function handleSubmit(e) {
         e.preventDefault();
+        setError('');
         try {
-            const trickleObjAPI = new TrickleObjectAPI();
-            const users = await trickleObjAPI.listObjects('user', 100, true);
-            const user = users.items.find(u => u.objectData.email === formData.email);
-
-            if (!user) {
+            const response = await fetch('/api/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(formData),
+            });
+    
+            if (!response.ok) {
                 setError('Invalid email or password');
                 return;
             }
-
-            const isValidPassword = await auth.verifyPassword(formData.password, user.objectData.password);
-            
-            if (isValidPassword) {
-                const sessionUser = {
-                    ...user,
-                    objectData: {
-                        ...user.objectData,
-                        password: undefined // Remove password from session storage
-                    }
-                };
-                localStorage.setItem('user', JSON.stringify(sessionUser));
-                window.location.href = '/dashboard';
-            } else {
-                setError('Invalid email or password');
-            }
+    
+            const { user, token } = await response.json();
+            localStorage.setItem('user', JSON.stringify(user));
+            localStorage.setItem('token', token); // Optional for secure routes
+            window.location.href = '/dashboard';
         } catch (error) {
-            reportError(error);
+            console.error('Error during login:', error);
             setError('Login failed. Please try again.');
         }
-    }
+    }    
 
     return (
         <div className="min-h-screen flex items-center justify-center bg-gray-50" data-name="login-container">

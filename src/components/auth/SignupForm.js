@@ -11,45 +11,39 @@ function SignupForm() {
 
     async function handleSubmit(e) {
         e.preventDefault();
+        setError('');
+    
+        if (formData.password !== formData.confirmPassword) {
+            setError('Passwords do not match');
+            return;
+        }
+    
+        if (formData.password.length < 8) {
+            setError('Password must be at least 8 characters long');
+            return;
+        }
+    
         try {
-            if (formData.password !== formData.confirmPassword) {
-                setError('Passwords do not match');
+            const response = await fetch('/api/signup', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(formData),
+            });
+    
+            if (!response.ok) {
+                const { message } = await response.json();
+                setError(message || 'Signup failed. Please try again.');
                 return;
             }
-
-            if (formData.password.length < 8) {
-                setError('Password must be at least 8 characters long');
-                return;
-            }
-
-            const trickleObjAPI = new TrickleObjectAPI();
-            
-            // Check if user already exists
-            const existingUsers = await trickleObjAPI.listObjects('user', 100, true);
-            if (existingUsers.items.some(u => u.objectData.email === formData.email)) {
-                setError('Email already exists');
-                return;
-            }
-
-            // Hash password before storing
-            const hashedPassword = await auth.hashPassword(formData.password);
-
-            // Create new user
-            const userData = {
-                name: formData.name,
-                email: formData.email,
-                password: hashedPassword,
-                role: formData.role,
-                createdAt: new Date().toISOString()
-            };
-
-            await trickleObjAPI.createObject('user', userData);
+    
             window.location.href = '/login';
         } catch (error) {
-            reportError(error);
+            console.error('Error during signup:', error);
             setError('Signup failed. Please try again.');
         }
-    }
+    }    
 
     return (
         <div className="min-h-screen flex items-center justify-center bg-gray-50" data-name="signup-container">
