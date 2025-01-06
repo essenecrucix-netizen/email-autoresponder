@@ -1,2 +1,14 @@
-# Environment Files
+# Ignore node_modules directory
+node_modules/
+
+# Ignore build directory
+build/
+
+# Ignore Yarn lock and package-lock if they're not managed
+yarn-error.log
+package-lock.json
 .env
+# Ignore OS-generated files
+.DS_Store
+Thumbs.db
+
