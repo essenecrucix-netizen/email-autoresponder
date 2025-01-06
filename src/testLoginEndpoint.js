@@ -10,6 +10,9 @@ AWS.config.update({
 // Initialize DynamoDB Document Client
 const dynamodb = new AWS.DynamoDB.DocumentClient();
 
+// Debugging: Log the DynamoDB object
+console.log('DynamoDB Object:', dynamodb);
+
 (async () => {
     try {
         // Define query parameters
@@ -22,6 +25,8 @@ const dynamodb = new AWS.DynamoDB.DocumentClient();
             },
         };
 
+        console.log('Query Parameters:', params); // Debugging: Log query parameters
+
         // Execute the query
         const result = await dynamodb.query(params).promise();
         console.log('User:', result.Items[0]); // Print the first matching user
@@ -29,5 +34,6 @@ const dynamodb = new AWS.DynamoDB.DocumentClient();
         console.error('Error fetching user:', error.message, error.stack); // Improved logging
     }
 })();
+
 
 
