@@ -1,0 +1,16 @@
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Principal": {
+                "AWS": "arn:aws:iam::533267023307:user/CLI_Access"
+            },
+            "Action": "s3:*",
+            "Resource": [
+                "arn:aws:s3:::knowledgebasefiles2234",
+                "arn:aws:s3:::knowledgebasefiles2234/*"
+            ]
+        }
+    ]
+}
