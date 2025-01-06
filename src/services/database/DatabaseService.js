@@ -1,3 +1,4 @@
+
 function DatabaseService() {
     const AWS = require('aws-sdk');
 
@@ -22,7 +23,7 @@ function DatabaseService() {
             await dynamodb.put(params).promise();
             return params.Item;
         } catch (error) {
-            console.error(`Failed to create item in ${tableName}:`, error.message, error.stack);
+            console.error(`Failed to create item in ${tableName}:`, error);
             throw new Error(`Failed to create item in ${tableName}`);
         }
     }
@@ -36,7 +37,7 @@ function DatabaseService() {
             const result = await dynamodb.get(params).promise();
             return result.Item;
         } catch (error) {
-            console.error(`Failed to get item from ${tableName}:`, error.message, error.stack);
+            console.error(`Failed to get item from ${tableName}:`, error);
             throw new Error(`Failed to get item from ${tableName}`);
         }
     }
@@ -68,7 +69,7 @@ function DatabaseService() {
             const result = await dynamodb.update(params).promise();
             return result.Attributes;
         } catch (error) {
-            console.error(`Failed to update item in ${tableName}:`, error.message, error.stack);
+            console.error(`Failed to update item in ${tableName}:`, error);
             throw new Error(`Failed to update item in ${tableName}`);
         }
     }
@@ -89,7 +90,7 @@ function DatabaseService() {
             await dynamodb.put(params).promise();
             return params.Item;
         } catch (error) {
-            console.error('Failed to save analytics data:', error.message, error.stack);
+            console.error('Failed to save analytics data:', error);
             throw new Error('Failed to save analytics data.');
         }
     }
@@ -98,7 +99,7 @@ function DatabaseService() {
         try {
             const params = {
                 TableName: 'analytics',
-                IndexName: 'user_id-index', // Ensure this index exists
+                IndexName: 'user_id-index', // Specify the index name
                 KeyConditionExpression: 'user_id = :userId', // Use the correct key schema element
                 ExpressionAttributeValues: {
                     ':userId': userId, // Provide the value for the hash key
@@ -112,33 +113,14 @@ function DatabaseService() {
         }
     }
 
-    async function getItemByEmail(email) {
-        try {
-            const params = {
-                TableName: 'users',
-                IndexName: 'email-index', // Ensure this index exists
-                KeyConditionExpression: 'email = :email',
-                ExpressionAttributeValues: {
-                    ':email': email,
-                },
-            };
-            const result = await dynamodb.query(params).promise();
-            return result.Items[0]; // Return the first match
-        } catch (error) {
-            console.error('Failed to fetch user by email:', error.message, error.stack);
-            throw new Error('Failed to fetch user by email.');
-        }
-    }
-
     return {
-        dynamodb, // Expose raw DynamoDB object if needed
         createItem,
         getItem,
         updateItem,
         saveAnalyticsData,
         getAnalyticsByUser,
-        getItemByEmail,
     };
 }
 
 module.exports = DatabaseService;
+
