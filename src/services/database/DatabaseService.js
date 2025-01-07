@@ -1,14 +1,18 @@
-function DatabaseService() {
-    const AWS = require('aws-sdk');
+const { DynamoDBClient } = require('@aws-sdk/client-dynamodb');
+const { DynamoDBDocumentClient, PutCommand, GetCommand, QueryCommand, UpdateCommand } = require('@aws-sdk/lib-dynamodb');
 
-    // Explicitly configure AWS SDK with credentials and region
-    AWS.config.update({
+function DatabaseService() {
+    // Initialize DynamoDB Client
+    const dynamodbClient = new DynamoDBClient({
         region: process.env.AWS_REGION || 'us-west-2',
-        accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+        credentials: {
+            accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+            secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+        },
     });
 
-    const dynamodb = new AWS.DynamoDB.DocumentClient();
+    // Create Document Client for easier interactions
+    const dynamodb = DynamoDBDocumentClient.from(dynamodbClient);
 
     async function createItem(tableName, item) {
         try {
@@ -19,7 +23,7 @@ function DatabaseService() {
                     createdAt: new Date().toISOString(),
                 },
             };
-            await dynamodb.put(params).promise();
+            await dynamodb.send(new PutCommand(params));
             return params.Item;
         } catch (error) {
             console.error(`Failed to create item in ${tableName}:`, error.message, error.stack);
@@ -33,7 +37,7 @@ function DatabaseService() {
                 TableName: tableName,
                 Key: key,
             };
-            const result = await dynamodb.get(params).promise();
+            const result = await dynamodb.send(new GetCommand(params));
             return result.Item;
         } catch (error) {
             console.error(`Failed to get item from ${tableName}:`, error.message, error.stack);
@@ -65,7 +69,7 @@ function DatabaseService() {
                 ReturnValues: 'ALL_NEW',
             };
 
-            const result = await dynamodb.update(params).promise();
+            const result = await dynamodb.send(new UpdateCommand(params));
             return result.Attributes;
         } catch (error) {
             console.error(`Failed to update item in ${tableName}:`, error.message, error.stack);
@@ -86,7 +90,7 @@ function DatabaseService() {
                     updatedAt: new Date().toISOString(),
                 },
             };
-            await dynamodb.put(params).promise();
+            await dynamodb.send(new PutCommand(params));
             return params.Item;
         } catch (error) {
             console.error('Failed to save analytics data:', error.message, error.stack);
@@ -104,7 +108,7 @@ function DatabaseService() {
                     ':userId': userId, // Provide the value for the hash key
                 },
             };
-            const result = await dynamodb.query(params).promise();
+            const result = await dynamodb.send(new QueryCommand(params));
             return result.Items;
         } catch (error) {
             console.error('Failed to fetch analytics data:', error.message, error.stack);
@@ -122,7 +126,7 @@ function DatabaseService() {
                     ':email': email,
                 },
             };
-            const result = await dynamodb.query(params).promise();
+            const result = await dynamodb.send(new QueryCommand(params));
             return result.Items[0]; // Return the first match
         } catch (error) {
             console.error('Failed to fetch user by email:', error.message, error.stack);
@@ -131,7 +135,7 @@ function DatabaseService() {
     }
 
     return {
-        dynamodb, // Expose raw DynamoDB object if needed
+        dynamodb, // Expose raw DynamoDB client if needed
         createItem,
         getItem,
         updateItem,
