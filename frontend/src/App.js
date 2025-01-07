@@ -1,30 +1,31 @@
-import React from 'react'; // Ensure React is imported
-import Header from './components/Header'; // Import Header component
-import Sidebar from './components/Sidebar'; // Import Sidebar component
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import Header from './components/Header';
+import Sidebar from './components/Sidebar';
+import Dashboard from './components/Dashboard';
+import Emails from './components/Emails';
+import KnowledgeBase from './components/KnowledgeBase';
+import Analytics from './components/Analytics';
 
 function App() {
     return (
-        <div className="app-container" data-name="app-container">
-            <Header />
-            <Sidebar />
-            <main className="content-area" data-name="main-content">
-                <div className="dashboard-stats" data-name="dashboard-stats">
-                    <div className="stat-card" data-name="stat-emails">
-                        <div className="stat-value">152</div>
-                        <div className="stat-label">Emails Processed Today</div>
-                    </div>
-                    <div className="stat-card" data-name="stat-response">
-                        <div className="stat-value">45s</div>
-                        <div className="stat-label">Average Response Time</div>
-                    </div>
-                    <div className="stat-card" data-name="stat-accuracy">
-                        <div className="stat-value">94%</div>
-                        <div className="stat-label">Response Accuracy</div>
-                    </div>
-                </div>
-            </main>
-        </div>
+        <Router>
+            <div className="app-container" data-name="app-container">
+                <Header />
+                <Sidebar />
+                <main className="content-area" data-name="main-content">
+                    <Routes>
+                        <Route path="/dashboard" element={<Dashboard />} />
+                        <Route path="/emails" element={<Emails />} />
+                        <Route path="/knowledge-base" element={<KnowledgeBase />} />
+                        <Route path="/analytics" element={<Analytics />} />
+                        {/* Default Route */}
+                        <Route path="/" element={<Dashboard />} />
+                    </Routes>
+                </main>
+            </div>
+        </Router>
     );
 }
 
-export default App; // Export App as a default export
+export default App;
