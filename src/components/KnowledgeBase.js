@@ -1,15 +1,28 @@
 import React from 'react';
-import AWS from 'aws-sdk';
+import { S3Client, PutObjectCommand, DeleteObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3';
+import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
+import { DynamoDBDocumentClient, QueryCommand, PutCommand, DeleteCommand } from '@aws-sdk/lib-dynamodb';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
-// Configure AWS
-AWS.config.update({
+// Initialize S3 and DynamoDB clients
+const s3Client = new S3Client({
     region: process.env.REACT_APP_AWS_REGION,
-    accessKeyId: process.env.REACT_APP_AWS_ACCESS_KEY_ID,
-    secretAccessKey: process.env.REACT_APP_AWS_SECRET_ACCESS_KEY,
+    credentials: {
+        accessKeyId: process.env.REACT_APP_AWS_ACCESS_KEY_ID,
+        secretAccessKey: process.env.REACT_APP_AWS_SECRET_ACCESS_KEY,
+    },
 });
 
-const s3 = new AWS.S3();
-const dynamodb = new AWS.DynamoDB.DocumentClient();
+const dynamoClient = new DynamoDBClient({
+    region: process.env.REACT_APP_AWS_REGION,
+    credentials: {
+        accessKeyId: process.env.REACT_APP_AWS_ACCESS_KEY_ID,
+        secretAccessKey: process.env.REACT_APP_AWS_SECRET_ACCESS_KEY,
+    },
+});
+
+const dynamodb = DynamoDBDocumentClient.from(dynamoClient);
+
 const BUCKET_NAME = process.env.REACT_APP_S3_BUCKET_NAME;
 const USER_ID = process.env.REACT_APP_USER_ID; // Replace with user-specific ID (e.g., from authentication)
 
@@ -28,7 +41,7 @@ function KnowledgeBase() {
                     ':user_id': USER_ID,
                 },
             };
-            const response = await dynamodb.query(params).promise();
+            const response = await dynamodb.send(new QueryCommand(params));
             setFiles(response.Items);
         } catch (error) {
             console.error('Error loading files from DynamoDB:', error);
@@ -49,7 +62,7 @@ function KnowledgeBase() {
                 Body: file,
                 ContentType: file.type,
             };
-            await s3.upload(uploadParams).promise();
+            await s3Client.send(new PutObjectCommand(uploadParams));
 
             // Save file metadata to DynamoDB
             const dbParams = {
@@ -61,7 +74,7 @@ function KnowledgeBase() {
                     uploaded_at: new Date().toISOString(),
                 },
             };
-            await dynamodb.put(dbParams).promise();
+            await dynamodb.send(new PutCommand(dbParams));
 
             await loadFiles();
         } catch (error) {
@@ -78,7 +91,7 @@ function KnowledgeBase() {
                 Bucket: BUCKET_NAME,
                 Key: file.s3_key,
             };
-            const url = s3.getSignedUrl('getObject', params);
+            const url = await getSignedUrl(s3Client, new GetObjectCommand(params), { expiresIn: 3600 });
             setSelectedFile({ ...file, url });
         } catch (error) {
             console.error('Error generating file preview:', error);
@@ -93,7 +106,7 @@ function KnowledgeBase() {
                 Bucket: BUCKET_NAME,
                 Key: file.s3_key,
             };
-            await s3.deleteObject(deleteParams).promise();
+            await s3Client.send(new DeleteObjectCommand(deleteParams));
 
             // Remove metadata from DynamoDB
             const dbParams = {
@@ -103,7 +116,7 @@ function KnowledgeBase() {
                     s3_key: file.s3_key,
                 },
             };
-            await dynamodb.delete(dbParams).promise();
+            await dynamodb.send(new DeleteCommand(dbParams));
 
             await loadFiles();
             if (selectedFile?.s3_key === file.s3_key) {
