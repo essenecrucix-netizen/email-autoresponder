@@ -17,7 +17,7 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use(cors());
 
 // Serve static files from the React frontend build
-app.use(express.static(path.join(__dirname, '../build')));
+app.use(express.static(path.join(__dirname, '../frontend/build'))); // Updated path for React app
 
 // Initialize EmailService
 const emailService = EmailService();
@@ -164,7 +164,7 @@ app.get('/api/analytics', authenticateToken, async (req, res) => {
 
 // Catch-all route to serve the React app
 app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, '../build', 'index.html'));
+    res.sendFile(path.join(__dirname, '../frontend/build', 'index.html'));
 });
 
 // Start the server
