@@ -19,6 +19,11 @@ app.use(cors());
 // Serve static files from the React frontend build
 app.use(express.static(path.join(__dirname, '../frontend/build'))); // Updated path for React app
 
+// Fallback to index.html for React routing
+app.get('/*', (req, res) => {
+    res.sendFile(path.join(__dirname, '../frontend/build/index.html'));
+});
+
 // Initialize EmailService
 const emailService = EmailService();
 
@@ -160,11 +165,6 @@ app.get('/api/analytics', authenticateToken, async (req, res) => {
         console.error('Error fetching analytics:', error.message, error.stack);
         res.status(500).json({ error: 'Failed to fetch analytics data.' });
     }
-});
-
-// Catch-all route to serve the React app
-app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, '../frontend/build', 'index.html'));
 });
 
 // Start the server
