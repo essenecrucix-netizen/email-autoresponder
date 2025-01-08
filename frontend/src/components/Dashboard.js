@@ -1,3 +1,5 @@
+import React from 'react';
+
 function Dashboard() {
     return (
         <div className="dashboard-container" data-name="dashboard-container">
@@ -19,23 +21,25 @@ function Dashboard() {
             <div className="dashboard-content grid grid-cols-2 gap-4" data-name="dashboard-content">
                 <div className="dashboard-section" data-name="analytics-section">
                     <h2 className="text-xl font-semibold mb-4">Analytics Overview</h2>
-                    <AnalyticsCharts />
+                    {/* Replace with actual AnalyticsCharts component */}
+                    <p>Analytics charts will go here.</p>
                 </div>
 
                 <div className="dashboard-section" data-name="emails-section">
                     <h2 className="text-xl font-semibold mb-4">Recent Emails</h2>
-                    <EmailList />
+                    {/* Replace with actual EmailList component */}
+                    <p>Email list will go here.</p>
                 </div>
 
                 <div className="dashboard-section" data-name="knowledge-section">
                     <h2 className="text-xl font-semibold mb-4">Knowledge Base</h2>
-                    <KnowledgeBase />
+                    {/* Replace with actual KnowledgeBase component */}
+                    <p>Knowledge base content will go here.</p>
                 </div>
 
                 <div className="dashboard-section" data-name="escalations-section">
                     <h2 className="text-xl font-semibold mb-4">Active Escalations</h2>
                     <div className="card" data-name="escalations-list">
-                        {/* Escalations list will be implemented here */}
                         <p className="text-gray-500">No active escalations</p>
                     </div>
                 </div>
@@ -43,3 +47,5 @@ function Dashboard() {
         </div>
     );
 }
+
+export default Dashboard;
