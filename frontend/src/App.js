@@ -3,7 +3,6 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Header from './components/Header';
 import Sidebar from './components/Sidebar';
 import Dashboard from './components/Dashboard';
-import Emails from './components/Emails';
 import KnowledgeBase from './components/KnowledgeBase';
 import Analytics from './components/Analytics';
 
