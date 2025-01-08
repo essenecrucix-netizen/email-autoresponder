@@ -1,12 +1,14 @@
+// Example Emails.js
 import React from 'react';
 
 function Emails() {
     return (
-        <div className="emails-container">
+        <div>
             <h1>Emails Page</h1>
-            <p>This is a placeholder for the Emails component.</p>
+            <p>This is the Emails component.</p>
         </div>
     );
 }
 
 export default Emails;
+
