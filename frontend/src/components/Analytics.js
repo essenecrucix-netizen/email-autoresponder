@@ -14,7 +14,13 @@ function Analytics() {
             const response = await axios.get('/api/analytics');
 
             if (response.status === 200) {
-                const stats = calculateStats(response.data.emails, response.data.responses);
+                const { emails = [], responses = [] } = response.data;
+
+                if (!Array.isArray(emails) || !Array.isArray(responses)) {
+                    throw new Error('Invalid data structure: `emails` or `responses` is not an array.');
+                }
+
+                const stats = calculateStats(emails, responses);
                 setAnalytics(stats);
             } else {
                 throw new Error(`Failed to fetch analytics: ${response.statusText}`);
@@ -28,12 +34,12 @@ function Analytics() {
     }
 
     function calculateStats(emails, responses) {
-        const totalEmails = emails.length;
-        const automatedResponses = responses.filter(r => r.type === 'automated').length;
-        const escalatedResponses = emails.filter(e => e.needsEscalation).length;
+        const totalEmails = emails.length || 0;
+        const automatedResponses = responses.filter(r => r.type === 'automated').length || 0;
+        const escalatedResponses = emails.filter(e => e.needsEscalation).length || 0;
 
         const averageResponseTime = responses.length > 0
-            ? responses.reduce((sum, r) => sum + r.responseTime, 0) / responses.length
+            ? responses.reduce((sum, r) => sum + (r.responseTime || 0), 0) / responses.length
             : 0;
 
         return {
@@ -48,7 +54,7 @@ function Analytics() {
     }
 
     function calculateSatisfactionRate(responses) {
-        const positiveResponses = responses.filter(r => r.satisfaction === 'positive').length;
+        const positiveResponses = responses.filter(r => r.satisfaction === 'positive').length || 0;
         return responses.length > 0
             ? Math.round((positiveResponses / responses.length) * 100)
             : 0;
