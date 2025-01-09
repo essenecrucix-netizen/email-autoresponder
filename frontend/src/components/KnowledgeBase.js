@@ -48,19 +48,30 @@ function KnowledgeBase() {
         }
     }
 
+    // Handle file selection
+    function handleFileSelection(event) {
+        const file = event.target.files[0];
+        if (file) {
+            setSelectedFile(file);
+        }
+    }
+
     // Handle file upload to S3 and save metadata to DynamoDB
-    async function handleFileUpload(event) {
+    async function handleFileUpload() {
+        if (!selectedFile) {
+            alert('Please select a file to upload.');
+            return;
+        }
         try {
             setUploading(true);
-            const file = event.target.files[0];
-            const s3Key = `${USER_ID}/${file.name}`;
+            const s3Key = `${USER_ID}/${selectedFile.name}`;
 
             // Upload file to S3
             const uploadParams = {
                 Bucket: BUCKET_NAME,
                 Key: s3Key,
-                Body: file,
-                ContentType: file.type,
+                Body: selectedFile,
+                ContentType: selectedFile.type,
             };
             await s3Client.send(new PutObjectCommand(uploadParams));
 
@@ -70,13 +81,14 @@ function KnowledgeBase() {
                 Item: {
                     user_id: USER_ID,
                     s3_key: s3Key,
-                    filename: file.name,
+                    filename: selectedFile.name,
                     uploaded_at: new Date().toISOString(),
                 },
             };
             await dynamodb.send(new PutCommand(dbParams));
 
             await loadFiles();
+            setSelectedFile(null); // Clear selected file after upload
         } catch (error) {
             console.error('Error uploading file:', error);
         } finally {
@@ -139,7 +151,7 @@ function KnowledgeBase() {
                     <div className="upload-section">
                         <input
                             type="file"
-                            onChange={handleFileUpload}
+                            onChange={handleFileSelection}
                             className="hidden"
                             id="file-upload"
                             accept=".txt,.pdf,.doc,.docx"
@@ -148,8 +160,17 @@ function KnowledgeBase() {
                             htmlFor="file-upload"
                             className="bg-blue-600 text-white px-4 py-2 rounded-md cursor-pointer hover:bg-blue-700"
                         >
-                            {uploading ? 'Uploading...' : 'Upload File'}
+                            Choose File
                         </label>
+                        <button
+                            onClick={handleFileUpload}
+                            disabled={uploading || !selectedFile}
+                            className={`ml-4 px-4 py-2 rounded-md text-white ${
+                                uploading ? 'bg-gray-400' : 'bg-green-600 hover:bg-green-700'
+                            }`}
+                        >
+                            {uploading ? 'Uploading...' : 'Upload File'}
+                        </button>
                     </div>
                 </div>
                 <div className="files-grid space-y-4">
@@ -180,7 +201,7 @@ function KnowledgeBase() {
             <div className="preview-section">
                 <div className="card h-full">
                     <h3 className="text-lg font-medium mb-4">File Preview</h3>
-                    {selectedFile ? (
+                    {selectedFile?.url ? (
                         selectedFile.url.includes('.pdf') ? (
                             <iframe src={selectedFile.url} className="w-full h-[600px]" title="PDF Preview" />
                         ) : (
