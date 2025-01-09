@@ -31,6 +31,7 @@ function KnowledgeBase() {
     const [uploading, setUploading] = React.useState(false);
     const [selectedFile, setSelectedFile] = React.useState(null);
     const [previewFileData, setPreviewFileData] = React.useState(null);
+    const [previewContent, setPreviewContent] = React.useState(null);
 
     // Load files from DynamoDB
     async function loadFiles() {
@@ -111,6 +112,19 @@ function KnowledgeBase() {
                 Key: file.s3_key,
             };
             const url = await getSignedUrl(s3Client, new GetObjectCommand(params), { expiresIn: 3600 });
+
+            if (file.filename.endsWith('.txt')) {
+                const response = await fetch(url);
+                const textContent = await response.text();
+                setPreviewContent({ type: 'text', content: textContent });
+            } else if (file.filename.endsWith('.pdf')) {
+                setPreviewContent({ type: 'pdf', url });
+            } else if (file.filename.endsWith('.docx')) {
+                setPreviewContent({ type: 'docx', url: `https://docs.google.com/gview?url=${url}&embedded=true` });
+            } else {
+                setPreviewContent(null);
+            }
+
             setPreviewFileData({ ...file, url });
         } catch (error) {
             console.error('Error generating file preview:', error);
@@ -138,6 +152,7 @@ function KnowledgeBase() {
             await loadFiles();
             if (previewFileData?.s3_key === file.s3_key) {
                 setPreviewFileData(null);
+                setPreviewContent(null);
             }
             alert('File deleted successfully!');
         } catch (error) {
@@ -208,13 +223,15 @@ function KnowledgeBase() {
             <div className="preview-section">
                 <div className="card h-full">
                     <h3 className="text-lg font-medium mb-4">File Preview</h3>
-                    {previewFileData?.url ? (
-                        previewFileData.url.includes('.pdf') ? (
-                            <iframe src={previewFileData.url} className="w-full h-[600px]" title="PDF Preview" />
+                    {previewContent ? (
+                        previewContent.type === 'text' ? (
+                            <pre className="w-full h-[600px] overflow-auto bg-gray-100 p-4">{previewContent.content}</pre>
+                        ) : previewContent.type === 'pdf' ? (
+                            <iframe src={previewContent.url} className="w-full h-[600px]" title="PDF Preview" />
+                        ) : previewContent.type === 'docx' ? (
+                            <iframe src={previewContent.url} className="w-full h-[600px]" title="DOCX Preview" />
                         ) : (
-                            <a href={previewFileData.url} target="_blank" rel="noopener noreferrer">
-                                Download and Open
-                            </a>
+                            <div className="text-gray-500 text-center">Unable to preview this file type</div>
                         )
                     ) : (
                         <div className="text-gray-500 text-center">Select a file to preview</div>
