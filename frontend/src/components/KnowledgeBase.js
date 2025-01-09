@@ -30,6 +30,7 @@ function KnowledgeBase() {
     const [files, setFiles] = React.useState([]);
     const [uploading, setUploading] = React.useState(false);
     const [selectedFile, setSelectedFile] = React.useState(null);
+    const [previewFileData, setPreviewFileData] = React.useState(null);
 
     // Load files from DynamoDB
     async function loadFiles() {
@@ -42,7 +43,7 @@ function KnowledgeBase() {
                 },
             };
             const response = await dynamodb.send(new QueryCommand(params));
-            setFiles(response.Items);
+            setFiles(response.Items || []);
         } catch (error) {
             console.error('Error loading files from DynamoDB:', error);
         }
@@ -52,6 +53,7 @@ function KnowledgeBase() {
     function handleFileSelection(event) {
         const file = event.target.files[0];
         if (file) {
+            console.log('Selected file:', file.name);
             setSelectedFile(file);
         }
     }
@@ -62,6 +64,7 @@ function KnowledgeBase() {
             alert('Please select a file to upload.');
             return;
         }
+
         try {
             setUploading(true);
             const s3Key = `${USER_ID}/${selectedFile.name}`;
@@ -73,6 +76,7 @@ function KnowledgeBase() {
                 Body: selectedFile,
                 ContentType: selectedFile.type,
             };
+            console.log('Uploading file to S3:', uploadParams);
             await s3Client.send(new PutObjectCommand(uploadParams));
 
             // Save file metadata to DynamoDB
@@ -85,12 +89,15 @@ function KnowledgeBase() {
                     uploaded_at: new Date().toISOString(),
                 },
             };
+            console.log('Saving metadata to DynamoDB:', dbParams);
             await dynamodb.send(new PutCommand(dbParams));
 
             await loadFiles();
             setSelectedFile(null); // Clear selected file after upload
+            alert('File uploaded successfully!');
         } catch (error) {
             console.error('Error uploading file:', error);
+            alert('An error occurred during the file upload. Please check the console for more details.');
         } finally {
             setUploading(false);
         }
@@ -104,7 +111,7 @@ function KnowledgeBase() {
                 Key: file.s3_key,
             };
             const url = await getSignedUrl(s3Client, new GetObjectCommand(params), { expiresIn: 3600 });
-            setSelectedFile({ ...file, url });
+            setPreviewFileData({ ...file, url });
         } catch (error) {
             console.error('Error generating file preview:', error);
         }
@@ -113,14 +120,12 @@ function KnowledgeBase() {
     // Delete file from S3 and remove metadata from DynamoDB
     async function deleteFile(file) {
         try {
-            // Delete file from S3
             const deleteParams = {
                 Bucket: BUCKET_NAME,
                 Key: file.s3_key,
             };
             await s3Client.send(new DeleteObjectCommand(deleteParams));
 
-            // Remove metadata from DynamoDB
             const dbParams = {
                 TableName: 'user_knowledge_files',
                 Key: {
@@ -131,11 +136,13 @@ function KnowledgeBase() {
             await dynamodb.send(new DeleteCommand(dbParams));
 
             await loadFiles();
-            if (selectedFile?.s3_key === file.s3_key) {
-                setSelectedFile(null);
+            if (previewFileData?.s3_key === file.s3_key) {
+                setPreviewFileData(null);
             }
+            alert('File deleted successfully!');
         } catch (error) {
             console.error('Error deleting file:', error);
+            alert('An error occurred while deleting the file.');
         }
     }
 
@@ -178,7 +185,7 @@ function KnowledgeBase() {
                         <div
                             key={file.s3_key}
                             className={`card flex justify-between items-center cursor-pointer ${
-                                selectedFile?.s3_key === file.s3_key ? 'border-blue-500 border-2' : ''
+                                previewFileData?.s3_key === file.s3_key ? 'border-blue-500 border-2' : ''
                             }`}
                             onClick={() => previewFile(file)}
                         >
@@ -201,11 +208,11 @@ function KnowledgeBase() {
             <div className="preview-section">
                 <div className="card h-full">
                     <h3 className="text-lg font-medium mb-4">File Preview</h3>
-                    {selectedFile?.url ? (
-                        selectedFile.url.includes('.pdf') ? (
-                            <iframe src={selectedFile.url} className="w-full h-[600px]" title="PDF Preview" />
+                    {previewFileData?.url ? (
+                        previewFileData.url.includes('.pdf') ? (
+                            <iframe src={previewFileData.url} className="w-full h-[600px]" title="PDF Preview" />
                         ) : (
-                            <a href={selectedFile.url} target="_blank" rel="noopener noreferrer">
+                            <a href={previewFileData.url} target="_blank" rel="noopener noreferrer">
                                 Download and Open
                             </a>
                         )
