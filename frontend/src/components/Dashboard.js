@@ -48,13 +48,11 @@ function Dashboard() {
 
                 <div className="dashboard-section" data-name="emails-section">
                     <h2 className="text-xl font-semibold mb-4">Recent Emails</h2>
-                    {/* Replace with actual EmailList component */}
                     <p>Email list will go here.</p>
                 </div>
 
                 <div className="dashboard-section" data-name="knowledge-section">
                     <h2 className="text-xl font-semibold mb-4">Knowledge Base</h2>
-                    {/* Replace with actual KnowledgeBase component */}
                     <p>Knowledge base content will go here.</p>
                 </div>
 
@@ -70,4 +68,3 @@ function Dashboard() {
 }
 
 export default Dashboard;
-

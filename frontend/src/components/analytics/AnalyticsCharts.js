@@ -28,6 +28,7 @@ function AnalyticsCharts() {
         console.log('Initializing charts with data:', data); // Debugging
 
         if (volumeChartRef.current) {
+            console.log('Volume chart canvas:', volumeChartRef.current);
             new Chart(volumeChartRef.current, {
                 type: 'line',
                 data: {
@@ -53,6 +54,7 @@ function AnalyticsCharts() {
         }
 
         if (responseTimeChartRef.current) {
+            console.log('Response Time chart canvas:', responseTimeChartRef.current);
             new Chart(responseTimeChartRef.current, {
                 type: 'line',
                 data: {
@@ -70,6 +72,7 @@ function AnalyticsCharts() {
         }
 
         if (sentimentChartRef.current) {
+            console.log('Sentiment chart canvas:', sentimentChartRef.current);
             new Chart(sentimentChartRef.current, {
                 type: 'pie',
                 data: {
@@ -89,6 +92,7 @@ function AnalyticsCharts() {
         }
 
         if (languageChartRef.current) {
+            console.log('Language Distribution chart canvas:', languageChartRef.current);
             const languageLabels = Object.keys(data.languageData);
             new Chart(languageChartRef.current, {
                 type: 'bar',
@@ -105,26 +109,6 @@ function AnalyticsCharts() {
             });
         }
     }
-
-    // Test Chart Initialization
-    useEffect(() => {
-        console.log('Testing chart.js with simple data...');
-        if (volumeChartRef.current) {
-            new Chart(volumeChartRef.current, {
-                type: 'line',
-                data: {
-                    labels: ['Test 1', 'Test 2', 'Test 3'],
-                    datasets: [
-                        {
-                            label: 'Test Dataset',
-                            data: [1, 2, 3],
-                            borderColor: 'rgb(75, 192, 192)',
-                        },
-                    ],
-                },
-            });
-        }
-    }, []); // Runs once on component mount for testing
 
     useEffect(() => {
         async function loadCharts() {
@@ -167,19 +151,19 @@ function AnalyticsCharts() {
                 <div className="grid grid-cols-2 gap-4">
                     <div className="card">
                         <h3 className="text-lg font-medium mb-2">Email Volume</h3>
-                        <canvas ref={volumeChartRef}></canvas>
+                        <canvas ref={volumeChartRef} width="400" height="300"></canvas>
                     </div>
                     <div className="card">
                         <h3 className="text-lg font-medium mb-2">Response Times</h3>
-                        <canvas ref={responseTimeChartRef}></canvas>
+                        <canvas ref={responseTimeChartRef} width="400" height="300"></canvas>
                     </div>
                     <div className="card">
                         <h3 className="text-lg font-medium mb-2">Sentiment Distribution</h3>
-                        <canvas ref={sentimentChartRef}></canvas>
+                        <canvas ref={sentimentChartRef} width="400" height="300"></canvas>
                     </div>
                     <div className="card">
                         <h3 className="text-lg font-medium mb-2">Language Distribution</h3>
-                        <canvas ref={languageChartRef}></canvas>
+                        <canvas ref={languageChartRef} width="400" height="300"></canvas>
                     </div>
                 </div>
             )}
