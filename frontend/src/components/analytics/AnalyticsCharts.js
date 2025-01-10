@@ -95,75 +95,95 @@ function AnalyticsCharts() {
     }
 
     async function initializeCharts(data) {
-        new Chart(document.getElementById('volumeChart'), {
-            type: 'line',
-            data: {
-                labels: data.dateLabels,
-                datasets: [
-                    {
-                        label: 'Email Volume',
-                        data: data.emailCounts,
-                        borderColor: 'rgb(75, 192, 192)',
-                        tension: 0.1,
-                    },
-                ],
-            },
-            options: {
-                responsive: true,
-                scales: {
-                    y: {
-                        beginAtZero: true,
+        const volumeChartEl = document.getElementById('volumeChart');
+        if (volumeChartEl) {
+            new Chart(volumeChartEl, {
+                type: 'line',
+                data: {
+                    labels: data.dateLabels,
+                    datasets: [
+                        {
+                            label: 'Email Volume',
+                            data: data.emailCounts,
+                            borderColor: 'rgb(75, 192, 192)',
+                            tension: 0.1,
+                        },
+                    ],
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                        },
                     },
                 },
-            },
-        });
+            });
+        } else {
+            console.error('Volume chart canvas element not found');
+        }
 
-        new Chart(document.getElementById('responseTimeChart'), {
-            type: 'line',
-            data: {
-                labels: data.dateLabels,
-                datasets: [
-                    {
-                        label: 'Average Response Time (seconds)',
-                        data: data.responseTimes,
-                        borderColor: 'rgb(255, 99, 132)',
-                        tension: 0.1,
-                    },
-                ],
-            },
-        });
+        const responseTimeChartEl = document.getElementById('responseTimeChart');
+        if (responseTimeChartEl) {
+            new Chart(responseTimeChartEl, {
+                type: 'line',
+                data: {
+                    labels: data.dateLabels,
+                    datasets: [
+                        {
+                            label: 'Average Response Time (seconds)',
+                            data: data.responseTimes,
+                            borderColor: 'rgb(255, 99, 132)',
+                            tension: 0.1,
+                        },
+                    ],
+                },
+            });
+        } else {
+            console.error('Response Time chart canvas element not found');
+        }
 
-        new Chart(document.getElementById('sentimentChart'), {
-            type: 'pie',
-            data: {
-                labels: ['Positive', 'Neutral', 'Negative'],
-                datasets: [
-                    {
-                        data: [
-                            data.sentimentData.positive,
-                            data.sentimentData.neutral,
-                            data.sentimentData.negative,
-                        ],
-                        backgroundColor: ['rgb(75, 192, 192)', 'rgb(255, 205, 86)', 'rgb(255, 99, 132)'],
-                    },
-                ],
-            },
-        });
+        const sentimentChartEl = document.getElementById('sentimentChart');
+        if (sentimentChartEl) {
+            new Chart(sentimentChartEl, {
+                type: 'pie',
+                data: {
+                    labels: ['Positive', 'Neutral', 'Negative'],
+                    datasets: [
+                        {
+                            data: [
+                                data.sentimentData.positive,
+                                data.sentimentData.neutral,
+                                data.sentimentData.negative,
+                            ],
+                            backgroundColor: ['rgb(75, 192, 192)', 'rgb(255, 205, 86)', 'rgb(255, 99, 132)'],
+                        },
+                    ],
+                },
+            });
+        } else {
+            console.error('Sentiment chart canvas element not found');
+        }
 
-        const languageLabels = Object.keys(data.languageData);
-        new Chart(document.getElementById('languageChart'), {
-            type: 'bar',
-            data: {
-                labels: languageLabels,
-                datasets: [
-                    {
-                        label: 'Emails by Language',
-                        data: languageLabels.map((lang) => data.languageData[lang]),
-                        backgroundColor: 'rgb(54, 162, 235)',
-                    },
-                ],
-            },
-        });
+        const languageChartEl = document.getElementById('languageChart');
+        if (languageChartEl) {
+            const languageLabels = Object.keys(data.languageData);
+            new Chart(languageChartEl, {
+                type: 'bar',
+                data: {
+                    labels: languageLabels,
+                    datasets: [
+                        {
+                            label: 'Emails by Language',
+                            data: languageLabels.map((lang) => data.languageData[lang]),
+                            backgroundColor: 'rgb(54, 162, 235)',
+                        },
+                    ],
+                },
+            });
+        } else {
+            console.error('Language chart canvas element not found');
+        }
     }
 
     useEffect(() => {
@@ -171,8 +191,12 @@ function AnalyticsCharts() {
             try {
                 setIsLoading(true);
                 const data = await fetchAnalyticsData(selectedPeriod);
-                setChartData(data);
-                await initializeCharts(data);
+                if (data) {
+                    setChartData(data);
+                    await initializeCharts(data);
+                } else {
+                    console.error('No data returned for charts');
+                }
             } catch (error) {
                 console.error('Error loading charts:', error);
             } finally {
