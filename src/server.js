@@ -90,7 +90,11 @@ app.post('/api/login', async (req, res) => {
 
     try {
         const database = DatabaseService();
-        const user = await database.getItem('users', { email }); // Fetch user by email
+        console.log('Login attempt:', { email }); // Debugging
+
+        const user = await database.getItemByEmail(email); // Updated to use the correct method
+        console.log('User fetched from DB:', user); // Debugging
+
         if (!user) {
             return res.status(401).json({ error: 'Invalid email or password.' });
         }
@@ -101,7 +105,7 @@ app.post('/api/login', async (req, res) => {
         }
 
         // Generate JWT token
-        const token = jwt.sign({ userId: user.user_id, role: user.role }, SECRET_KEY, { expiresIn: '1h' });
+        const token = jwt.sign({ userId: user.id, role: user.role }, SECRET_KEY, { expiresIn: '1h' });
 
         // Respond with user details (excluding password) and token
         const userResponse = { ...user, password_hash: undefined }; // Remove password hash
@@ -126,8 +130,10 @@ app.post('/api/signup', async (req, res) => {
     try {
         const database = DatabaseService();
 
+        console.log('Signup attempt:', { name, email, role }); // Debugging
+
         // Check if the user already exists
-        const existingUser = await database.getItem('users', { email });
+        const existingUser = await database.getItemByEmail(email);
         if (existingUser) {
             return res.status(400).json({ error: 'Email already exists.' });
         }
@@ -137,7 +143,7 @@ app.post('/api/signup', async (req, res) => {
 
         // Create the new user
         const newUser = {
-            user_id: Date.now().toString(), // Generate a unique ID
+            id: Date.now().toString(), // Generate a unique ID
             email,
             name,
             password_hash: hashedPassword,
@@ -146,6 +152,7 @@ app.post('/api/signup', async (req, res) => {
         };
 
         await database.createItem('users', newUser);
+        console.log('User created successfully:', newUser); // Debugging
 
         res.status(201).json({ message: 'User created successfully. Please log in.' });
     } catch (error) {
@@ -160,6 +167,7 @@ app.get('/api/analytics', authenticateToken, async (req, res) => {
         const userId = req.user.userId; // Extract user ID from the token
         const database = DatabaseService();
         const analytics = await database.getAnalyticsByUser(userId);
+        console.log('Analytics fetched for user:', userId, analytics); // Debugging
         res.status(200).json(analytics);
     } catch (error) {
         console.error('Error fetching analytics:', error.message, error.stack);
