@@ -123,15 +123,18 @@ function AnalyticsCharts() {
     return (
         <div className="analytics-charts-container">
             <div className="mb-4">
-                <select
-                    value={selectedPeriod}
-                    onChange={(e) => setSelectedPeriod(e.target.value)}
-                    className="px-4 py-2 border rounded-md"
-                >
-                    <option value="week">Last 7 Days</option>
-                    <option value="month">Last Month</option>
-                    <option value="year">Last Year</option>
-                </select>
+            <select
+    id="analytics-period"
+    name="analyticsPeriod"
+    value={selectedPeriod}
+    onChange={(e) => setSelectedPeriod(e.target.value)}
+    className="px-4 py-2 border rounded-md"
+>
+    <option value="week">Last 7 Days</option>
+    <option value="month">Last Month</option>
+    <option value="year">Last Year</option>
+</select>
+
             </div>
 
             {isLoading ? (
