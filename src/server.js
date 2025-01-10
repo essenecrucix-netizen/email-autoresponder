@@ -166,9 +166,10 @@ app.get('/api/analytics', authenticateToken, async (req, res) => {
     try {
         const userId = req.user.userId; // Extract user ID from the token
         const database = DatabaseService();
-        const analytics = await database.getAnalyticsByUser(userId);
-        console.log('Analytics fetched for user:', userId, analytics); // Debugging
-        res.status(200).json(analytics);
+        const emails = await database.getAnalyticsByUser(userId);
+        const responses = await database.getResponsesByUser(userId);
+        console.log('Analytics fetched for user:', userId, { emails, responses }); // Debugging
+        res.status(200).json({ emails, responses });
     } catch (error) {
         console.error('Error fetching analytics:', error.message, error.stack);
         res.status(500).json({ error: 'Failed to fetch analytics data.' });
