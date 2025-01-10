@@ -14,6 +14,7 @@ function AnalyticsCharts() {
 
     // Temporary test data
     async function fetchAnalyticsData() {
+        console.log('Fetching analytics data for testing...');
         return {
             dateLabels: ['2025-01-01', '2025-01-02', '2025-01-03'],
             emailCounts: [10, 15, 20],
@@ -24,6 +25,8 @@ function AnalyticsCharts() {
     }
 
     async function initializeCharts(data) {
+        console.log('Initializing charts with data:', data); // Debugging
+
         if (volumeChartRef.current) {
             new Chart(volumeChartRef.current, {
                 type: 'line',
@@ -103,6 +106,26 @@ function AnalyticsCharts() {
         }
     }
 
+    // Test Chart Initialization
+    useEffect(() => {
+        console.log('Testing chart.js with simple data...');
+        if (volumeChartRef.current) {
+            new Chart(volumeChartRef.current, {
+                type: 'line',
+                data: {
+                    labels: ['Test 1', 'Test 2', 'Test 3'],
+                    datasets: [
+                        {
+                            label: 'Test Dataset',
+                            data: [1, 2, 3],
+                            borderColor: 'rgb(75, 192, 192)',
+                        },
+                    ],
+                },
+            });
+        }
+    }, []); // Runs once on component mount for testing
+
     useEffect(() => {
         async function loadCharts() {
             try {
@@ -123,18 +146,17 @@ function AnalyticsCharts() {
     return (
         <div className="analytics-charts-container">
             <div className="mb-4">
-            <select
-    id="analytics-period"
-    name="analyticsPeriod"
-    value={selectedPeriod}
-    onChange={(e) => setSelectedPeriod(e.target.value)}
-    className="px-4 py-2 border rounded-md"
->
-    <option value="week">Last 7 Days</option>
-    <option value="month">Last Month</option>
-    <option value="year">Last Year</option>
-</select>
-
+                <select
+                    id="analytics-period"
+                    name="analyticsPeriod"
+                    value={selectedPeriod}
+                    onChange={(e) => setSelectedPeriod(e.target.value)}
+                    className="px-4 py-2 border rounded-md"
+                >
+                    <option value="week">Last 7 Days</option>
+                    <option value="month">Last Month</option>
+                    <option value="year">Last Year</option>
+                </select>
             </div>
 
             {isLoading ? (
