@@ -131,13 +131,13 @@ function DatabaseService() {
                     ':email': email,
                 },
             };
-            console.log('DynamoDB GetItemByEmail Params:', params); // Debugging
+            console.log('DynamoDB Query Params for getItemByEmail:', params); // Debugging
             const result = await dynamodb.send(new QueryCommand(params));
             if (result.Items && result.Items.length > 0) {
-                console.log('DynamoDB GetItemByEmail Result:', result.Items[0]); // Debugging
-                return result.Items[0];
+                console.log('DynamoDB Query Result for getItemByEmail:', result.Items[0]); // Debugging
+                return result.Items[0]; // Return the first match
             } else {
-                console.warn('DynamoDB GetItemByEmail: No matching items found.');
+                console.warn('DynamoDB Query for getItemByEmail: No matching items found.');
                 return null;
             }
         } catch (error) {
