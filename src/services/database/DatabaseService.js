@@ -23,6 +23,7 @@ function DatabaseService() {
                     createdAt: new Date().toISOString(),
                 },
             };
+            console.log('DynamoDB CreateItem Params:', params); // Debugging
             await dynamodb.send(new PutCommand(params));
             return params.Item;
         } catch (error) {
@@ -37,6 +38,7 @@ function DatabaseService() {
                 TableName: tableName,
                 Key: key,
             };
+            console.log('DynamoDB GetItem Params:', params); // Debugging
             const result = await dynamodb.send(new GetCommand(params));
             return result.Item;
         } catch (error) {
@@ -69,6 +71,7 @@ function DatabaseService() {
                 ReturnValues: 'ALL_NEW',
             };
 
+            console.log('DynamoDB UpdateItem Params:', params); // Debugging
             const result = await dynamodb.send(new UpdateCommand(params));
             return result.Attributes;
         } catch (error) {
@@ -90,6 +93,7 @@ function DatabaseService() {
                     updatedAt: new Date().toISOString(),
                 },
             };
+            console.log('DynamoDB SaveAnalyticsData Params:', params); // Debugging
             await dynamodb.send(new PutCommand(params));
             return params.Item;
         } catch (error) {
@@ -108,6 +112,7 @@ function DatabaseService() {
                     ':userId': userId, // Provide the value for the hash key
                 },
             };
+            console.log('DynamoDB GetAnalyticsByUser Params:', params); // Debugging
             const result = await dynamodb.send(new QueryCommand(params));
             return result.Items || [];
         } catch (error) {
@@ -126,8 +131,15 @@ function DatabaseService() {
                     ':email': email,
                 },
             };
+            console.log('DynamoDB GetItemByEmail Params:', params); // Debugging
             const result = await dynamodb.send(new QueryCommand(params));
-            return result.Items && result.Items.length > 0 ? result.Items[0] : null; // Return the first match
+            if (result.Items && result.Items.length > 0) {
+                console.log('DynamoDB GetItemByEmail Result:', result.Items[0]); // Debugging
+                return result.Items[0];
+            } else {
+                console.warn('DynamoDB GetItemByEmail: No matching items found.');
+                return null;
+            }
         } catch (error) {
             console.error('Failed to fetch user by email:', error.message, error.stack);
             throw new Error('Failed to fetch user by email.');
