@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Chart } from 'chart.js';
-import axios from 'axios';
 
 function AnalyticsCharts() {
     const [chartData, setChartData] = useState(null);
@@ -13,90 +12,14 @@ function AnalyticsCharts() {
     const sentimentChartRef = useRef(null);
     const languageChartRef = useRef(null);
 
-    async function fetchAnalyticsData(period) {
-        try {
-            const endDate = new Date();
-            const startDate = new Date();
-
-            switch (period) {
-                case 'week':
-                    startDate.setDate(startDate.getDate() - 7);
-                    break;
-                case 'month':
-                    startDate.setMonth(startDate.getMonth() - 1);
-                    break;
-                case 'year':
-                    startDate.setFullYear(startDate.getFullYear() - 1);
-                    break;
-                default:
-                    throw new Error('Invalid period selected');
-            }
-
-            const response = await axios.get('/api/analytics', {
-                params: {
-                    startDate: startDate.toISOString(),
-                    endDate: endDate.toISOString(),
-                },
-            });
-
-            if (response.status === 200) {
-                return processAnalyticsData(response.data.emails, response.data.responses, startDate, endDate);
-            } else {
-                throw new Error(`Failed to fetch analytics data: ${response.statusText}`);
-            }
-        } catch (error) {
-            console.error('Error fetching analytics data:', error.message);
-            throw new Error('Failed to fetch analytics data.');
-        }
-    }
-
-    function processAnalyticsData(emails = [], responses = [], startDate, endDate) {
-        const dateLabels = [];
-        const emailCounts = [];
-        const responseTimes = [];
-        const sentimentData = { positive: 0, neutral: 0, negative: 0 };
-        const languageData = {};
-
-        let currentDate = new Date(startDate);
-        while (currentDate <= endDate) {
-            dateLabels.push(currentDate.toISOString().split('T')[0]);
-            emailCounts.push(0);
-            responseTimes.push(0);
-            currentDate.setDate(currentDate.getDate() + 1);
-        }
-
-        emails.forEach((email) => {
-            const emailDate = new Date(email.createdAt).toISOString().split('T')[0];
-            const dateIndex = dateLabels.indexOf(emailDate);
-
-            if (dateIndex !== -1) {
-                emailCounts[dateIndex]++;
-                sentimentData[email.sentiment] = (sentimentData[email.sentiment] || 0) + 1;
-
-                const language = email.language || 'unknown';
-                languageData[language] = (languageData[language] || 0) + 1;
-            }
-        });
-
-        responses.forEach((response) => {
-            const responseDate = new Date(response.createdAt).toISOString().split('T')[0];
-            const dateIndex = dateLabels.indexOf(responseDate);
-
-            if (dateIndex !== -1) {
-                const email = emails.find((e) => e.id === response.emailId);
-                if (email) {
-                    const responseTime = new Date(response.createdAt) - new Date(email.createdAt);
-                    responseTimes[dateIndex] = responseTime / 1000; // Convert to seconds
-                }
-            }
-        });
-
+    // Temporary test data
+    async function fetchAnalyticsData() {
         return {
-            dateLabels,
-            emailCounts,
-            responseTimes,
-            sentimentData,
-            languageData,
+            dateLabels: ['2025-01-01', '2025-01-02', '2025-01-03'],
+            emailCounts: [10, 15, 20],
+            responseTimes: [30, 45, 60],
+            sentimentData: { positive: 5, neutral: 3, negative: 2 },
+            languageData: { English: 10, Spanish: 5 },
         };
     }
 
@@ -184,7 +107,7 @@ function AnalyticsCharts() {
         async function loadCharts() {
             try {
                 setIsLoading(true);
-                const data = await fetchAnalyticsData(selectedPeriod);
+                const data = await fetchAnalyticsData(); // Use temporary test data
                 setChartData(data);
                 await initializeCharts(data);
             } catch (error) {
