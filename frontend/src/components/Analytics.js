@@ -1,11 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
+import AnalyticsCharts from './analytics/AnalyticsCharts'; // Import AnalyticsCharts
 
 function Analytics() {
     const [analytics, setAnalytics] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
+    // Fetch analytics data from the server
     async function fetchAnalytics() {
         try {
             setLoading(true);
@@ -33,6 +35,7 @@ function Analytics() {
         }
     }
 
+    // Calculate statistics for analytics
     function calculateStats(emails, responses) {
         const totalEmails = emails.length || 0;
         const automatedResponses = responses.filter(r => r.type === 'automated').length || 0;
@@ -53,6 +56,7 @@ function Analytics() {
         };
     }
 
+    // Calculate satisfaction rate
     function calculateSatisfactionRate(responses) {
         const positiveResponses = responses.filter(r => r.satisfaction === 'positive').length || 0;
         return responses.length > 0
@@ -60,6 +64,7 @@ function Analytics() {
             : 0;
     }
 
+    // Fetch analytics on component mount
     useEffect(() => {
         fetchAnalytics();
     }, []);
@@ -85,6 +90,8 @@ function Analytics() {
                     <li>Escalated: {analytics.responseDistribution.escalated}</li>
                 </ul>
             </div>
+            {/* Include AnalyticsCharts and pass analytics data */}
+            <AnalyticsCharts data={analytics} />
         </div>
     );
 }

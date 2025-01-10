@@ -1,28 +1,49 @@
 import React from 'react';
+import useAnalyticsData from '../hooks/useAnalyticsData';
+import AnalyticsCharts from './analytics/AnalyticsCharts';
 
 function Dashboard() {
+    const { analyticsData, loading, error } = useAnalyticsData();
+
+    if (loading) {
+        return <p>Loading dashboard data...</p>;
+    }
+
+    if (error) {
+        return <p className="error-message">{error}</p>;
+    }
+
+    const {
+        emails = [],
+        responses = [],
+        stats: {
+            totalEmails = 0,
+            averageResponseTime = 0,
+            satisfactionRate = 0,
+        } = {},
+    } = analyticsData || {};
+
     return (
         <div className="dashboard-container" data-name="dashboard-container">
             <div className="dashboard-stats" data-name="dashboard-stats">
                 <div className="stat-card" data-name="stat-emails">
-                    <div className="stat-value">152</div>
-                    <div className="stat-label">Emails Processed Today</div>
+                    <div className="stat-value">{totalEmails}</div>
+                    <div className="stat-label">Emails Processed</div>
                 </div>
                 <div className="stat-card" data-name="stat-response">
-                    <div className="stat-value">45s</div>
+                    <div className="stat-value">{averageResponseTime}s</div>
                     <div className="stat-label">Average Response Time</div>
                 </div>
-                <div className="stat-card" data-name="stat-accuracy">
-                    <div className="stat-value">94%</div>
-                    <div className="stat-label">Response Accuracy</div>
+                <div className="stat-card" data-name="stat-satisfaction">
+                    <div className="stat-value">{satisfactionRate}%</div>
+                    <div className="stat-label">Satisfaction Rate</div>
                 </div>
             </div>
 
             <div className="dashboard-content grid grid-cols-2 gap-4" data-name="dashboard-content">
                 <div className="dashboard-section" data-name="analytics-section">
                     <h2 className="text-xl font-semibold mb-4">Analytics Overview</h2>
-                    {/* Replace with actual AnalyticsCharts component */}
-                    <p>Analytics charts will go here.</p>
+                    <AnalyticsCharts />
                 </div>
 
                 <div className="dashboard-section" data-name="emails-section">
@@ -49,3 +70,4 @@ function Dashboard() {
 }
 
 export default Dashboard;
+
