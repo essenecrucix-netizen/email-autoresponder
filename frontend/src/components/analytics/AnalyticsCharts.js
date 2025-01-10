@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Chart } from 'chart.js';
 import axios from 'axios';
 
@@ -6,6 +6,12 @@ function AnalyticsCharts() {
     const [chartData, setChartData] = useState(null);
     const [selectedPeriod, setSelectedPeriod] = useState('week');
     const [isLoading, setIsLoading] = useState(true);
+
+    // Refs for canvas elements
+    const volumeChartRef = useRef(null);
+    const responseTimeChartRef = useRef(null);
+    const sentimentChartRef = useRef(null);
+    const languageChartRef = useRef(null);
 
     async function fetchAnalyticsData(period) {
         try {
@@ -95,9 +101,8 @@ function AnalyticsCharts() {
     }
 
     async function initializeCharts(data) {
-        const volumeChartEl = document.getElementById('volumeChart');
-        if (volumeChartEl) {
-            new Chart(volumeChartEl, {
+        if (volumeChartRef.current) {
+            new Chart(volumeChartRef.current, {
                 type: 'line',
                 data: {
                     labels: data.dateLabels,
@@ -119,13 +124,10 @@ function AnalyticsCharts() {
                     },
                 },
             });
-        } else {
-            console.error('Volume chart canvas element not found');
         }
 
-        const responseTimeChartEl = document.getElementById('responseTimeChart');
-        if (responseTimeChartEl) {
-            new Chart(responseTimeChartEl, {
+        if (responseTimeChartRef.current) {
+            new Chart(responseTimeChartRef.current, {
                 type: 'line',
                 data: {
                     labels: data.dateLabels,
@@ -139,13 +141,10 @@ function AnalyticsCharts() {
                     ],
                 },
             });
-        } else {
-            console.error('Response Time chart canvas element not found');
         }
 
-        const sentimentChartEl = document.getElementById('sentimentChart');
-        if (sentimentChartEl) {
-            new Chart(sentimentChartEl, {
+        if (sentimentChartRef.current) {
+            new Chart(sentimentChartRef.current, {
                 type: 'pie',
                 data: {
                     labels: ['Positive', 'Neutral', 'Negative'],
@@ -161,14 +160,11 @@ function AnalyticsCharts() {
                     ],
                 },
             });
-        } else {
-            console.error('Sentiment chart canvas element not found');
         }
 
-        const languageChartEl = document.getElementById('languageChart');
-        if (languageChartEl) {
+        if (languageChartRef.current) {
             const languageLabels = Object.keys(data.languageData);
-            new Chart(languageChartEl, {
+            new Chart(languageChartRef.current, {
                 type: 'bar',
                 data: {
                     labels: languageLabels,
@@ -181,8 +177,6 @@ function AnalyticsCharts() {
                     ],
                 },
             });
-        } else {
-            console.error('Language chart canvas element not found');
         }
     }
 
@@ -191,12 +185,8 @@ function AnalyticsCharts() {
             try {
                 setIsLoading(true);
                 const data = await fetchAnalyticsData(selectedPeriod);
-                if (data) {
-                    setChartData(data);
-                    await initializeCharts(data);
-                } else {
-                    console.error('No data returned for charts');
-                }
+                setChartData(data);
+                await initializeCharts(data);
             } catch (error) {
                 console.error('Error loading charts:', error);
             } finally {
@@ -229,19 +219,19 @@ function AnalyticsCharts() {
                 <div className="grid grid-cols-2 gap-4">
                     <div className="card">
                         <h3 className="text-lg font-medium mb-2">Email Volume</h3>
-                        <canvas id="volumeChart"></canvas>
+                        <canvas ref={volumeChartRef}></canvas>
                     </div>
                     <div className="card">
                         <h3 className="text-lg font-medium mb-2">Response Times</h3>
-                        <canvas id="responseTimeChart"></canvas>
+                        <canvas ref={responseTimeChartRef}></canvas>
                     </div>
                     <div className="card">
                         <h3 className="text-lg font-medium mb-2">Sentiment Distribution</h3>
-                        <canvas id="sentimentChart"></canvas>
+                        <canvas ref={sentimentChartRef}></canvas>
                     </div>
                     <div className="card">
                         <h3 className="text-lg font-medium mb-2">Language Distribution</h3>
-                        <canvas id="languageChart"></canvas>
+                        <canvas ref={languageChartRef}></canvas>
                     </div>
                 </div>
             )}
