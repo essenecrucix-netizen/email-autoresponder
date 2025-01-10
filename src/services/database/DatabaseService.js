@@ -109,7 +109,7 @@ function DatabaseService() {
                 },
             };
             const result = await dynamodb.send(new QueryCommand(params));
-            return result.Items;
+            return result.Items || [];
         } catch (error) {
             console.error('Failed to fetch analytics data:', error.message, error.stack);
             throw new Error('Failed to fetch analytics data.');
@@ -120,14 +120,14 @@ function DatabaseService() {
         try {
             const params = {
                 TableName: 'users',
-                IndexName: 'email-index', // Ensure this index exists
+                IndexName: 'email-index', // Use the index for querying by email
                 KeyConditionExpression: 'email = :email',
                 ExpressionAttributeValues: {
                     ':email': email,
                 },
             };
             const result = await dynamodb.send(new QueryCommand(params));
-            return result.Items[0]; // Return the first match
+            return result.Items && result.Items.length > 0 ? result.Items[0] : null; // Return the first match
         } catch (error) {
             console.error('Failed to fetch user by email:', error.message, error.stack);
             throw new Error('Failed to fetch user by email.');
