@@ -1,12 +1,26 @@
 const express = require('express');
-const DatabaseService = require('../services/database/DatabaseService'); // Correct dependency
+const DatabaseService = require('../services/database/DatabaseService');
+const jwt = require('jsonwebtoken');
+
+// Middleware to authenticate JWT tokens
+function authenticateToken(req, res, next) {
+    const token = req.headers['authorization']?.split(' ')[1];
+    if (!token) return res.status(401).json({ error: 'Access token is missing.' });
+
+    const SECRET_KEY = process.env.JWT_SECRET || 'your-very-secure-secret';
+    jwt.verify(token, SECRET_KEY, (err, user) => {
+        if (err) return res.status(403).json({ error: 'Invalid token.' });
+        req.user = user;
+        next();
+    });
+}
 
 const router = express.Router();
 
-// Get analytics by user (no authentication for now)
-router.get('/', async (req, res) => {
+// Get analytics by user
+router.get('/', authenticateToken, async (req, res) => {
     try {
-        const userId = req.query.userId || 'test-user'; // Hardcoded or passed via query for now
+        const userId = req.user.userId; // Extract user ID from the token
         const database = DatabaseService();
         const emails = await database.getAnalyticsByUser(userId);
         const responses = await database.getResponsesByUser(userId);
@@ -38,4 +52,5 @@ router.get('/', async (req, res) => {
 });
 
 module.exports = router;
+
 

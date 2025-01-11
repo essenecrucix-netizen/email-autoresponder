@@ -13,7 +13,13 @@ function Analytics() {
             setLoading(true);
             setError(null);
 
-            const response = await axios.get('/api/analytics');
+            const token = localStorage.getItem('token'); // Retrieve the JWT token from localStorage
+
+            const response = await axios.get('/api/analytics', {
+                headers: {
+                    Authorization: `Bearer ${token}`, // Add the token to the Authorization header
+                },
+            });
 
             if (response.status === 200) {
                 const { emails = [], responses = [] } = response.data;
