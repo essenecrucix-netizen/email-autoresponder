@@ -14,13 +14,15 @@ function Analytics() {
             setError(null);
     
             const token = localStorage.getItem('token'); // Retrieve token
-            console.log('JWT Token:', token); // Log the token
+            console.log('JWT Token:', token); // Debug log to verify token presence
     
             const response = await axios.get('/api/analytics', {
                 headers: {
-                    Authorization: `Bearer ${token}`, // Include the token
+                    Authorization: `Bearer ${token}`, // Add the token to the Authorization header
                 },
             });
+    
+            console.log('Analytics Response:', response.data); // Log the response for debugging
     
             if (response.status === 200) {
                 const { emails = [], responses = [] } = response.data;
