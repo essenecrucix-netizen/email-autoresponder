@@ -1,5 +1,33 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Chart } from 'chart.js';
+import {
+    Chart,
+    LineController,
+    LineElement,
+    PointElement,
+    LinearScale,
+    CategoryScale,
+    PieController,
+    ArcElement,
+    BarController,
+    BarElement,
+    Legend,
+    Tooltip,
+} from 'chart.js';
+
+// Explicitly register Chart.js components
+Chart.register(
+    LineController,
+    LineElement,
+    PointElement,
+    LinearScale,
+    CategoryScale,
+    PieController,
+    ArcElement,
+    BarController,
+    BarElement,
+    Legend,
+    Tooltip
+);
 
 function AnalyticsCharts() {
     const [chartData, setChartData] = useState(null);
@@ -12,9 +40,11 @@ function AnalyticsCharts() {
     const sentimentChartRef = useRef(null);
     const languageChartRef = useRef(null);
 
+    // Chart instances
+    let volumeChart, responseTimeChart, sentimentChart, languageChart;
+
     // Temporary test data
     async function fetchAnalyticsData() {
-        console.log('Fetching analytics data for testing...');
         return {
             dateLabels: ['2025-01-01', '2025-01-02', '2025-01-03'],
             emailCounts: [10, 15, 20],
@@ -25,11 +55,14 @@ function AnalyticsCharts() {
     }
 
     async function initializeCharts(data) {
-        console.log('Initializing charts with data:', data); // Debugging
+        // Destroy existing chart instances to prevent duplicate rendering
+        if (volumeChart) volumeChart.destroy();
+        if (responseTimeChart) responseTimeChart.destroy();
+        if (sentimentChart) sentimentChart.destroy();
+        if (languageChart) languageChart.destroy();
 
         if (volumeChartRef.current) {
-            console.log('Volume chart canvas:', volumeChartRef.current);
-            new Chart(volumeChartRef.current, {
+            volumeChart = new Chart(volumeChartRef.current, {
                 type: 'line',
                 data: {
                     labels: data.dateLabels,
@@ -38,15 +71,24 @@ function AnalyticsCharts() {
                             label: 'Email Volume',
                             data: data.emailCounts,
                             borderColor: 'rgb(75, 192, 192)',
-                            tension: 0.1,
+                            backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                            tension: 0.4,
                         },
                     ],
                 },
                 options: {
                     responsive: true,
+                    plugins: {
+                        legend: { position: 'top' },
+                        tooltip: { enabled: true },
+                    },
                     scales: {
+                        x: {
+                            title: { display: true, text: 'Date' },
+                        },
                         y: {
                             beginAtZero: true,
+                            title: { display: true, text: 'Email Count' },
                         },
                     },
                 },
@@ -54,17 +96,16 @@ function AnalyticsCharts() {
         }
 
         if (responseTimeChartRef.current) {
-            console.log('Response Time chart canvas:', responseTimeChartRef.current);
-            new Chart(responseTimeChartRef.current, {
+            responseTimeChart = new Chart(responseTimeChartRef.current, {
                 type: 'line',
                 data: {
                     labels: data.dateLabels,
                     datasets: [
                         {
-                            label: 'Average Response Time (seconds)',
+                            label: 'Response Time (seconds)',
                             data: data.responseTimes,
                             borderColor: 'rgb(255, 99, 132)',
-                            tension: 0.1,
+                            tension: 0.4,
                         },
                     ],
                 },
@@ -72,8 +113,7 @@ function AnalyticsCharts() {
         }
 
         if (sentimentChartRef.current) {
-            console.log('Sentiment chart canvas:', sentimentChartRef.current);
-            new Chart(sentimentChartRef.current, {
+            sentimentChart = new Chart(sentimentChartRef.current, {
                 type: 'pie',
                 data: {
                     labels: ['Positive', 'Neutral', 'Negative'],
@@ -92,16 +132,14 @@ function AnalyticsCharts() {
         }
 
         if (languageChartRef.current) {
-            console.log('Language Distribution chart canvas:', languageChartRef.current);
-            const languageLabels = Object.keys(data.languageData);
-            new Chart(languageChartRef.current, {
+            languageChart = new Chart(languageChartRef.current, {
                 type: 'bar',
                 data: {
-                    labels: languageLabels,
+                    labels: Object.keys(data.languageData),
                     datasets: [
                         {
                             label: 'Emails by Language',
-                            data: languageLabels.map((lang) => data.languageData[lang]),
+                            data: Object.values(data.languageData),
                             backgroundColor: 'rgb(54, 162, 235)',
                         },
                     ],
@@ -114,7 +152,7 @@ function AnalyticsCharts() {
         async function loadCharts() {
             try {
                 setIsLoading(true);
-                const data = await fetchAnalyticsData(); // Use temporary test data
+                const data = await fetchAnalyticsData();
                 setChartData(data);
                 await initializeCharts(data);
             } catch (error) {
@@ -151,19 +189,27 @@ function AnalyticsCharts() {
                 <div className="grid grid-cols-2 gap-4">
                     <div className="card">
                         <h3 className="text-lg font-medium mb-2">Email Volume</h3>
-                        <canvas ref={volumeChartRef} width="400" height="300"></canvas>
+                        <div className="canvas-container">
+                            <canvas ref={volumeChartRef}></canvas>
+                        </div>
                     </div>
                     <div className="card">
                         <h3 className="text-lg font-medium mb-2">Response Times</h3>
-                        <canvas ref={responseTimeChartRef} width="400" height="300"></canvas>
+                        <div className="canvas-container">
+                            <canvas ref={responseTimeChartRef}></canvas>
+                        </div>
                     </div>
                     <div className="card">
                         <h3 className="text-lg font-medium mb-2">Sentiment Distribution</h3>
-                        <canvas ref={sentimentChartRef} width="400" height="300"></canvas>
+                        <div className="canvas-container">
+                            <canvas ref={sentimentChartRef}></canvas>
+                        </div>
                     </div>
                     <div className="card">
                         <h3 className="text-lg font-medium mb-2">Language Distribution</h3>
-                        <canvas ref={languageChartRef} width="400" height="300"></canvas>
+                        <div className="canvas-container">
+                            <canvas ref={languageChartRef}></canvas>
+                        </div>
                     </div>
                 </div>
             )}
