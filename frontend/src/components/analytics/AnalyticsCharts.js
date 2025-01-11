@@ -61,6 +61,11 @@ function AnalyticsCharts() {
         if (sentimentChart) sentimentChart.destroy();
         if (languageChart) languageChart.destroy();
 
+        const commonOptions = {
+            responsive: true,
+            maintainAspectRatio: false, // Allow canvas resizing
+        };
+
         if (volumeChartRef.current) {
             volumeChart = new Chart(volumeChartRef.current, {
                 type: 'line',
@@ -77,19 +82,14 @@ function AnalyticsCharts() {
                     ],
                 },
                 options: {
-                    responsive: true,
+                    ...commonOptions,
                     plugins: {
                         legend: { position: 'top' },
                         tooltip: { enabled: true },
                     },
                     scales: {
-                        x: {
-                            title: { display: true, text: 'Date' },
-                        },
-                        y: {
-                            beginAtZero: true,
-                            title: { display: true, text: 'Email Count' },
-                        },
+                        x: { title: { display: true, text: 'Date' } },
+                        y: { beginAtZero: true, title: { display: true, text: 'Email Count' } },
                     },
                 },
             });
@@ -109,6 +109,7 @@ function AnalyticsCharts() {
                         },
                     ],
                 },
+                options: commonOptions,
             });
         }
 
@@ -128,6 +129,7 @@ function AnalyticsCharts() {
                         },
                     ],
                 },
+                options: commonOptions,
             });
         }
 
@@ -144,6 +146,7 @@ function AnalyticsCharts() {
                         },
                     ],
                 },
+                options: commonOptions,
             });
         }
     }
@@ -189,25 +192,25 @@ function AnalyticsCharts() {
                 <div className="grid grid-cols-2 gap-4">
                     <div className="card">
                         <h3 className="text-lg font-medium mb-2">Email Volume</h3>
-                        <div className="canvas-container">
+                        <div className="canvas-container" style={{ width: '100%', height: '300px' }}>
                             <canvas ref={volumeChartRef}></canvas>
                         </div>
                     </div>
                     <div className="card">
                         <h3 className="text-lg font-medium mb-2">Response Times</h3>
-                        <div className="canvas-container">
+                        <div className="canvas-container" style={{ width: '100%', height: '300px' }}>
                             <canvas ref={responseTimeChartRef}></canvas>
                         </div>
                     </div>
                     <div className="card">
                         <h3 className="text-lg font-medium mb-2">Sentiment Distribution</h3>
-                        <div className="canvas-container">
+                        <div className="canvas-container" style={{ width: '100%', height: '300px' }}>
                             <canvas ref={sentimentChartRef}></canvas>
                         </div>
                     </div>
                     <div className="card">
                         <h3 className="text-lg font-medium mb-2">Language Distribution</h3>
-                        <div className="canvas-container">
+                        <div className="canvas-container" style={{ width: '100%', height: '300px' }}>
                             <canvas ref={languageChartRef}></canvas>
                         </div>
                     </div>
