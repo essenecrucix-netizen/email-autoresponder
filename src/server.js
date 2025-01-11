@@ -4,13 +4,13 @@ const bodyParser = require('body-parser');
 const dotenv = require('dotenv');
 const cors = require('cors');
 
-const authRoutes = require('./routes/authRoutes');
-const analyticsRoutes = require('./routes/analyticsRoutes');
+const authRoutes = require('./routes/authRoutes'); // Modularized routes for auth
+const analyticsRoutes = require('./routes/analyticsRoutes'); // Modularized routes for analytics
 
 dotenv.config();
 const app = express();
 
-// Middleware
+// Middleware (must come first)
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(cors());
@@ -22,9 +22,14 @@ app.use(express.static(path.join(__dirname, '../frontend/build')));
 app.use('/api/auth', authRoutes);
 app.use('/api/analytics', analyticsRoutes);
 
-// Fallback for React routing
+// React routing fallback (must come last)
 app.get('/*', (req, res) => {
     res.sendFile(path.join(__dirname, '../frontend/build/index.html'));
+});
+
+// Status endpoint
+app.get('/api/status', (req, res) => {
+    res.json({ status: 'Server is running!', timestamp: new Date().toISOString() });
 });
 
 // Start the server
