@@ -12,25 +12,16 @@ function Analytics() {
         try {
             setLoading(true);
             setError(null);
-    
-            const token = localStorage.getItem('token'); // Retrieve token
-            console.log('JWT Token:', token); // Debug log to verify token presence
-    
-            const response = await axios.get('/api/analytics', {
-                headers: {
-                    Authorization: `Bearer ${token}`, // Add the token to the Authorization header
-                },
-            });
-    
-            console.log('Analytics Response:', response.data); // Log the response for debugging
-    
+
+            const response = await axios.get('/api/analytics');
+
             if (response.status === 200) {
                 const { emails = [], responses = [] } = response.data;
-    
+
                 if (!Array.isArray(emails) || !Array.isArray(responses)) {
                     throw new Error('Invalid data structure: `emails` or `responses` is not an array.');
                 }
-    
+
                 const stats = calculateStats(emails, responses);
                 setAnalytics(stats);
             } else {
