@@ -2,7 +2,7 @@ const OpenAIService = require('./services/ai/OpenAIService')();
 const DatabaseService = require('./services/database/DatabaseService')();
 const { S3Client, GetObjectCommand } = require('@aws-sdk/client-s3');
 const { DynamoDBClient } = require('@aws-sdk/client-dynamodb');
-const { DynamoDBDocumentClient, QueryCommand } = require('@aws-sdk/lib-dynamodb');
+const { DynamoDBDocumentClient, QueryCommand, ScanCommand } = require('@aws-sdk/lib-dynamodb');
 require('dotenv').config();
 
 async function testKnowledgeBaseIntegration() {
@@ -54,18 +54,18 @@ async function fetchKnowledgeBase() {
         });
         const docClient = DynamoDBDocumentClient.from(client);
 
-        // Query DynamoDB for knowledge base entries
-        const params = {
+        // First, let's scan the table to find all files for this user
+        const scanParams = {
             TableName: 'user_knowledge_files',
-            KeyConditionExpression: 'user_id = :user_id',
+            FilterExpression: 'user_id = :user_id',
             ExpressionAttributeValues: {
                 ':user_id': process.env.USER_ID
             }
         };
 
-        console.log('Querying DynamoDB for knowledge base files...');
+        console.log('Scanning DynamoDB for knowledge base files...');
         console.log('Using USER_ID:', process.env.USER_ID);
-        const knowledgeBaseItems = await docClient.send(new QueryCommand(params));
+        const knowledgeBaseItems = await docClient.send(new ScanCommand(scanParams));
         
         if (!knowledgeBaseItems.Items || knowledgeBaseItems.Items.length === 0) {
             console.log('No knowledge base files found');
@@ -73,6 +73,7 @@ async function fetchKnowledgeBase() {
         }
 
         console.log(`Found ${knowledgeBaseItems.Items.length} knowledge base files`);
+        console.log('Files found:', knowledgeBaseItems.Items.map(item => ({ user_id: item.user_id, s3_key: item.s3_key, filename: item.filename })));
 
         // For S3 stored files, fetch their content
         const s3Client = new S3Client({
@@ -91,12 +92,12 @@ async function fetchKnowledgeBase() {
                     Key: item.s3_key
                 };
                 
-                console.log(`Fetching content for file: ${item.filename}`);
+                console.log(`Fetching content for file: ${item.filename || item.s3_key}`);
                 const response = await s3Client.send(new GetObjectCommand(getObjectParams));
                 const content = await response.Body.transformToString();
-                return `Content from ${item.filename}:\n${content}`;
+                return `Content from ${item.filename || item.s3_key}:\n${content}`;
             } catch (error) {
-                console.error(`Error fetching content for file ${item.filename}:`, error);
+                console.error(`Error fetching content for file ${item.filename || item.s3_key}:`, error);
                 return '';
             }
         });
