@@ -231,24 +231,39 @@ function EmailService() {
                 const email = emailQueue.shift();
                 console.log('Processing:', email.subject);
 
-                // Fetch knowledge base content
-                const knowledgeBaseContent = await fetchKnowledgeBase();
-                
-                // Generate response using both knowledge base and email content
-                const response = await openai.generateResponse(
-                    `Context from knowledge base: ${knowledgeBaseContent}\n\nEmail content: ${email.text}`,
-                    email.subject
-                );
+                try {
+                    // Fetch knowledge base content
+                    const knowledgeBaseContent = await fetchKnowledgeBase();
+                    
+                    // Generate response using both knowledge base and email content
+                    const response = await openai.generateResponse(
+                        `Context from knowledge base: ${knowledgeBaseContent}\n\nEmail content: ${email.text}`,
+                        email.subject
+                    );
 
-                await sendReply(email.from, email.subject, response);
-                
-                // Add analytics entry
-                await database.addAnalyticsEntry({
-                    timestamp: new Date().toISOString(),
-                    emailSubject: email.subject,
-                    response: response,
-                    hasKnowledgeBase: !!knowledgeBaseContent
-                });
+                    await sendReply(email.from, email.subject, response);
+                    
+                    // Add analytics entry
+                    await database.addAnalyticsEntry({
+                        timestamp: new Date().toISOString(),
+                        emailSubject: email.subject,
+                        response: response,
+                        hasKnowledgeBase: !!knowledgeBaseContent
+                    });
+
+                    // Update the last processed UID
+                    await database.updateItem('LastProcessedUID', {
+                        emailUser: EMAIL_CONFIG.user,
+                        uid: email.uid
+                    });
+
+                    console.log(`Updated last processed UID to ${email.uid}`);
+
+                    // Add delay between processing emails (30 seconds)
+                    await new Promise(resolve => setTimeout(resolve, 30000));
+                } catch (error) {
+                    console.error(`Error processing email: ${error.message}`);
+                }
             }
         } catch (error) {
             console.error('Error processing email queue:', error);
