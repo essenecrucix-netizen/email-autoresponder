@@ -1,6 +1,7 @@
 const OpenAIService = require('./services/ai/OpenAIService')();
 const DatabaseService = require('./services/database/DatabaseService')();
 const { S3Client, GetObjectCommand } = require('@aws-sdk/client-s3');
+const { QueryCommand } = require('@aws-sdk/client-dynamodb');
 require('dotenv').config();
 
 async function testKnowledgeBaseIntegration() {
