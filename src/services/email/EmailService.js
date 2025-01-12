@@ -143,7 +143,7 @@ function EmailService() {
         }
     }
 
-    function truncateContent(content, maxLength = 15000) {
+    function truncateContent(content, maxLength = 8000) {
         if (content.length <= maxLength) return content;
         return content.substring(0, maxLength) + '... [Content truncated due to length]';
     }
@@ -245,10 +245,13 @@ function EmailService() {
                 console.log('Processing:', email.subject);
 
                 try {
-                    // First, classify the email
+                    // Add delay at the start of each email processing
+                    await new Promise(resolve => setTimeout(resolve, 30000));
+
+                    // First, classify the email with minimal context
                     const shouldRespond = await openai.classifyEmail(
                         email.subject,
-                        email.text,
+                        truncateContent(email.text, 1000),
                         email.from
                     );
 
@@ -259,12 +262,16 @@ function EmailService() {
 
                     console.log('Email classified as requiring response. Generating response...');
 
+                    // Add delay between API calls
+                    await new Promise(resolve => setTimeout(resolve, 10000));
+
                     // Fetch knowledge base content
                     const knowledgeBaseContent = await fetchKnowledgeBase();
+                    const truncatedKnowledgeBase = truncateContent(knowledgeBaseContent, 8000);
                     
                     // Generate response using both knowledge base and email content
                     const response = await openai.generateResponse(
-                        `Context from knowledge base: ${knowledgeBaseContent}\n\nEmail content: ${email.text}`,
+                        `Context from knowledge base: ${truncatedKnowledgeBase}\n\nEmail content: ${truncateContent(email.text, 2000)}`,
                         email.subject
                     );
 
@@ -279,18 +286,17 @@ function EmailService() {
                         classification: 'responded'
                     });
 
-                    // Update the last processed UID
-                    await database.updateItem('LastProcessedUID', {
-                        emailUser: EMAIL_CONFIG.user,
-                        uid: email.uid
-                    });
+                    console.log('Successfully processed email:', email.subject);
 
-                    console.log(`Updated last processed UID to ${email.uid}`);
-
-                    // Add delay between processing emails (30 seconds)
-                    await new Promise(resolve => setTimeout(resolve, 30000));
                 } catch (error) {
-                    console.error(`Error processing email: ${error.message}`);
+                    if (error.message?.includes('rate_limit_exceeded')) {
+                        console.log('Rate limit reached, adding email back to queue and pausing...');
+                        emailQueue.unshift(email);
+                        await new Promise(resolve => setTimeout(resolve, 60000));
+                        break;
+                    } else {
+                        console.error(`Error processing email: ${error.message}`);
+                    }
                 }
             }
         } catch (error) {
