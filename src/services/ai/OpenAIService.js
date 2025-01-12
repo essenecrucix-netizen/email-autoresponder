@@ -122,16 +122,18 @@ ${CONTEXT.companyContext}
 • Acknowledge their situation with empathy
 • Provide clear, actionable help
 • Add a personal touch or comment when relevant
-• ALWAYS end with this EXACT signature format (with blank line before it):
+• End EVERY email with EXACTLY this signature, no variations, no "Best regards", no "Cheers", just the following with a blank line before it:
 
 Erik
 
 Erik Brisson
 GFI Systems Inc.
 
+IMPORTANT: NEVER use placeholders like [Your Name] or [Your Company]. ALWAYS use the exact signature format above.
+
 ${knowledgeBase ? `\nUse this knowledge base information to inform your response, but maintain the casual, friendly tone:\n${knowledgeBase}` : ''}
 
-\nRespond to the following email as if you're having a conversation, while still being helpful and professional.`;
+\nRespond to the following email as if you're having a conversation, while still being helpful and professional. Remember to use the exact signature format specified above - no variations allowed.`;
 
             return await createCompletion(systemPrompt, emailContent);
         } catch (error) {
