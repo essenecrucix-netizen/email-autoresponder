@@ -29,8 +29,31 @@ async function extractTextFromBuffer(buffer, filename) {
             const result = await mammoth.extractRawText({ buffer });
             return result.value;
         } else if (filename.toLowerCase().endsWith('.pdf')) {
-            const data = await pdf(buffer);
-            return data.text;
+            try {
+                const options = {
+                    // Disable font and page rendering
+                    disableFontFace: true,
+                    disablePageRendering: true,
+                    // Custom error handler for parsing warnings
+                    onError: (error) => {
+                        // Log but don't throw for TT function warnings
+                        if (error.message.includes('undefined function')) {
+                            console.debug('PDF Parser Warning:', error.message);
+                            return;
+                        }
+                        throw error;
+                    }
+                };
+                const data = await pdf(buffer, options);
+                if (!data.text) {
+                    console.warn(`No text content extracted from PDF: ${filename}`);
+                    return '';
+                }
+                return data.text.trim();
+            } catch (pdfError) {
+                console.error(`Error parsing PDF ${filename}:`, pdfError);
+                return '';
+            }
         } else {
             // Assume it's plain text
             return buffer.toString('utf-8');
