@@ -1,7 +1,8 @@
 const OpenAIService = require('./services/ai/OpenAIService')();
 const DatabaseService = require('./services/database/DatabaseService')();
 const { S3Client, GetObjectCommand } = require('@aws-sdk/client-s3');
-const { QueryCommand } = require('@aws-sdk/client-dynamodb');
+const { DynamoDBClient } = require('@aws-sdk/client-dynamodb');
+const { DynamoDBDocumentClient, QueryCommand } = require('@aws-sdk/lib-dynamodb');
 require('dotenv').config();
 
 async function testKnowledgeBaseIntegration() {
@@ -38,17 +39,33 @@ async function testKnowledgeBaseIntegration() {
 
 async function fetchKnowledgeBase() {
     try {
+        if (!process.env.USER_ID) {
+            console.error('USER_ID environment variable is not set');
+            return '';
+        }
+
+        // Initialize DynamoDB Document Client
+        const client = new DynamoDBClient({
+            region: process.env.AWS_REGION || 'us-west-2',
+            credentials: {
+                accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+                secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+            },
+        });
+        const docClient = DynamoDBDocumentClient.from(client);
+
         // Query DynamoDB for knowledge base entries
         const params = {
             TableName: 'user_knowledge_files',
             KeyConditionExpression: 'user_id = :user_id',
             ExpressionAttributeValues: {
-                ':user_id': { S: process.env.USER_ID }
+                ':user_id': process.env.USER_ID
             }
         };
 
         console.log('Querying DynamoDB for knowledge base files...');
-        const knowledgeBaseItems = await DatabaseService.dynamodb.send(new QueryCommand(params));
+        console.log('Using USER_ID:', process.env.USER_ID);
+        const knowledgeBaseItems = await docClient.send(new QueryCommand(params));
         
         if (!knowledgeBaseItems.Items || knowledgeBaseItems.Items.length === 0) {
             console.log('No knowledge base files found');
