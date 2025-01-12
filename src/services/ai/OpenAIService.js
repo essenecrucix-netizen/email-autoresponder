@@ -122,7 +122,12 @@ ${CONTEXT.companyContext}
 • Acknowledge their situation with empathy
 • Provide clear, actionable help
 • Add a personal touch or comment when relevant
-• Close with a friendly, approachable sign-off
+• ALWAYS end with this EXACT signature format (with blank line before it):
+
+Erik
+
+Erik Brisson
+GFI Systems Inc.
 
 ${knowledgeBase ? `\nUse this knowledge base information to inform your response, but maintain the casual, friendly tone:\n${knowledgeBase}` : ''}
 
