@@ -2,7 +2,9 @@ const OpenAIService = require('./services/ai/OpenAIService')();
 const DatabaseService = require('./services/database/DatabaseService')();
 const { S3Client, GetObjectCommand } = require('@aws-sdk/client-s3');
 const { DynamoDBClient } = require('@aws-sdk/client-dynamodb');
-const { DynamoDBDocumentClient, QueryCommand, ScanCommand } = require('@aws-sdk/lib-dynamodb');
+const { DynamoDBDocumentClient, ScanCommand } = require('@aws-sdk/lib-dynamodb');
+const mammoth = require('mammoth');
+const pdf = require('pdf-parse');
 require('dotenv').config();
 
 // Validate environment variables
@@ -19,6 +21,120 @@ if (!process.env.S3_BUCKET_NAME) {
 if (!process.env.OPENAI_API_KEYS) {
     console.error('OPENAI_API_KEYS environment variable is not set');
     process.exit(1);
+}
+
+async function extractTextFromBuffer(buffer, filename) {
+    try {
+        if (filename.toLowerCase().endsWith('.docx')) {
+            const result = await mammoth.extractRawText({ buffer });
+            return result.value;
+        } else if (filename.toLowerCase().endsWith('.pdf')) {
+            const data = await pdf(buffer);
+            return data.text;
+        } else {
+            // Assume it's plain text
+            return buffer.toString('utf-8');
+        }
+    } catch (error) {
+        console.error(`Error extracting text from ${filename}:`, error);
+        return '';
+    }
+}
+
+function truncateContent(content, maxLength = 15000) {
+    if (content.length <= maxLength) return content;
+    return content.substring(0, maxLength) + '... [Content truncated due to length]';
+}
+
+async function fetchKnowledgeBase() {
+    try {
+        // Initialize DynamoDB Document Client
+        const client = new DynamoDBClient({
+            region: process.env.AWS_REGION || 'us-west-2',
+            credentials: {
+                accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+                secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+            },
+        });
+        const docClient = DynamoDBDocumentClient.from(client);
+
+        // Scan the table to find all files for this user
+        const scanParams = {
+            TableName: 'user_knowledge_files',
+            FilterExpression: 'user_id = :user_id',
+            ExpressionAttributeValues: {
+                ':user_id': process.env.USER_ID
+            }
+        };
+
+        console.log('Scanning DynamoDB for knowledge base files...');
+        console.log('Using USER_ID:', process.env.USER_ID);
+        const knowledgeBaseItems = await docClient.send(new ScanCommand(scanParams));
+        
+        if (!knowledgeBaseItems.Items || knowledgeBaseItems.Items.length === 0) {
+            console.log('No knowledge base files found');
+            return '';
+        }
+
+        console.log(`Found ${knowledgeBaseItems.Items.length} knowledge base files`);
+        console.log('Files found:', knowledgeBaseItems.Items.map(item => ({
+            user_id: item.user_id,
+            s3_key: item.s3_key,
+            filename: item.filename
+        })));
+
+        // Initialize S3 Client
+        const s3Client = new S3Client({
+            region: process.env.AWS_REGION || 'us-west-2',
+            credentials: {
+                accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+                secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+            },
+        });
+
+        // Fetch and process content from all relevant knowledge base entries
+        const contentPromises = knowledgeBaseItems.Items.map(async (item) => {
+            try {
+                const getObjectParams = {
+                    Bucket: process.env.S3_BUCKET_NAME,
+                    Key: item.s3_key
+                };
+                
+                console.log(`Fetching content for file: ${item.filename || item.s3_key}`);
+                const response = await s3Client.send(new GetObjectCommand(getObjectParams));
+                
+                // Convert stream to buffer
+                const chunks = [];
+                for await (const chunk of response.Body) {
+                    chunks.push(chunk);
+                }
+                const buffer = Buffer.concat(chunks);
+                
+                // Extract text based on file type
+                const content = await extractTextFromBuffer(buffer, item.filename || item.s3_key);
+                const truncatedContent = truncateContent(content);
+                return `Content from ${item.filename || item.s3_key}:\n${truncatedContent}`;
+            } catch (error) {
+                console.error(`Error fetching content for file ${item.filename || item.s3_key}:`, error);
+                return '';
+            }
+        });
+
+        const contents = await Promise.all(contentPromises);
+        const validContents = contents.filter(content => content !== '');
+        
+        if (validContents.length === 0) {
+            console.log('No valid content retrieved from knowledge base files');
+            return '';
+        }
+
+        console.log(`Successfully retrieved content from ${validContents.length} knowledge base files`);
+        // Combine and truncate the final content to stay within token limits
+        return truncateContent(validContents.join('\n\n'), 30000);
+    } catch (error) {
+        console.error('Error fetching knowledge base content:', error);
+        return '';
+    }
 }
 
 async function testKnowledgeBaseIntegration() {
@@ -50,87 +166,6 @@ async function testKnowledgeBaseIntegration() {
 
     } catch (error) {
         console.error('Test failed:', error);
-    }
-}
-
-async function fetchKnowledgeBase() {
-    try {
-        if (!process.env.USER_ID) {
-            console.error('USER_ID environment variable is not set');
-            return '';
-        }
-
-        // Initialize DynamoDB Document Client
-        const client = new DynamoDBClient({
-            region: process.env.AWS_REGION || 'us-west-2',
-            credentials: {
-                accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-                secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-            },
-        });
-        const docClient = DynamoDBDocumentClient.from(client);
-
-        // First, let's scan the table to find all files for this user
-        const scanParams = {
-            TableName: 'user_knowledge_files',
-            FilterExpression: 'user_id = :user_id',
-            ExpressionAttributeValues: {
-                ':user_id': process.env.USER_ID
-            }
-        };
-
-        console.log('Scanning DynamoDB for knowledge base files...');
-        console.log('Using USER_ID:', process.env.USER_ID);
-        const knowledgeBaseItems = await docClient.send(new ScanCommand(scanParams));
-        
-        if (!knowledgeBaseItems.Items || knowledgeBaseItems.Items.length === 0) {
-            console.log('No knowledge base files found');
-            return '';
-        }
-
-        console.log(`Found ${knowledgeBaseItems.Items.length} knowledge base files`);
-        console.log('Files found:', knowledgeBaseItems.Items.map(item => ({ user_id: item.user_id, s3_key: item.s3_key, filename: item.filename })));
-
-        // For S3 stored files, fetch their content
-        const s3Client = new S3Client({
-            region: process.env.AWS_REGION || 'us-west-2',
-            credentials: {
-                accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-                secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-            },
-        });
-
-        // Fetch and combine content from all relevant knowledge base entries
-        const contentPromises = knowledgeBaseItems.Items.map(async (item) => {
-            try {
-                const getObjectParams = {
-                    Bucket: process.env.S3_BUCKET_NAME,
-                    Key: item.s3_key
-                };
-                
-                console.log(`Fetching content for file: ${item.filename || item.s3_key}`);
-                const response = await s3Client.send(new GetObjectCommand(getObjectParams));
-                const content = await response.Body.transformToString();
-                return `Content from ${item.filename || item.s3_key}:\n${content}`;
-            } catch (error) {
-                console.error(`Error fetching content for file ${item.filename || item.s3_key}:`, error);
-                return '';
-            }
-        });
-
-        const contents = await Promise.all(contentPromises);
-        const validContents = contents.filter(content => content !== '');
-        
-        if (validContents.length === 0) {
-            console.log('No valid content retrieved from knowledge base files');
-            return '';
-        }
-
-        console.log(`Successfully retrieved content from ${validContents.length} knowledge base files`);
-        return validContents.join('\n\n');
-    } catch (error) {
-        console.error('Error fetching knowledge base content:', error);
-        return '';
     }
 }
 
