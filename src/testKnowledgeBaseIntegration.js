@@ -5,6 +5,22 @@ const { DynamoDBClient } = require('@aws-sdk/client-dynamodb');
 const { DynamoDBDocumentClient, QueryCommand, ScanCommand } = require('@aws-sdk/lib-dynamodb');
 require('dotenv').config();
 
+// Validate environment variables
+if (!process.env.USER_ID) {
+    console.error('USER_ID environment variable is not set');
+    process.exit(1);
+}
+
+if (!process.env.S3_BUCKET_NAME) {
+    console.error('S3_BUCKET_NAME environment variable is not set');
+    process.exit(1);
+}
+
+if (!process.env.OPENAI_API_KEYS) {
+    console.error('OPENAI_API_KEYS environment variable is not set');
+    process.exit(1);
+}
+
 async function testKnowledgeBaseIntegration() {
     try {
         // 1. First, let's fetch knowledge base content
