@@ -10,6 +10,10 @@ const Imap = require('imap');
 const { simpleParser } = require('mailparser');
 const { QueryCommand, GetObjectCommand } = require('@aws-sdk/client-dynamodb');
 const { S3Client } = require('@aws-sdk/client-s3');
+const { DynamoDBClient } = require('@aws-sdk/client-dynamodb');
+const { DynamoDBDocumentClient, ScanCommand } = require('@aws-sdk/lib-dynamodb');
+const mammoth = require('mammoth');
+const pdf = require('pdf-parse');
 
 function EmailService() {
     const EMAIL_CONFIG = {
@@ -91,64 +95,78 @@ function EmailService() {
         // No changes to this function
     }
 
-    async function processQueue() {
-        if (isProcessingQueue) return;
-        isProcessingQueue = true;
+    async function extractTextFromBuffer(buffer, filename) {
+        try {
+            if (filename.toLowerCase().endsWith('.docx')) {
+                const result = await mammoth.extractRawText({ buffer });
+                return result.value;
+            } else if (filename.toLowerCase().endsWith('.pdf')) {
+                try {
+                    const options = {
+                        disableFontFace: true,
+                        disablePageRendering: true,
+                        verbosity: -1,
+                        ignoreErrors: true,
+                        throwOnErrors: false,
+                    };
 
-        while (emailQueue.length > 0) {
-            const email = emailQueue.shift();
-            try {
-                console.log(`Processing email (UID: ${email.uid}): ${email.subject}`);
-                
-                // Fetch relevant knowledge base content
-                const knowledgeBaseContent = await fetchRelevantKnowledgeBase(email.text);
-                console.log('Retrieved knowledge base content for context');
-
-                // Generate response with knowledge base context
-                const response = await openai.generateResponse(
-                    `Context from knowledge base: ${knowledgeBaseContent}\n\nEmail content: ${email.text}`,
-                    email.subject
-                );
-
-                if (!response) {
-                    console.error(`OpenAI response is undefined for email UID ${email.uid}. Skipping.`);
-                    continue;
+                    const data = await pdf(buffer, options);
+                    if (!data.text) {
+                        console.warn(`No text content extracted from PDF: ${filename}`);
+                        return '';
+                    }
+                    return data.text.trim();
+                } catch (pdfError) {
+                    console.error(`Error parsing PDF ${filename}:`, pdfError);
+                    return '';
                 }
-
-                await sendReply(email.from.text, email.subject, response);
-                await database.updateLastProcessedUID(EMAIL_CONFIG.user, email.uid);
-
-                console.log(`Updated last processed UID to ${email.uid}`);
-            } catch (error) {
-                console.error(`Error processing email (UID: ${email.uid}):`, error);
+            } else {
+                // Assume it's plain text
+                return buffer.toString('utf-8');
             }
-
-            // Delay between sending emails
-            await new Promise(resolve => setTimeout(resolve, 30000)); // 30-second delay
+        } catch (error) {
+            console.error(`Error extracting text from ${filename}:`, error);
+            return '';
         }
-
-        isProcessingQueue = false;
     }
 
-    async function fetchRelevantKnowledgeBase(emailContent) {
+    function truncateContent(content, maxLength = 15000) {
+        if (content.length <= maxLength) return content;
+        return content.substring(0, maxLength) + '... [Content truncated due to length]';
+    }
+
+    async function fetchKnowledgeBase() {
         try {
-            // Query DynamoDB for knowledge base entries
-            const params = {
+            // Initialize DynamoDB Document Client
+            const client = new DynamoDBClient({
+                region: process.env.AWS_REGION || 'us-west-2',
+                credentials: {
+                    accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+                    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+                },
+            });
+            const docClient = DynamoDBDocumentClient.from(client);
+
+            // Scan the table to find all files for this user
+            const scanParams = {
                 TableName: 'user_knowledge_files',
-                KeyConditionExpression: 'user_id = :user_id',
+                FilterExpression: 'user_id = :user_id',
                 ExpressionAttributeValues: {
-                    ':user_id': process.env.USER_ID, // Make sure to set this in your .env file
+                    ':user_id': process.env.USER_ID
                 }
             };
 
-            const knowledgeBaseItems = await database.dynamodb.send(new QueryCommand(params));
+            console.log('Scanning DynamoDB for knowledge base files...');
+            const knowledgeBaseItems = await docClient.send(new ScanCommand(scanParams));
             
             if (!knowledgeBaseItems.Items || knowledgeBaseItems.Items.length === 0) {
                 console.log('No knowledge base files found');
                 return '';
             }
 
-            // For S3 stored files, fetch their content
+            console.log(`Found ${knowledgeBaseItems.Items.length} knowledge base files`);
+
+            // Initialize S3 Client
             const s3Client = new S3Client({
                 region: process.env.AWS_REGION || 'us-west-2',
                 credentials: {
@@ -157,7 +175,7 @@ function EmailService() {
                 },
             });
 
-            // Fetch and combine content from all relevant knowledge base entries
+            // Fetch and process content from all relevant knowledge base entries
             const contentPromises = knowledgeBaseItems.Items.map(async (item) => {
                 try {
                     const getObjectParams = {
@@ -165,12 +183,22 @@ function EmailService() {
                         Key: item.s3_key
                     };
                     
+                    console.log(`Fetching content for file: ${item.filename || item.s3_key}`);
                     const response = await s3Client.send(new GetObjectCommand(getObjectParams));
-                    const content = await response.Body.transformToString();
-                    console.log(`Successfully retrieved content for file: ${item.filename}`);
-                    return `Content from ${item.filename}:\n${content}`;
+                    
+                    // Convert stream to buffer
+                    const chunks = [];
+                    for await (const chunk of response.Body) {
+                        chunks.push(chunk);
+                    }
+                    const buffer = Buffer.concat(chunks);
+                    
+                    // Extract text based on file type
+                    const content = await extractTextFromBuffer(buffer, item.filename || item.s3_key);
+                    const truncatedContent = truncateContent(content);
+                    return `Content from ${item.filename || item.s3_key}:\n${truncatedContent}`;
                 } catch (error) {
-                    console.error(`Error fetching content for file ${item.filename}:`, error);
+                    console.error(`Error fetching content for file ${item.filename || item.s3_key}:`, error);
                     return '';
                 }
             });
@@ -184,10 +212,48 @@ function EmailService() {
             }
 
             console.log(`Successfully retrieved content from ${validContents.length} knowledge base files`);
-            return validContents.join('\n\n');
+            return truncateContent(validContents.join('\n\n'), 30000);
         } catch (error) {
             console.error('Error fetching knowledge base content:', error);
             return '';
+        }
+    }
+
+    async function processQueue() {
+        if (isProcessingQueue) {
+            return;
+        }
+
+        isProcessingQueue = true;
+
+        try {
+            while (emailQueue.length > 0) {
+                const email = emailQueue.shift();
+                console.log('Processing:', email.subject);
+
+                // Fetch knowledge base content
+                const knowledgeBaseContent = await fetchKnowledgeBase();
+                
+                // Generate response using both knowledge base and email content
+                const response = await openai.generateResponse(
+                    `Context from knowledge base: ${knowledgeBaseContent}\n\nEmail content: ${email.text}`,
+                    email.subject
+                );
+
+                await sendReply(email.from, email.subject, response);
+                
+                // Add analytics entry
+                await database.addAnalyticsEntry({
+                    timestamp: new Date().toISOString(),
+                    emailSubject: email.subject,
+                    response: response,
+                    hasKnowledgeBase: !!knowledgeBaseContent
+                });
+            }
+        } catch (error) {
+            console.error('Error processing email queue:', error);
+        } finally {
+            isProcessingQueue = false;
         }
     }
 
