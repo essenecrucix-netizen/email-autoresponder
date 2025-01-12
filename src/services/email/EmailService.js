@@ -302,6 +302,8 @@ function EmailService() {
 
     async function monitorEmails() {
         const accessToken = await getAccessToken();
+        const serviceStartTime = new Date();
+        console.log(`Email monitoring service started at: ${serviceStartTime.toISOString()}`);
 
         const imap = new Imap({
             user: EMAIL_CONFIG.user,
@@ -317,12 +319,6 @@ function EmailService() {
             imap.once('ready', async () => {
                 console.log('IMAP connection ready.');
 
-                const lastProcessedUIDEntry = await database.getItem('LastProcessedUID', {
-                    emailUser: EMAIL_CONFIG.user,
-                });
-                const lastProcessedUID = lastProcessedUIDEntry ? lastProcessedUIDEntry.uid : 0;
-
-                console.log(`Last processed UID: ${lastProcessedUID}`);
                 imap.openBox('INBOX', true, (err, box) => {
                     if (err) {
                         console.error('Error opening inbox:', err);
@@ -333,7 +329,7 @@ function EmailService() {
                     console.log(`Mailbox opened. Total messages: ${box.messages.total}`);
                     imap.on('mail', () => {
                         console.log('New mail detected.');
-                        processNewEmails(imap, lastProcessedUID);
+                        processNewEmails(imap, serviceStartTime);
                     });
                 });
             });
@@ -352,7 +348,7 @@ function EmailService() {
         });
     }
 
-    async function processNewEmails(imap, lastProcessedUID) {
+    async function processNewEmails(imap, serviceStartTime) {
         try {
             imap.search(['UNSEEN'], async (err, results) => {
                 if (err) {
@@ -360,22 +356,23 @@ function EmailService() {
                     return;
                 }
 
-                const filteredResults = results.filter(uid => uid > lastProcessedUID);
-                if (!filteredResults.length) {
+                if (!results.length) {
                     console.log('No new unseen emails to process.');
                     return;
                 }
 
-                const fetch = imap.fetch(filteredResults, { bodies: '' });
+                const fetch = imap.fetch(results, { bodies: '' });
 
                 fetch.on('message', (msg, seqno) => {
                     msg.on('body', async stream => {
                         try {
                             const email = await parseEmail(stream);
-                            if (email) {  // Only process if email parsing was successful
+                            if (email && email.date > serviceStartTime) {
                                 email.uid = seqno;
                                 emailQueue.push(email);
                                 processQueue();
+                            } else if (email) {
+                                console.log(`Skipping email from ${email.date.toISOString()} (before service start)`);
                             } else {
                                 console.error(`Failed to parse email UID ${seqno}`);
                             }
