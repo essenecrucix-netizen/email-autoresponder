@@ -7,6 +7,15 @@ const mammoth = require('mammoth');
 const pdf = require('pdf-parse');
 require('dotenv').config();
 
+// Global error handler for PDF.js
+const originalConsoleWarn = console.warn;
+console.warn = function() {
+    if (arguments[0] && typeof arguments[0] === 'string' && arguments[0].includes('TT: undefined function')) {
+        return;
+    }
+    return originalConsoleWarn.apply(console, arguments);
+};
+
 // Validate environment variables
 if (!process.env.USER_ID) {
     console.error('USER_ID environment variable is not set');
@@ -30,32 +39,15 @@ async function extractTextFromBuffer(buffer, filename) {
             return result.value;
         } else if (filename.toLowerCase().endsWith('.pdf')) {
             try {
-                // Create a custom event handler
-                const eventBus = {
-                    _listeners: [],
-                    on(eventName, callback) {
-                        this._listeners.push({ eventName, callback });
-                    },
-                    dispatch(eventName, data) {
-                        // Suppress warning events
-                        if (eventName === 'warning') return;
-                        this._listeners
-                            .filter(listener => listener.eventName === eventName)
-                            .forEach(listener => listener.callback(data));
-                    }
-                };
-
                 const options = {
-                    eventBus,
                     disableFontFace: true,
                     disablePageRendering: true,
                     verbosity: -1,
                     ignoreErrors: true,
-                    showWarnings: false,
+                    throwOnErrors: false,
                 };
 
                 const data = await pdf(buffer, options);
-
                 if (!data.text) {
                     console.warn(`No text content extracted from PDF: ${filename}`);
                     return '';
