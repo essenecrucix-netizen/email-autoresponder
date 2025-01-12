@@ -15,8 +15,8 @@ async function testKnowledgeBaseIntegration() {
 
         // 2. Test with a sample email
         const testEmail = {
-            subject: "Need help with product features",
-            text: "Can you tell me about your product's main features and capabilities?"
+            subject: "Question about GFI Systems Fleetcam",
+            text: "What can you tell me about GFI Systems Fleetcam?"
         };
 
         console.log('\nTesting with sample email:', testEmail);
