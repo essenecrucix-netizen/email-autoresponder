@@ -80,9 +80,22 @@ function OpenAIService() {
 
     async function generateResponse(context = "", question = "What do you need help with?") {
         try {
-            if (!context) context = `General context for the ${CONTEXT.industry} industry.`;
-            const systemPrompt = `You are a helpful customer service assistant working in the ${CONTEXT.industry} industry. You are assisting the ${CONTEXT.role}. Use this context to answer the question: ${context}`;
-            return await createCompletion(systemPrompt, question);
+            // Split context into knowledge base and email content if provided
+            const hasKnowledgeBase = context.includes('Context from knowledge base:');
+            let knowledgeBase = '';
+            let emailContent = context;
+
+            if (hasKnowledgeBase) {
+                const parts = context.split('Email content:');
+                knowledgeBase = parts[0].replace('Context from knowledge base:', '').trim();
+                emailContent = parts[1].trim();
+            }
+
+            const systemPrompt = `You are a helpful customer service assistant working in the ${CONTEXT.industry} industry, assisting the ${CONTEXT.role}.
+${knowledgeBase ? `\nUse this knowledge base information to inform your response:\n${knowledgeBase}` : ''}
+\nRespond to the following email content in a professional and helpful manner.`;
+
+            return await createCompletion(systemPrompt, emailContent);
         } catch (error) {
             console.error('Failed to generate response:', error);
             throw error;

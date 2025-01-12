@@ -8,6 +8,8 @@ const DatabaseService = require('../database/DatabaseService');
 const OpenAIService = require('../ai/OpenAIService');
 const Imap = require('imap');
 const { simpleParser } = require('mailparser');
+const { QueryCommand, GetObjectCommand } = require('@aws-sdk/client-dynamodb');
+const { S3Client } = require('@aws-sdk/client-s3');
 
 function EmailService() {
     const EMAIL_CONFIG = {
@@ -97,7 +99,16 @@ function EmailService() {
             const email = emailQueue.shift();
             try {
                 console.log(`Processing email (UID: ${email.uid}): ${email.subject}`);
-                const response = await openai.generateResponse(email.text, email.subject);
+                
+                // Fetch relevant knowledge base content
+                const knowledgeBaseContent = await fetchRelevantKnowledgeBase(email.text);
+                console.log('Retrieved knowledge base content for context');
+
+                // Generate response with knowledge base context
+                const response = await openai.generateResponse(
+                    `Context from knowledge base: ${knowledgeBaseContent}\n\nEmail content: ${email.text}`,
+                    email.subject
+                );
 
                 if (!response) {
                     console.error(`OpenAI response is undefined for email UID ${email.uid}. Skipping.`);
@@ -117,6 +128,67 @@ function EmailService() {
         }
 
         isProcessingQueue = false;
+    }
+
+    async function fetchRelevantKnowledgeBase(emailContent) {
+        try {
+            // Query DynamoDB for knowledge base entries
+            const params = {
+                TableName: 'user_knowledge_files',
+                KeyConditionExpression: 'user_id = :user_id',
+                ExpressionAttributeValues: {
+                    ':user_id': process.env.USER_ID, // Make sure to set this in your .env file
+                }
+            };
+
+            const knowledgeBaseItems = await database.dynamodb.send(new QueryCommand(params));
+            
+            if (!knowledgeBaseItems.Items || knowledgeBaseItems.Items.length === 0) {
+                console.log('No knowledge base files found');
+                return '';
+            }
+
+            // For S3 stored files, fetch their content
+            const s3Client = new S3Client({
+                region: process.env.AWS_REGION || 'us-west-2',
+                credentials: {
+                    accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+                    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+                },
+            });
+
+            // Fetch and combine content from all relevant knowledge base entries
+            const contentPromises = knowledgeBaseItems.Items.map(async (item) => {
+                try {
+                    const getObjectParams = {
+                        Bucket: process.env.S3_BUCKET_NAME,
+                        Key: item.s3_key
+                    };
+                    
+                    const response = await s3Client.send(new GetObjectCommand(getObjectParams));
+                    const content = await response.Body.transformToString();
+                    console.log(`Successfully retrieved content for file: ${item.filename}`);
+                    return `Content from ${item.filename}:\n${content}`;
+                } catch (error) {
+                    console.error(`Error fetching content for file ${item.filename}:`, error);
+                    return '';
+                }
+            });
+
+            const contents = await Promise.all(contentPromises);
+            const validContents = contents.filter(content => content !== '');
+            
+            if (validContents.length === 0) {
+                console.log('No valid content retrieved from knowledge base files');
+                return '';
+            }
+
+            console.log(`Successfully retrieved content from ${validContents.length} knowledge base files`);
+            return validContents.join('\n\n');
+        } catch (error) {
+            console.error('Error fetching knowledge base content:', error);
+            return '';
+        }
     }
 
     async function monitorEmails() {
