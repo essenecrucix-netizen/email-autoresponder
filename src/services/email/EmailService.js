@@ -91,8 +91,21 @@ function EmailService() {
         }
     }
 
-    async function parseEmail(messageStream) {
-        // No changes to this function
+    async function parseEmail(stream) {
+        try {
+            const parsed = await simpleParser(stream);
+            return {
+                subject: parsed.subject || '',
+                text: parsed.text || '',
+                from: parsed.from?.text || '',
+                to: parsed.to?.text || '',
+                date: parsed.date || new Date(),
+                messageId: parsed.messageId || '',
+            };
+        } catch (error) {
+            console.error('Error parsing email:', error);
+            return null;
+        }
     }
 
     async function extractTextFromBuffer(buffer, filename) {
@@ -359,9 +372,13 @@ function EmailService() {
                     msg.on('body', async stream => {
                         try {
                             const email = await parseEmail(stream);
-                            email.uid = seqno; // Assign UID to email
-                            emailQueue.push(email); // Add email to the queue
-                            processQueue(); // Start processing the queue
+                            if (email) {  // Only process if email parsing was successful
+                                email.uid = seqno;
+                                emailQueue.push(email);
+                                processQueue();
+                            } else {
+                                console.error(`Failed to parse email UID ${seqno}`);
+                            }
                         } catch (error) {
                             console.error(`Error processing email UID ${seqno}:`, error);
                         }
