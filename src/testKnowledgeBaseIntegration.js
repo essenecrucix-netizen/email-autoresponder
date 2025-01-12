@@ -30,27 +30,31 @@ async function extractTextFromBuffer(buffer, filename) {
             return result.value;
         } else if (filename.toLowerCase().endsWith('.pdf')) {
             try {
-                // Suppress console warnings temporarily
-                const originalWarn = console.warn;
-                console.warn = function (message) {
-                    if (!message.includes('TT: undefined function')) {
-                        originalWarn.apply(console, arguments);
+                // Create a custom event handler
+                const eventBus = {
+                    _listeners: [],
+                    on(eventName, callback) {
+                        this._listeners.push({ eventName, callback });
+                    },
+                    dispatch(eventName, data) {
+                        // Suppress warning events
+                        if (eventName === 'warning') return;
+                        this._listeners
+                            .filter(listener => listener.eventName === eventName)
+                            .forEach(listener => listener.callback(data));
                     }
                 };
 
                 const options = {
-                    // Disable font and page rendering
+                    eventBus,
                     disableFontFace: true,
                     disablePageRendering: true,
-                    // More aggressive rendering options
-                    verbosity: -1,  // Suppress non-error messages
+                    verbosity: -1,
                     ignoreErrors: true,
+                    showWarnings: false,
                 };
 
                 const data = await pdf(buffer, options);
-
-                // Restore console.warn
-                console.warn = originalWarn;
 
                 if (!data.text) {
                     console.warn(`No text content extracted from PDF: ${filename}`);
