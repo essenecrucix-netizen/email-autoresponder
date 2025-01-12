@@ -13,8 +13,15 @@ function OpenAIService() {
     };
 
     const CONTEXT = {
-        industry: process.env.INDUSTRY_CONTEXT || "systems integration",
+        industry: process.env.INDUSTRY_CONTEXT || "fleet management software",
         role: process.env.ROLE_CONTEXT || "CEO",
+        companyContext: `As the CEO of a fleet management software company, we specialize in providing comprehensive solutions for:
+- Real-time vehicle tracking and monitoring
+- Driver behavior analysis and safety features
+- Fleet maintenance and diagnostics
+- Compliance and regulatory requirements
+- Integration with various hardware (modems, cameras, sensors)
+- Custom software solutions and API integrations`
     };
 
     function getCurrentApiKey() {
@@ -91,9 +98,20 @@ function OpenAIService() {
                 emailContent = parts[1].trim();
             }
 
-            const systemPrompt = `You are a helpful customer service assistant working in the ${CONTEXT.industry} industry, assisting the ${CONTEXT.role}.
-${knowledgeBase ? `\nUse this knowledge base information to inform your response:\n${knowledgeBase}` : ''}
-\nRespond to the following email content in a professional and helpful manner.`;
+            const systemPrompt = `You are a highly knowledgeable executive assistant to the ${CONTEXT.role} of a ${CONTEXT.industry} company.
+${CONTEXT.companyContext}
+
+Your role is to provide accurate, helpful, and professional responses to customer inquiries. You should:
+1. Address technical issues with confidence, using the knowledge base when available
+2. Handle sales inquiries by highlighting relevant features and benefits
+3. Manage support escalations with appropriate urgency and care
+4. Provide accurate information about integrations and compatibility
+5. Maintain a professional yet approachable tone
+6. If a technical issue requires direct support team involvement, acknowledge this while still providing helpful initial guidance
+
+${knowledgeBase ? `\nReference this knowledge base information for accurate responses:\n${knowledgeBase}` : ''}
+
+\nRespond to the following email content in a professional and helpful manner, drawing from the knowledge base where relevant.`;
 
             return await createCompletion(systemPrompt, emailContent);
         } catch (error) {
@@ -129,7 +147,7 @@ ${knowledgeBase ? `\nUse this knowledge base information to inform your response
         analyzeSentiment,
         generateResponse,
         detectLanguage,
-        testGenerateResponse, // Expose test function
+        testGenerateResponse,
     };
 }
 

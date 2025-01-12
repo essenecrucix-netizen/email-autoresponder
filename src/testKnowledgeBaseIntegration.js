@@ -1,3 +1,4 @@
+require('dotenv').config();
 const OpenAIService = require('./services/ai/OpenAIService')();
 const DatabaseService = require('./services/database/DatabaseService')();
 const { S3Client, GetObjectCommand } = require('@aws-sdk/client-s3');
@@ -5,7 +6,30 @@ const { DynamoDBClient } = require('@aws-sdk/client-dynamodb');
 const { DynamoDBDocumentClient, ScanCommand } = require('@aws-sdk/lib-dynamodb');
 const mammoth = require('mammoth');
 const pdf = require('pdf-parse');
-require('dotenv').config();
+
+// Test cases representing different types of inquiries
+const TEST_CASES = [
+    {
+        type: "Technical Support",
+        subject: "Camera system not recording",
+        text: "We've been having issues with our FleetCam system. The cameras are powered on but they're not recording any footage. This is affecting 5 of our trucks. Can you help us resolve this urgently?"
+    },
+    {
+        type: "Sales Inquiry",
+        subject: "Interested in your fleet management solution",
+        text: "I manage a fleet of 50 vehicles and I'm looking for a comprehensive solution that can help with tracking, maintenance, and driver safety. Can you tell me more about your software and what makes it different from other solutions?"
+    },
+    {
+        type: "Integration Question",
+        subject: "API Integration Capabilities",
+        text: "We're currently using a custom maintenance management system. I'd like to know if your software can integrate with our existing system through APIs, and what kind of data can be exchanged?"
+    },
+    {
+        type: "Compliance",
+        subject: "ELD Compliance Question",
+        text: "We need to ensure our fleet is fully compliant with the latest ELD mandates. Can your system help us maintain compliance, and what specific features do you offer for HOS tracking?"
+    }
+];
 
 // Global error handler for PDF.js
 const originalConsoleWarn = console.warn;
@@ -170,25 +194,25 @@ async function testKnowledgeBaseIntegration() {
         const knowledgeBaseContent = await fetchKnowledgeBase();
         console.log('\nKnowledge base content retrieved:', knowledgeBaseContent ? 'Yes' : 'No');
         if (knowledgeBaseContent) {
-            console.log('Sample of content:', knowledgeBaseContent.substring(0, 200) + '...');
+            console.log('Sample of content:', knowledgeBaseContent.substring(0, 200) + '...\n');
         }
 
-        // 2. Test with a sample email
-        const testEmail = {
-            subject: "Question about GFI Systems Fleetcam",
-            text: "What can you tell me about GFI Systems Fleetcam?"
-        };
+        // 2. Test with multiple types of inquiries
+        for (const testCase of TEST_CASES) {
+            console.log(`\n=== Testing ${testCase.type} Scenario ===`);
+            console.log('Subject:', testCase.subject);
+            console.log('Email:', testCase.text);
 
-        console.log('\nTesting with sample email:', testEmail);
+            // 3. Generate response with knowledge base context
+            console.log('\nGenerating response...');
+            const response = await OpenAIService.generateResponse(
+                `Context from knowledge base: ${knowledgeBaseContent}\n\nEmail content: ${testCase.text}`,
+                testCase.subject
+            );
 
-        // 3. Generate response with knowledge base context
-        console.log('\nGenerating response...');
-        const response = await OpenAIService.generateResponse(
-            `Context from knowledge base: ${knowledgeBaseContent}\n\nEmail content: ${testEmail.text}`,
-            testEmail.subject
-        );
-
-        console.log('\nGenerated Response:', response);
+            console.log('\nGenerated Response:', response);
+            console.log('\n' + '='.repeat(80) + '\n');
+        }
 
     } catch (error) {
         console.error('Test failed:', error);
