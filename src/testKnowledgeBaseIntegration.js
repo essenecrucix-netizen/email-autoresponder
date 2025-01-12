@@ -43,7 +43,7 @@ async function fetchKnowledgeBase() {
             TableName: 'user_knowledge_files',
             KeyConditionExpression: 'user_id = :user_id',
             ExpressionAttributeValues: {
-                ':user_id': process.env.USER_ID
+                ':user_id': { S: process.env.USER_ID }
             }
         };
 
