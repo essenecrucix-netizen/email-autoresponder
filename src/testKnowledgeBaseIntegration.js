@@ -12,22 +12,45 @@ const TEST_CASES = [
     {
         type: "Technical Support",
         subject: "Camera system not recording",
-        text: "We've been having issues with our FleetCam system. The cameras are powered on but they're not recording any footage. This is affecting 5 of our trucks. Can you help us resolve this urgently?"
+        text: "We've been having issues with our FleetCam system. The cameras are powered on but they're not recording any footage. This is affecting 5 of our trucks. Can you help us resolve this urgently?",
+        from: "fleet.manager@clientcompany.com"
     },
     {
         type: "Sales Inquiry",
         subject: "Interested in your fleet management solution",
-        text: "I manage a fleet of 50 vehicles and I'm looking for a comprehensive solution that can help with tracking, maintenance, and driver safety. Can you tell me more about your software and what makes it different from other solutions?"
+        text: "I manage a fleet of 50 vehicles and I'm looking for a comprehensive solution that can help with tracking, maintenance, and driver safety. Can you tell me more about your software and what makes it different from other solutions?",
+        from: "operations.director@prospectcompany.com"
     },
     {
         type: "Integration Question",
         subject: "API Integration Capabilities",
-        text: "We're currently using a custom maintenance management system. I'd like to know if your software can integrate with our existing system through APIs, and what kind of data can be exchanged?"
+        text: "We're currently using a custom maintenance management system. I'd like to know if your software can integrate with our existing system through APIs, and what kind of data can be exchanged?",
+        from: "tech.lead@existingclient.com"
     },
     {
         type: "Compliance",
         subject: "ELD Compliance Question",
-        text: "We need to ensure our fleet is fully compliant with the latest ELD mandates. Can your system help us maintain compliance, and what specific features do you offer for HOS tracking?"
+        text: "We need to ensure our fleet is fully compliant with the latest ELD mandates. Can your system help us maintain compliance, and what specific features do you offer for HOS tracking?",
+        from: "compliance.officer@trucking.com"
+    },
+    // Add test cases for emails that should be ignored
+    {
+        type: "Legal Communication",
+        subject: "Contract Review - Confidential",
+        text: "Please review the attached contract revisions for the Johnson deal. We need your feedback by Friday.",
+        from: "lawyer@lawfirm.com"
+    },
+    {
+        type: "Marketing",
+        subject: "🔥 Special Offer: Boost Your Business with Our Services",
+        text: "Don't miss out on this exclusive opportunity to transform your business with our revolutionary marketing solutions!",
+        from: "marketing@salescompany.com"
+    },
+    {
+        type: "System Report",
+        subject: "Weekly System Performance Report",
+        text: "Server Uptime: 99.9%\nCPU Usage: 45%\nMemory Usage: 60%\nNo critical issues detected.",
+        from: "system@monitoring.com"
     }
 ];
 
@@ -200,17 +223,31 @@ async function testKnowledgeBaseIntegration() {
         // 2. Test with multiple types of inquiries
         for (const testCase of TEST_CASES) {
             console.log(`\n=== Testing ${testCase.type} Scenario ===`);
+            console.log('From:', testCase.from);
             console.log('Subject:', testCase.subject);
             console.log('Email:', testCase.text);
 
-            // 3. Generate response with knowledge base context
-            console.log('\nGenerating response...');
-            const response = await OpenAIService.generateResponse(
-                `Context from knowledge base: ${knowledgeBaseContent}\n\nEmail content: ${testCase.text}`,
-                testCase.subject
+            // First, test classification
+            console.log('\nClassifying email...');
+            const shouldRespond = await OpenAIService.classifyEmail(
+                testCase.subject,
+                testCase.text,
+                testCase.from
             );
+            console.log('Classification result:', shouldRespond ? 'RESPOND' : 'IGNORE');
 
-            console.log('\nGenerated Response:', response);
+            // Only generate response if classification indicates we should
+            if (shouldRespond) {
+                console.log('\nGenerating response...');
+                const response = await OpenAIService.generateResponse(
+                    `Context from knowledge base: ${knowledgeBaseContent}\n\nEmail content: ${testCase.text}`,
+                    testCase.subject
+                );
+                console.log('\nGenerated Response:', response);
+            } else {
+                console.log('\nSkipping response generation for this email.');
+            }
+
             console.log('\n' + '='.repeat(80) + '\n');
         }
 

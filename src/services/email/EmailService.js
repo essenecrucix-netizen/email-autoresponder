@@ -232,6 +232,20 @@ function EmailService() {
                 console.log('Processing:', email.subject);
 
                 try {
+                    // First, classify the email
+                    const shouldRespond = await openai.classifyEmail(
+                        email.subject,
+                        email.text,
+                        email.from
+                    );
+
+                    if (!shouldRespond) {
+                        console.log('Email classified as not requiring response:', email.subject);
+                        continue;
+                    }
+
+                    console.log('Email classified as requiring response. Generating response...');
+
                     // Fetch knowledge base content
                     const knowledgeBaseContent = await fetchKnowledgeBase();
                     
@@ -248,7 +262,8 @@ function EmailService() {
                         timestamp: new Date().toISOString(),
                         emailSubject: email.subject,
                         response: response,
-                        hasKnowledgeBase: !!knowledgeBaseContent
+                        hasKnowledgeBase: !!knowledgeBaseContent,
+                        classification: 'responded'
                     });
 
                     // Update the last processed UID

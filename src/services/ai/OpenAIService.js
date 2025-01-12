@@ -142,12 +142,51 @@ ${knowledgeBase ? `\nReference this knowledge base information for accurate resp
         }
     }
 
+    async function classifyEmail(subject, content, sender) {
+        try {
+            const systemPrompt = `You are an email classifier for a fleet management software company's CEO.
+Your task is to determine if an email requires a response based on these criteria:
+
+RESPOND TO:
+- Client inquiries about fleet management software/hardware
+- Technical support questions
+- Sales inquiries about fleet management solutions
+- Integration questions
+- Compliance inquiries
+- Questions about company products/services
+- Client escalations
+
+DO NOT RESPOND TO:
+- Marketing or advertising emails
+- Spam
+- System-generated reports or notifications
+- Personal communications (banking, legal, etc.)
+- Newsletter subscriptions
+- Job applications/recruiters
+- Generic business solicitations
+
+Respond with EXACTLY ONE WORD:
+- "RESPOND" - if the email needs a response
+- "IGNORE" - if the email should be ignored
+
+Consider the email sender, subject, and content in your decision.`;
+
+            const emailContext = `From: ${sender}\nSubject: ${subject}\n\nContent: ${content}`;
+            const classification = await createCompletion(systemPrompt, emailContext);
+            return classification.trim().toUpperCase() === 'RESPOND';
+        } catch (error) {
+            console.error('Failed to classify email:', error);
+            return false; // Default to not responding if classification fails
+        }
+    }
+
     return {
         createCompletion,
         analyzeSentiment,
         generateResponse,
         detectLanguage,
         testGenerateResponse,
+        classifyEmail,
     };
 }
 
