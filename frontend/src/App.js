@@ -12,7 +12,9 @@ import Signup from './pages/Signup';
 // Protected Route component
 function ProtectedRoute({ children }) {
     const token = localStorage.getItem('authToken');
-    if (!token) {
+    const userId = localStorage.getItem('userId');
+    
+    if (!token || !userId) {
         return <Navigate to="/login" replace state={{ from: window.location.pathname }} />;
     }
     return children;
@@ -23,47 +25,51 @@ function App() {
 
     return (
         <Router>
-            {token ? (
-                <div className="app-container" data-name="app-container">
-                    <Header />
-                    <Sidebar />
-                    <main className="content-area" data-name="main-content">
-                        <Routes>
-                            <Route path="/dashboard" element={
-                                <ProtectedRoute>
-                                    <Dashboard />
-                                </ProtectedRoute>
-                            } />
-                            <Route path="/emails" element={
-                                <ProtectedRoute>
-                                    <Emails />
-                                </ProtectedRoute>
-                            } />
-                            <Route path="/knowledge-base" element={
-                                <ProtectedRoute>
-                                    <KnowledgeBase />
-                                </ProtectedRoute>
-                            } />
-                            <Route path="/analytics" element={
-                                <ProtectedRoute>
-                                    <Analytics />
-                                </ProtectedRoute>
-                            } />
-                            <Route path="/" element={
-                                <ProtectedRoute>
-                                    <Dashboard />
-                                </ProtectedRoute>
-                            } />
-                        </Routes>
-                    </main>
-                </div>
-            ) : (
-                <Routes>
-                    <Route path="/login" element={<Login />} />
-                    <Route path="/signup" element={<Signup />} />
-                    <Route path="*" element={<Navigate to="/login" replace />} />
-                </Routes>
-            )}
+            <Routes>
+                <Route path="/login" element={
+                    token ? <Navigate to="/dashboard" replace /> : <Login />
+                } />
+                <Route path="/signup" element={
+                    token ? <Navigate to="/dashboard" replace /> : <Signup />
+                } />
+                <Route path="/*" element={
+                    token ? (
+                        <div className="app-container" data-name="app-container">
+                            <Header />
+                            <Sidebar />
+                            <main className="content-area" data-name="main-content">
+                                <Routes>
+                                    <Route path="/dashboard" element={
+                                        <ProtectedRoute>
+                                            <Dashboard />
+                                        </ProtectedRoute>
+                                    } />
+                                    <Route path="/emails" element={
+                                        <ProtectedRoute>
+                                            <Emails />
+                                        </ProtectedRoute>
+                                    } />
+                                    <Route path="/knowledge-base" element={
+                                        <ProtectedRoute>
+                                            <KnowledgeBase />
+                                        </ProtectedRoute>
+                                    } />
+                                    <Route path="/analytics" element={
+                                        <ProtectedRoute>
+                                            <Analytics />
+                                        </ProtectedRoute>
+                                    } />
+                                    <Route path="/" element={
+                                        <Navigate to="/dashboard" replace />
+                                    } />
+                                </Routes>
+                            </main>
+                        </div>
+                    ) : (
+                        <Navigate to="/login" replace />
+                    )
+                } />
+            </Routes>
         </Router>
     );
 }
