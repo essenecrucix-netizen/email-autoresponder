@@ -1,12 +1,37 @@
 import axios from 'axios';
 
-// No need for baseURL since frontend and backend are served from same origin
-// axios.defaults.baseURL = 'http://54.213.58.183:3000';
+const instance = axios.create({
+    baseURL: process.env.REACT_APP_API_URL || 'http://localhost:3001',
+    headers: {
+        'Content-Type': 'application/json'
+    }
+});
 
-// Add auth token to requests if it exists
-const token = localStorage.getItem('token');
-if (token) {
-    axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-}
+// Add a request interceptor
+instance.interceptors.request.use(
+    (config) => {
+        const token = localStorage.getItem('token');
+        if (token) {
+            config.headers.Authorization = `Bearer ${token}`;
+        }
+        return config;
+    },
+    (error) => {
+        return Promise.reject(error);
+    }
+);
 
-export default axios; 
+// Add a response interceptor
+instance.interceptors.response.use(
+    (response) => response,
+    (error) => {
+        if (error.response?.status === 401) {
+            localStorage.removeItem('token');
+            localStorage.removeItem('userId');
+            window.location.href = '/login';
+        }
+        return Promise.reject(error);
+    }
+);
+
+export default instance; 
