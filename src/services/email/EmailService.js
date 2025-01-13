@@ -154,6 +154,17 @@ function EmailService() {
         }
 
         try {
+            // Initialize DynamoDB Document Client
+            const client = new DynamoDBClient({
+                region: process.env.AWS_REGION,
+                credentials: {
+                    accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+                    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+                }
+            });
+            const docClient = DynamoDBDocumentClient.from(client);
+
+            // Initialize S3 Client
             const s3Client = new S3Client({
                 region: process.env.AWS_REGION,
                 credentials: {
@@ -161,13 +172,6 @@ function EmailService() {
                     secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
                 }
             });
-
-            // Rest of the function remains the same, GetObjectCommand will now be properly defined
-            const getObjectParams = {
-                Bucket: process.env.S3_BUCKET_NAME,
-                Key: s3Key
-            };
-            const command = new GetObjectCommand(getObjectParams);
 
             // Scan the table to find all files for this user
             const scanParams = {
