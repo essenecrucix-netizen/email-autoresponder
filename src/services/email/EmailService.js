@@ -8,10 +8,9 @@ const DatabaseService = require('../database/DatabaseService');
 const OpenAIService = require('../ai/OpenAIService');
 const Imap = require('imap');
 const { simpleParser } = require('mailparser');
-const { QueryCommand, GetObjectCommand } = require('@aws-sdk/client-dynamodb');
-const { S3Client, GetObjectCommand } = require('@aws-sdk/client-s3');
 const { DynamoDBClient } = require('@aws-sdk/client-dynamodb');
 const { DynamoDBDocumentClient, ScanCommand } = require('@aws-sdk/lib-dynamodb');
+const { S3Client, GetObjectCommand } = require('@aws-sdk/client-s3');
 const mammoth = require('mammoth');
 const pdf = require('pdf-parse');
 
