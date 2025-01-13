@@ -183,15 +183,27 @@ app.post('/api/signup', async (req, res) => {
 // Get analytics by user
 app.get('/api/analytics', authenticateToken, async (req, res) => {
     try {
-        const userId = req.user.userId; // Extract user ID from the token
-        const database = DatabaseService();
-        const emails = await database.getAnalyticsByUser(userId);
-        const responses = await database.getResponsesByUser(userId);
-        console.log('Analytics fetched for user:', userId, { emails, responses }); // Debugging
-        res.status(200).json({ emails, responses });
+        console.log('Analytics request received');
+        console.log('User from token:', req.user);
+
+        // For now, return mock data for testing
+        const mockData = {
+            totalEmails: 100,
+            automatedResponses: 75,
+            averageResponseTime: 30,
+            satisfactionRate: 85,
+            escalatedResponses: 25,
+            emailVolume: [
+                { date: '2024-01-01', count: 10 },
+                { date: '2024-01-02', count: 15 },
+                { date: '2024-01-03', count: 20 }
+            ]
+        };
+
+        res.status(200).json(mockData);
     } catch (error) {
-        console.error('Error fetching analytics:', error.message, error.stack);
-        res.status(500).json({ error: 'Failed to fetch analytics data.' });
+        console.error('Error in analytics endpoint:', error);
+        res.status(500).json({ error: 'Failed to fetch analytics data' });
     }
 });
 
