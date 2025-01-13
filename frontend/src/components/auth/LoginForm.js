@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
-import axios from 'axios';
+import axios from '../../utils/axios';
 
 function LoginForm() {
     const navigate = useNavigate();
@@ -28,7 +28,7 @@ function LoginForm() {
         setLoading(true);
         
         try {
-            const response = await axios.post('http://54.213.58.183:3000/api/login', formData);
+            const response = await axios.post('/api/login', formData);
             console.log('Login response:', response.data);
             
             if (response.data.token) {
@@ -39,6 +39,9 @@ function LoginForm() {
                 // Set success message
                 setSuccess('Login successful! Redirecting to dashboard...');
                 
+                // Configure axios defaults for future requests
+                axios.defaults.headers.common['Authorization'] = `Bearer ${response.data.token}`;
+                
                 // Redirect after a short delay
                 setTimeout(() => {
                     navigate('/dashboard', { replace: true });
@@ -48,7 +51,7 @@ function LoginForm() {
             }
         } catch (err) {
             console.error('Login error:', err);
-            setError(err.response?.data?.message || 'Failed to login. Please try again.');
+            setError(err.response?.data?.error || 'Failed to login. Please try again.');
         } finally {
             setLoading(false);
         }
