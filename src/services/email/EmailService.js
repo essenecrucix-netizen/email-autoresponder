@@ -44,6 +44,7 @@ function EmailService() {
 
     const emailQueue = [];
     let isProcessingQueue = false;
+    const processedMessageIds = new Set();
 
     async function getAccessToken() {
         try {
@@ -378,9 +379,15 @@ function EmailService() {
                         try {
                             const email = await parseEmail(stream);
                             if (email && email.date > serviceStartTime) {
-                                email.uid = seqno;
-                                emailQueue.push(email);
-                                processQueue();
+                                if (email.messageId && !processedMessageIds.has(email.messageId)) {
+                                    processedMessageIds.add(email.messageId);
+                                    email.uid = seqno;
+                                    emailQueue.push(email);
+                                    console.log(`Added email ${email.messageId} to queue for processing`);
+                                    processQueue();
+                                } else {
+                                    console.log(`Skipping duplicate email ${email.messageId}`);
+                                }
                             } else if (email) {
                                 console.log(`Skipping email from ${email.date.toISOString()} (before service start)`);
                             } else {
