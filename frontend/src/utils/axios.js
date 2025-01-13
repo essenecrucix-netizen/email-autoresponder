@@ -4,7 +4,7 @@ import axios from 'axios';
 // axios.defaults.baseURL = 'http://54.213.58.183:3000';
 
 // Add auth token to requests if it exists
-const token = localStorage.getItem('authToken');
+const token = localStorage.getItem('token');
 if (token) {
     axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
 }

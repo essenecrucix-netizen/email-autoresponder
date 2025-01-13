@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import axios from '../../utils/axios';
 
-function LoginForm() {
+function LoginForm({ redirectPath }) {
     const navigate = useNavigate();
     const location = useLocation();
     const [formData, setFormData] = useState({
@@ -33,18 +33,18 @@ function LoginForm() {
             
             if (response.data.token) {
                 // Store the token and user ID
-                localStorage.setItem('authToken', response.data.token);
+                localStorage.setItem('token', response.data.token);
                 localStorage.setItem('userId', response.data.user?.id || '123');
                 
                 // Set success message
-                setSuccess('Login successful! Redirecting to dashboard...');
+                setSuccess('Login successful! Redirecting...');
                 
                 // Configure axios defaults for future requests
                 axios.defaults.headers.common['Authorization'] = `Bearer ${response.data.token}`;
                 
                 // Redirect after a short delay
                 setTimeout(() => {
-                    navigate('/dashboard', { replace: true });
+                    navigate(redirectPath || '/dashboard', { replace: true });
                 }, 1500);
             } else {
                 setError('Invalid response from server');
