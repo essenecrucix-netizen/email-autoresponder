@@ -149,7 +149,7 @@ function DatabaseService() {
     async function addAnalyticsEntry(entry) {
         try {
             const params = {
-                TableName: 'email_analytics',
+                TableName: 'analytics',
                 Item: {
                     analytics_id: `${Date.now()}-${Math.random().toString(36).substring(7)}`,
                     user_id: entry.userId || process.env.USER_ID || '123',
