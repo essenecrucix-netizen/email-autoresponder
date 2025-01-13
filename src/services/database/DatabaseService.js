@@ -146,6 +146,34 @@ function DatabaseService() {
         }
     }
 
+    async function addAnalyticsEntry(entry) {
+        try {
+            const params = {
+                TableName: 'analytics',
+                Item: {
+                    analytics_id: `${Date.now()}-${Math.random().toString(36).substring(7)}`,
+                    user_id: process.env.USER_ID,
+                    type: 'automated',
+                    timestamp: entry.timestamp,
+                    subject: entry.emailSubject,
+                    response: entry.response,
+                    hasKnowledgeBase: entry.hasKnowledgeBase,
+                    satisfaction: 'pending',  // Can be updated later based on user feedback
+                    responseTime: 0,  // Can be calculated if needed
+                    needsEscalation: false,
+                    createdAt: new Date().toISOString()
+                }
+            };
+            console.log('Adding analytics entry:', params);
+            await dynamodb.send(new PutCommand(params));
+            return params.Item;
+        } catch (error) {
+            console.error('Failed to add analytics entry:', error);
+            // Don't throw error to prevent email processing from failing
+            return null;
+        }
+    }
+
     return {
         dynamodb, // Expose raw DynamoDB client if needed
         createItem,
@@ -154,6 +182,7 @@ function DatabaseService() {
         saveAnalyticsData,
         getAnalyticsByUser,
         getItemByEmail,
+        addAnalyticsEntry
     };
 }
 

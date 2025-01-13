@@ -150,6 +150,11 @@ function EmailService() {
 
     async function fetchKnowledgeBase() {
         try {
+            if (!process.env.USER_ID) {
+                console.warn('USER_ID not set in environment variables');
+                return '';
+            }
+
             // Initialize DynamoDB Document Client
             const client = new DynamoDBClient({
                 region: process.env.AWS_REGION || 'us-west-2',
