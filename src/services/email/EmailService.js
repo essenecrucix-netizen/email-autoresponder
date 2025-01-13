@@ -9,7 +9,7 @@ const OpenAIService = require('../ai/OpenAIService');
 const Imap = require('imap');
 const { simpleParser } = require('mailparser');
 const { QueryCommand, GetObjectCommand } = require('@aws-sdk/client-dynamodb');
-const { S3Client } = require('@aws-sdk/client-s3');
+const { S3Client, GetObjectCommand } = require('@aws-sdk/client-s3');
 const { DynamoDBClient } = require('@aws-sdk/client-dynamodb');
 const { DynamoDBDocumentClient, ScanCommand } = require('@aws-sdk/lib-dynamodb');
 const mammoth = require('mammoth');
@@ -148,22 +148,27 @@ function EmailService() {
         return content.substring(0, maxLength) + '... [Content truncated due to length]';
     }
 
-    async function fetchKnowledgeBase() {
-        try {
-            if (!process.env.USER_ID) {
-                console.warn('USER_ID not set in environment variables');
-                return '';
-            }
+    async function fetchKnowledgeBase(emailContent) {
+        if (!process.env.USER_ID) {
+            console.warn('USER_ID not set in environment variables');
+            return '';
+        }
 
-            // Initialize DynamoDB Document Client
-            const client = new DynamoDBClient({
-                region: process.env.AWS_REGION || 'us-west-2',
+        try {
+            const s3Client = new S3Client({
+                region: process.env.AWS_REGION,
                 credentials: {
                     accessKeyId: process.env.AWS_ACCESS_KEY_ID,
                     secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-                },
+                }
             });
-            const docClient = DynamoDBDocumentClient.from(client);
+
+            // Rest of the function remains the same, GetObjectCommand will now be properly defined
+            const getObjectParams = {
+                Bucket: process.env.S3_BUCKET_NAME,
+                Key: s3Key
+            };
+            const command = new GetObjectCommand(getObjectParams);
 
             // Scan the table to find all files for this user
             const scanParams = {
@@ -183,15 +188,6 @@ function EmailService() {
             }
 
             console.log(`Found ${knowledgeBaseItems.Items.length} knowledge base files`);
-
-            // Initialize S3 Client
-            const s3Client = new S3Client({
-                region: process.env.AWS_REGION || 'us-west-2',
-                credentials: {
-                    accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-                    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-                },
-            });
 
             // Fetch and process content from all relevant knowledge base entries
             const contentPromises = knowledgeBaseItems.Items.map(async (item) => {
@@ -232,7 +228,7 @@ function EmailService() {
             console.log(`Successfully retrieved content from ${validContents.length} knowledge base files`);
             return truncateContent(validContents.join('\n\n'), 30000);
         } catch (error) {
-            console.error('Error fetching knowledge base content:', error);
+            console.error('Error in fetchKnowledgeBase:', error);
             return '';
         }
     }
