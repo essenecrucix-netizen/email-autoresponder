@@ -28,7 +28,7 @@ function LoginForm() {
         setLoading(true);
         
         try {
-            const response = await axios.post('http://54.213.58.183:3001/api/auth/login', formData);
+            const response = await axios.post('http://54.213.58.183:3000/api/auth/login', formData);
             console.log('Login response:', response.data);
             
             if (response.data.token) {
