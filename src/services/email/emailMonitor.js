@@ -8,7 +8,7 @@ async function startEmailMonitor() {
         const emailService = EmailService();
         
         // Function to start monitoring
-        await emailService.startMonitoring();
+        await emailService.monitorEmails();
         
         // Handle graceful shutdown
         process.on('SIGINT', async () => {
