@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 
 function LoginForm() {
     const navigate = useNavigate();
@@ -9,7 +9,17 @@ function LoginForm() {
         password: ''
     });
     const [error, setError] = useState('');
+    const [success, setSuccess] = useState('');
     const [loading, setLoading] = useState(false);
+
+    // Handle success message from signup
+    useEffect(() => {
+        if (location.state?.message) {
+            setSuccess(location.state.message);
+            // Clear the message from location state
+            window.history.replaceState({}, document.title);
+        }
+    }, [location.state]);
 
     async function handleSubmit(e) {
         e.preventDefault();
@@ -47,9 +57,11 @@ function LoginForm() {
 
     return (
         <div className="space-y-8">
-            <div>
-                <h2 className="text-2xl font-bold text-center text-gray-900">Sign in to your account</h2>
-            </div>
+            {success && (
+                <div className="bg-green-100 text-green-700 p-3 rounded" role="alert">
+                    {success}
+                </div>
+            )}
             
             {error && (
                 <div className="bg-red-100 text-red-700 p-3 rounded" role="alert">
@@ -96,6 +108,12 @@ function LoginForm() {
                     {loading ? 'Signing in...' : 'Sign in'}
                 </button>
             </form>
+            
+            <div className="text-center mt-4">
+                <Link to="/signup" className="text-sm text-blue-600 hover:text-blue-500">
+                    Don't have an account? Sign up
+                </Link>
+            </div>
         </div>
     );
 }

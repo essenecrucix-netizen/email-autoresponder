@@ -7,6 +7,7 @@ import Dashboard from './components/Dashboard';
 import KnowledgeBase from './components/KnowledgeBase';
 import Analytics from './components/Analytics';
 import Login from './pages/Login';
+import Signup from './pages/Signup';
 
 // Protected Route component
 function ProtectedRoute({ children }) {
@@ -59,6 +60,7 @@ function App() {
             ) : (
                 <Routes>
                     <Route path="/login" element={<Login />} />
+                    <Route path="/signup" element={<Signup />} />
                     <Route path="*" element={<Navigate to="/login" replace />} />
                 </Routes>
             )}
