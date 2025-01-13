@@ -1,12 +1,18 @@
-const express = require('express');
-const path = require('path');
-const bodyParser = require('body-parser');
-const dotenv = require('dotenv');
-const cors = require('cors');
-const bcrypt = require('bcrypt');
-const jwt = require('jsonwebtoken');
-const EmailService = require('./services/email/EmailService');
-const DatabaseService = require('./services/database/DatabaseService');
+try {
+    const express = require('express');
+    const path = require('path');
+    const bodyParser = require('body-parser');
+    const dotenv = require('dotenv');
+    const cors = require('cors');
+    const bcrypt = require('bcrypt');
+    const jwt = require('jsonwebtoken');
+    const EmailService = require('./services/email/EmailService');
+    const DatabaseService = require('./services/database/DatabaseService');
+} catch (error) {
+    console.error('Error loading module:', error.message);
+    console.error('Module that failed:', error.requireStack);
+    process.exit(1);
+}
 
 const app = express();
 dotenv.config();
