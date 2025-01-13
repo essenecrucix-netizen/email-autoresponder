@@ -111,7 +111,7 @@ function SignupForm() {
                             id="password"
                             type="password"
                             required
-                            minLength="8"
+                            autoComplete="new-password"
                             className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-blue-500 focus:border-blue-500"
                             value={formData.password}
                             onChange={(e) => setFormData({...formData, password: e.target.value})}
@@ -127,6 +127,7 @@ function SignupForm() {
                             id="confirmPassword"
                             type="password"
                             required
+                            autoComplete="new-password"
                             className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-blue-500 focus:border-blue-500"
                             value={formData.confirmPassword}
                             onChange={(e) => setFormData({...formData, confirmPassword: e.target.value})}

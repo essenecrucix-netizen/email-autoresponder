@@ -27,6 +27,7 @@ function LoginForm() {
         setLoading(true);
         
         try {
+            console.log('Attempting login with:', { email: formData.email });
             const response = await fetch('/api/login', {
                 method: 'POST',
                 headers: {
@@ -35,12 +36,19 @@ function LoginForm() {
                 body: JSON.stringify(formData),
             });
     
+            console.log('Login response status:', response.status);
             const data = await response.json();
+            console.log('Login response data:', data);
             
             if (!response.ok) {
                 throw new Error(data.error || 'Invalid email or password');
             }
     
+            if (!data.token) {
+                throw new Error('No authentication token received');
+            }
+
+            console.log('Login successful, storing token and redirecting...');
             // Store the auth token
             localStorage.setItem('authToken', data.token);
             
@@ -48,7 +56,7 @@ function LoginForm() {
             const from = location.state?.from || '/dashboard';
             navigate(from, { replace: true });
         } catch (error) {
-            console.error('Error during login:', error);
+            console.error('Detailed login error:', error);
             setError(error.message || 'Login failed. Please try again.');
         } finally {
             setLoading(false);
@@ -93,6 +101,7 @@ function LoginForm() {
                             id="password"
                             type="password"
                             required
+                            autoComplete="current-password"
                             className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-blue-500 focus:border-blue-500"
                             value={formData.password}
                             onChange={(e) => setFormData({...formData, password: e.target.value})}
