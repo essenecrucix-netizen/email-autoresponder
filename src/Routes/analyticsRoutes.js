@@ -5,20 +5,16 @@ const jwt = require('jsonwebtoken');
 // Middleware to authenticate JWT tokens
 function authenticateToken(req, res, next) {
     const token = req.headers['authorization']?.split(' ')[1];
-    console.log('Received Token:', token); // Log the token for debugging
-
+    
     if (!token) {
-        console.log('No token provided');
         return res.status(401).json({ error: 'Access token is missing.' });
     }
 
     const SECRET_KEY = process.env.JWT_SECRET || 'your-very-secure-secret';
     jwt.verify(token, SECRET_KEY, (err, user) => {
         if (err) {
-            console.log('Token verification failed:', err.message);
             return res.status(403).json({ error: 'Invalid token.' });
         }
-        console.log('Token verified successfully:', user);
         req.user = user;
         next();
     });
@@ -29,33 +25,62 @@ const router = express.Router();
 // Get analytics by user
 router.get('/', authenticateToken, async (req, res) => {
     try {
-        const userId = req.user.userId; // Extract user ID from the token
+        const userId = req.user.userId || process.env.USER_ID; // Fallback to env USER_ID if needed
         const database = DatabaseService();
-        const emails = await database.getAnalyticsByUser(userId);
-        const responses = await database.getResponsesByUser(userId);
+        const analyticsData = await database.getAnalyticsByUser(userId);
 
-        const totalEmails = emails.length;
-        const automatedResponses = responses.filter(r => r.type === 'automated').length;
-        const escalatedResponses = emails.filter(e => e.needsEscalation).length;
-        const averageResponseTime = responses.length > 0
-            ? Math.round(responses.reduce((sum, r) => sum + (r.responseTime || 0), 0) / responses.length)
-            : 0;
+        if (!analyticsData || analyticsData.length === 0) {
+            return res.status(200).json({
+                emails: [],
+                totalEmails: 0,
+                automatedResponses: 0,
+                escalatedResponses: 0,
+                averageResponseTime: 0,
+                satisfactionRate: 0,
+                dateLabels: [],
+                emailCounts: [],
+                responseTimes: [],
+                sentimentData: { positive: 0, neutral: 0, negative: 0 }
+            });
+        }
 
-        const satisfactionRate = responses.length > 0
-            ? Math.round((responses.filter(r => r.satisfaction === 'positive').length / responses.length) * 100)
+        // Process analytics data
+        const emailsByDate = new Map();
+        let totalResponseTime = 0;
+        let escalatedCount = 0;
+        const sentiments = { positive: 0, neutral: 0, negative: 0 };
+
+        analyticsData.forEach(entry => {
+            const date = new Date(entry.timestamp).toISOString().split('T')[0];
+            emailsByDate.set(date, (emailsByDate.get(date) || 0) + 1);
+            
+            if (entry.responseTime) totalResponseTime += entry.responseTime;
+            if (entry.needsEscalation) escalatedCount++;
+            if (entry.satisfaction) sentiments[entry.satisfaction]++;
+        });
+
+        // Sort dates and prepare data for charts
+        const sortedDates = Array.from(emailsByDate.keys()).sort();
+        const emailCounts = sortedDates.map(date => emailsByDate.get(date));
+
+        const averageResponseTime = analyticsData.length > 0 
+            ? Math.round(totalResponseTime / analyticsData.length) 
             : 0;
 
         res.status(200).json({
-            emails,
-            responses,
-            totalEmails,
-            automatedResponses,
-            escalatedResponses,
+            emails: analyticsData,
+            totalEmails: analyticsData.length,
+            automatedResponses: analyticsData.filter(e => e.type === 'automated').length,
+            escalatedResponses: escalatedCount,
             averageResponseTime,
-            satisfactionRate,
+            satisfactionRate: Math.round((sentiments.positive / analyticsData.length) * 100) || 0,
+            dateLabels: sortedDates,
+            emailCounts,
+            responseTimes: analyticsData.map(e => e.responseTime || 0),
+            sentimentData: sentiments
         });
     } catch (error) {
-        console.error('Error fetching analytics:', error.message, error.stack);
+        console.error('Error fetching analytics:', error);
         res.status(500).json({ error: 'Failed to fetch analytics data.' });
     }
 });

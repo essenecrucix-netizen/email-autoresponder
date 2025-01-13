@@ -13,6 +13,7 @@ import {
     Legend,
     Tooltip,
 } from 'chart.js';
+import axios from 'axios';
 
 // Explicitly register Chart.js components
 Chart.register(
@@ -45,13 +46,29 @@ function AnalyticsCharts() {
 
     // Temporary test data
     async function fetchAnalyticsData() {
-        return {
-            dateLabels: ['2025-01-01', '2025-01-02', '2025-01-03'],
-            emailCounts: [10, 15, 20],
-            responseTimes: [30, 45, 60],
-            sentimentData: { positive: 5, neutral: 3, negative: 2 },
-            languageData: { English: 10, Spanish: 5 },
-        };
+        try {
+            const token = localStorage.getItem('authToken');
+            if (!token) {
+                throw new Error('Authentication token not found');
+            }
+
+            const response = await axios.get('/api/analytics', {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            return {
+                dateLabels: response.data.dateLabels,
+                emailCounts: response.data.emailCounts,
+                responseTimes: response.data.responseTimes,
+                sentimentData: response.data.sentimentData,
+                languageData: response.data.languageData || { English: response.data.totalEmails }
+            };
+        } catch (error) {
+            console.error('Error fetching analytics data:', error);
+            throw error;
+        }
     }
 
     async function initializeCharts(data) {
