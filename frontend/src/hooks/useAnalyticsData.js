@@ -11,21 +11,27 @@ export function useAnalyticsData() {
             try {
                 setLoading(true);
                 const token = localStorage.getItem('token');
+                console.log('Token from localStorage:', token);
                 
                 if (!token) {
                     throw new Error('Authentication token not found');
                 }
 
-                const response = await axios.get('/api/analytics', {
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
-                });
+                console.log('Making request with token:', `Bearer ${token}`);
+                const response = await axios.get('/api/analytics');
+                console.log('Response:', response);
                 
                 setData(response.data);
                 setError(null);
             } catch (err) {
                 console.error('Error fetching analytics:', err);
+                if (err.response) {
+                    console.log('Error response:', {
+                        status: err.response.status,
+                        data: err.response.data,
+                        headers: err.response.headers
+                    });
+                }
                 setError(err.message || 'Failed to fetch analytics data');
             } finally {
                 setLoading(false);
