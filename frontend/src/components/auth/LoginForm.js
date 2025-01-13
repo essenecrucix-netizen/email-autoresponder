@@ -49,12 +49,9 @@ function LoginForm({ redirectPath }) {
                 // Debug: Log before redirect
                 console.log('Attempting to redirect to:', redirectPath || '/dashboard');
                 
-                // Redirect after a short delay
-                setTimeout(() => {
-                    navigate('/dashboard', { replace: true });
-                    // Debug: Log after redirect attempt
-                    console.log('Redirect attempted');
-                }, 1500);
+                // Redirect immediately
+                navigate('/dashboard', { replace: true });
+                console.log('Redirect attempted');
             } else {
                 setError('Invalid response from server');
             }
