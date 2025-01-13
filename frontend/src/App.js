@@ -1,8 +1,10 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Dashboard from './components/Dashboard';
+import Analytics from './components/Analytics';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
+import Header from './components/Header';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 
 function App() {
@@ -14,51 +16,28 @@ function App() {
 
     return (
         <Router>
-            <Routes>
-                {/* Public routes */}
-                <Route
-                    path="/login"
-                    element={
-                        isAuthenticated() ? (
-                            <Navigate to="/dashboard" replace />
-                        ) : (
-                            <Login />
-                        )
-                    }
-                />
-                <Route
-                    path="/signup"
-                    element={
-                        isAuthenticated() ? (
-                            <Navigate to="/dashboard" replace />
-                        ) : (
-                            <Signup />
-                        )
-                    }
-                />
-
-                {/* Protected routes */}
-                <Route
-                    path="/dashboard"
-                    element={
+            <div className="min-h-screen bg-gray-100">
+                <Header />
+                <Routes>
+                    <Route path="/login" element={
+                        isAuthenticated() ? <Navigate to="/dashboard" replace /> : <Login />
+                    } />
+                    <Route path="/signup" element={
+                        isAuthenticated() ? <Navigate to="/dashboard" replace /> : <Signup />
+                    } />
+                    <Route path="/" element={<Navigate to="/dashboard" replace />} />
+                    <Route path="/dashboard" element={
                         <ProtectedRoute>
                             <Dashboard />
                         </ProtectedRoute>
-                    }
-                />
-
-                {/* Redirect root to dashboard */}
-                <Route
-                    path="/"
-                    element={<Navigate to="/dashboard" replace />}
-                />
-
-                {/* Catch all route */}
-                <Route
-                    path="*"
-                    element={<Navigate to="/dashboard" replace />}
-                />
-            </Routes>
+                    } />
+                    <Route path="/analytics" element={
+                        <ProtectedRoute>
+                            <Analytics />
+                        </ProtectedRoute>
+                    } />
+                </Routes>
+            </div>
         </Router>
     );
 }
