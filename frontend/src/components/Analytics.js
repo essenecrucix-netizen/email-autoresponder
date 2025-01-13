@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AnalyticsCharts from './analytics/AnalyticsCharts';
-import useAnalyticsData from '../hooks/useAnalyticsData';
+import { useAnalyticsData } from '../hooks/useAnalyticsData';
 
 function Analytics() {
     const navigate = useNavigate();

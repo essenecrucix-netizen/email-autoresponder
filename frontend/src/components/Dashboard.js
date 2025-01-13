@@ -1,5 +1,5 @@
 import React from 'react';
-import useAnalyticsData from '../hooks/useAnalyticsData';
+import { useAnalyticsData } from '../hooks/useAnalyticsData';
 import AnalyticsCharts from './analytics/AnalyticsCharts';
 
 function Dashboard() {
