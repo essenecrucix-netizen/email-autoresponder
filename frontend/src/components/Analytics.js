@@ -5,11 +5,11 @@ import { useAnalyticsData } from '../hooks/useAnalyticsData';
 
 function Analytics() {
     const navigate = useNavigate();
-    const { analyticsData, loading, error } = useAnalyticsData();
+    const { data, loading, error } = useAnalyticsData();
 
     useEffect(() => {
         // Check if user is authenticated
-        const token = localStorage.getItem('authToken');
+        const token = localStorage.getItem('token');
         if (!token) {
             navigate('/login', { state: { from: '/analytics' } });
         }
@@ -24,15 +24,10 @@ function Analytics() {
     }
 
     if (error) {
-        // If error is authentication related, redirect to login
-        if (error.includes('Authentication') || error.includes('token')) {
-            navigate('/login', { state: { from: '/analytics' } });
-            return null;
-        }
         return <p className="text-red-500 p-4">{error}</p>;
     }
 
-    if (!analyticsData) {
+    if (!data) {
         return <p className="p-4">No analytics data available.</p>;
     }
 
@@ -43,27 +38,27 @@ function Analytics() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
                 <div className="bg-white p-4 rounded-lg shadow">
                     <h3 className="text-gray-500 text-sm">Total Emails</h3>
-                    <p className="text-2xl font-semibold">{analyticsData.totalEmails}</p>
+                    <p className="text-2xl font-semibold">{data.totalEmails}</p>
                 </div>
                 
                 <div className="bg-white p-4 rounded-lg shadow">
                     <h3 className="text-gray-500 text-sm">Automated Responses</h3>
-                    <p className="text-2xl font-semibold">{analyticsData.automatedResponses}</p>
+                    <p className="text-2xl font-semibold">{data.automatedResponses}</p>
                 </div>
                 
                 <div className="bg-white p-4 rounded-lg shadow">
                     <h3 className="text-gray-500 text-sm">Average Response Time</h3>
-                    <p className="text-2xl font-semibold">{analyticsData.averageResponseTime}s</p>
+                    <p className="text-2xl font-semibold">{data.averageResponseTime}s</p>
                 </div>
                 
                 <div className="bg-white p-4 rounded-lg shadow">
                     <h3 className="text-gray-500 text-sm">Satisfaction Rate</h3>
-                    <p className="text-2xl font-semibold">{analyticsData.satisfactionRate}%</p>
+                    <p className="text-2xl font-semibold">{data.satisfactionRate}%</p>
                 </div>
             </div>
 
             <div className="bg-white rounded-lg shadow p-4">
-                <AnalyticsCharts />
+                <AnalyticsCharts data={data} />
             </div>
         </div>
     );

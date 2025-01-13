@@ -10,7 +10,18 @@ export function useAnalyticsData() {
         async function fetchData() {
             try {
                 setLoading(true);
-                const response = await axios.get('/api/analytics');
+                const token = localStorage.getItem('token');
+                
+                if (!token) {
+                    throw new Error('Authentication token not found');
+                }
+
+                const response = await axios.get('/api/analytics', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
                 setData(response.data);
                 setError(null);
             } catch (err) {
