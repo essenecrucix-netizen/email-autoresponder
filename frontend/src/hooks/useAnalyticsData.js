@@ -12,15 +12,24 @@ function useAnalyticsData() {
                 setLoading(true);
                 setError(null);
 
-                // Get the auth token from localStorage
+                // Get the auth token and user ID from localStorage
                 const token = localStorage.getItem('authToken');
+                const userId = localStorage.getItem('userId');
+
                 if (!token) {
                     throw new Error('Authentication token not found');
+                }
+
+                if (!userId) {
+                    throw new Error('User ID not found');
                 }
 
                 const response = await axios.get('/api/analytics', {
                     headers: {
                         'Authorization': `Bearer ${token}`
+                    },
+                    params: {
+                        userId: userId
                     }
                 });
 
@@ -33,14 +42,14 @@ function useAnalyticsData() {
                 console.error('Error fetching analytics:', err);
                 if (err.response?.status === 401 || err.response?.status === 403) {
                     setError('Authentication failed. Please log in again.');
+                    localStorage.removeItem('authToken');
+                    localStorage.removeItem('userId');
                 } else if (err.message === 'Authentication token not found') {
                     setError('Authentication token not found');
+                } else if (err.message === 'User ID not found') {
+                    setError('User ID not found. Please log in again.');
                 } else {
                     setError(err.response?.data?.error || 'Failed to fetch analytics data');
-                }
-                // Clear token if it's an authentication error
-                if (err.response?.status === 401 || err.response?.status === 403) {
-                    localStorage.removeItem('authToken');
                 }
             } finally {
                 setLoading(false);

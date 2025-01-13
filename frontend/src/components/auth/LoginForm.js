@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
+import axios from 'axios';
 
 function LoginForm() {
     const navigate = useNavigate();
@@ -21,47 +22,37 @@ function LoginForm() {
         }
     }, [location.state]);
 
-    async function handleSubmit(e) {
+    const handleSubmit = async (e) => {
         e.preventDefault();
         setError('');
         setLoading(true);
         
         try {
-            console.log('Attempting login with:', { email: formData.email });
-            const response = await fetch('/api/login', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(formData),
-            });
-    
-            console.log('Login response status:', response.status);
-            const data = await response.json();
-            console.log('Login response data:', data);
+            const response = await axios.post('/api/login', { email: formData.email, password: formData.password });
+            console.log('Login response:', response);
             
-            if (!response.ok) {
-                throw new Error(data.error || 'Invalid email or password');
+            if (response.status === 200 && response.data.token) {
+                // Store the token and user ID
+                localStorage.setItem('authToken', response.data.token);
+                localStorage.setItem('userId', response.data.user.id || '123'); // Default to '123' if id not in response
+                
+                // Set success message
+                setSuccess('Login successful! Redirecting to dashboard...');
+                
+                // Redirect after a short delay
+                setTimeout(() => {
+                    navigate(location.state?.from || '/dashboard', { replace: true });
+                }, 1500);
+            } else {
+                setError('Invalid response from server');
             }
-    
-            if (!data.token) {
-                throw new Error('No authentication token received');
-            }
-
-            console.log('Login successful, storing token and redirecting...');
-            // Store the auth token
-            localStorage.setItem('authToken', data.token);
-            
-            // Navigate to the redirect path or dashboard
-            const from = location.state?.from || '/dashboard';
-            navigate(from, { replace: true });
-        } catch (error) {
-            console.error('Detailed login error:', error);
-            setError(error.message || 'Login failed. Please try again.');
+        } catch (err) {
+            console.error('Login error:', err);
+            setError(err.response?.data?.error || 'Failed to login');
         } finally {
             setLoading(false);
         }
-    }    
+    };
 
     return (
         <div className="space-y-8">

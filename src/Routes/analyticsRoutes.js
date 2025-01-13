@@ -25,7 +25,10 @@ const router = express.Router();
 // Get analytics by user
 router.get('/', authenticateToken, async (req, res) => {
     try {
-        const userId = req.user.userId || process.env.USER_ID; // Fallback to env USER_ID if needed
+        // Get user ID from query parameters or token
+        const userId = req.query.userId || req.user.userId || process.env.USER_ID;
+        console.log('Fetching analytics for user:', userId);
+
         const database = DatabaseService();
         const analyticsData = await database.getAnalyticsByUser(userId);
 

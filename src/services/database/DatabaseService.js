@@ -84,7 +84,7 @@ function DatabaseService() {
         try {
             const analyticsId = `${userId}-${Date.now()}`; // Unique ID per user and timestamp
             const params = {
-                TableName: 'analytics',
+                TableName: 'email_analytics',
                 Item: {
                     analytics_id: analyticsId,
                     user_id: userId,
@@ -105,11 +105,11 @@ function DatabaseService() {
     async function getAnalyticsByUser(userId) {
         try {
             const params = {
-                TableName: 'analytics',
-                IndexName: 'user_id-index', // Ensure this index exists
-                KeyConditionExpression: 'user_id = :userId', // Use the correct key schema element
+                TableName: 'email_analytics',
+                IndexName: 'user_id-index',
+                KeyConditionExpression: 'user_id = :userId',
                 ExpressionAttributeValues: {
-                    ':userId': userId, // Provide the value for the hash key
+                    ':userId': userId,
                 },
             };
             console.log('DynamoDB GetAnalyticsByUser Params:', params); // Debugging
@@ -149,17 +149,17 @@ function DatabaseService() {
     async function addAnalyticsEntry(entry) {
         try {
             const params = {
-                TableName: 'analytics',
+                TableName: 'email_analytics',
                 Item: {
                     analytics_id: `${Date.now()}-${Math.random().toString(36).substring(7)}`,
-                    user_id: process.env.USER_ID,
+                    user_id: entry.userId || process.env.USER_ID || '123',
                     type: 'automated',
                     timestamp: entry.timestamp,
                     subject: entry.emailSubject,
                     response: entry.response,
                     hasKnowledgeBase: entry.hasKnowledgeBase,
-                    satisfaction: 'pending',  // Can be updated later based on user feedback
-                    responseTime: 0,  // Can be calculated if needed
+                    satisfaction: 'pending',
+                    responseTime: 0,
                     needsEscalation: false,
                     createdAt: new Date().toISOString()
                 }
@@ -169,7 +169,6 @@ function DatabaseService() {
             return params.Item;
         } catch (error) {
             console.error('Failed to add analytics entry:', error);
-            // Don't throw error to prevent email processing from failing
             return null;
         }
     }
