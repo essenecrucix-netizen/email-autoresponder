@@ -24,10 +24,24 @@ function useAnalyticsData() {
                     }
                 });
 
-                setAnalyticsData(response.data);
+                if (response.status === 200 && response.data) {
+                    setAnalyticsData(response.data);
+                } else {
+                    throw new Error('Failed to fetch analytics data');
+                }
             } catch (err) {
                 console.error('Error fetching analytics:', err);
-                setError(err.response?.data?.error || 'Failed to fetch analytics data');
+                if (err.response?.status === 401 || err.response?.status === 403) {
+                    setError('Authentication failed. Please log in again.');
+                } else if (err.message === 'Authentication token not found') {
+                    setError('Authentication token not found');
+                } else {
+                    setError(err.response?.data?.error || 'Failed to fetch analytics data');
+                }
+                // Clear token if it's an authentication error
+                if (err.response?.status === 401 || err.response?.status === 403) {
+                    localStorage.removeItem('authToken');
+                }
             } finally {
                 setLoading(false);
             }

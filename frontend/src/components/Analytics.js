@@ -1,9 +1,19 @@
-import React from 'react';
+import React, { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import AnalyticsCharts from './analytics/AnalyticsCharts';
 import useAnalyticsData from '../hooks/useAnalyticsData';
 
 function Analytics() {
+    const navigate = useNavigate();
     const { analyticsData, loading, error } = useAnalyticsData();
+
+    useEffect(() => {
+        // Check if user is authenticated
+        const token = localStorage.getItem('authToken');
+        if (!token) {
+            navigate('/login', { state: { from: '/analytics' } });
+        }
+    }, [navigate]);
 
     if (loading) {
         return (
@@ -14,6 +24,11 @@ function Analytics() {
     }
 
     if (error) {
+        // If error is authentication related, redirect to login
+        if (error.includes('Authentication') || error.includes('token')) {
+            navigate('/login', { state: { from: '/analytics' } });
+            return null;
+        }
         return <p className="text-red-500 p-4">{error}</p>;
     }
 
