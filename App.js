@@ -10,7 +10,11 @@ const ProtectedRoute = ({ children }) => {
   const token = localStorage.getItem('token');
   const userId = localStorage.getItem('userId');
   
+  console.log('ProtectedRoute - Token:', token);
+  console.log('ProtectedRoute - UserID:', userId);
+  
   if (!token || !userId) {
+    console.log('ProtectedRoute - Redirecting to login due to missing:', !token ? 'token' : 'userId');
     return <Navigate to="/login" />;
   }
   

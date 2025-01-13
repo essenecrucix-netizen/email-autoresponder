@@ -36,15 +36,24 @@ function LoginForm({ redirectPath }) {
                 localStorage.setItem('token', response.data.token);
                 localStorage.setItem('userId', response.data.user?.id || '123');
                 
+                // Debug: Check if token was stored
+                console.log('Token stored:', localStorage.getItem('token'));
+                console.log('UserID stored:', localStorage.getItem('userId'));
+                
                 // Set success message
                 setSuccess('Login successful! Redirecting...');
                 
                 // Configure axios defaults for future requests
                 axios.defaults.headers.common['Authorization'] = `Bearer ${response.data.token}`;
                 
+                // Debug: Log before redirect
+                console.log('Attempting to redirect to:', redirectPath || '/dashboard');
+                
                 // Redirect after a short delay
                 setTimeout(() => {
-                    navigate(redirectPath || '/dashboard', { replace: true });
+                    navigate('/dashboard', { replace: true });
+                    // Debug: Log after redirect attempt
+                    console.log('Redirect attempted');
                 }, 1500);
             } else {
                 setError('Invalid response from server');
