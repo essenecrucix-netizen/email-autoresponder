@@ -11,10 +11,16 @@ const DatabaseService = require('./services/database/DatabaseService');
 const app = express();
 dotenv.config();
 
+// CORS configuration
+app.use(cors({
+    origin: 'http://54.213.58.183:3000',
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
+}));
+
 // Middleware
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
-app.use(cors());
 
 // Serve static files from the React frontend build
 app.use(express.static(path.join(__dirname, '../frontend/build'))); // Updated path for React app
