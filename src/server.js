@@ -1,6 +1,6 @@
 let app;
+const express = require('express');
 try {
-    const express = require('express');
     const path = require('path');
     const bodyParser = require('body-parser');
     const dotenv = require('dotenv');

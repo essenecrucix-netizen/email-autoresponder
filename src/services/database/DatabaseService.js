@@ -84,7 +84,7 @@ function DatabaseService() {
         try {
             const analyticsId = `${userId}-${Date.now()}`; // Unique ID per user and timestamp
             const params = {
-                TableName: 'email_analytics',
+                TableName: 'analytics',
                 Item: {
                     analytics_id: analyticsId,
                     user_id: userId,
@@ -105,7 +105,7 @@ function DatabaseService() {
     async function getAnalyticsByUser(userId) {
         try {
             const params = {
-                TableName: 'email_analytics',
+                TableName: 'analytics',
                 IndexName: 'user_id-index',
                 KeyConditionExpression: 'user_id = :userId',
                 ExpressionAttributeValues: {

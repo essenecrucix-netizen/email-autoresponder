@@ -7,8 +7,48 @@ import AnalyticsCharts from './analytics/AnalyticsCharts';
 function Analytics() {
     const { data, loading, error } = useAnalyticsData();
 
-    if (loading) return <div>Loading...</div>;
-    if (error) return <div>Error: {error}</div>;
+    if (loading) {
+        return (
+            <div className="flex h-screen bg-gray-100">
+                <Sidebar />
+                <div className="flex-1 flex flex-col">
+                    <Header />
+                    <main className="flex-1 overflow-y-auto p-6">
+                        <div className="flex justify-center items-center h-64">
+                            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+                        </div>
+                    </main>
+                </div>
+            </div>
+        );
+    }
+
+    if (error) {
+        return (
+            <div className="flex h-screen bg-gray-100">
+                <Sidebar />
+                <div className="flex-1 flex flex-col">
+                    <Header />
+                    <main className="flex-1 overflow-y-auto p-6">
+                        <div className="bg-red-50 border-l-4 border-red-400 p-4 mb-4">
+                            <div className="flex">
+                                <div className="flex-shrink-0">
+                                    <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                                    </svg>
+                                </div>
+                                <div className="ml-3">
+                                    <p className="text-sm text-red-700">
+                                        Error loading analytics data: {error}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </main>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="flex h-screen bg-gray-100">
@@ -37,28 +77,15 @@ function Analytics() {
                             </div>
                         </div>
 
-                        {/* Charts Section */}
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                            <div className="bg-white rounded-lg shadow p-6">
-                                <h3 className="text-lg font-semibold mb-4">Response Summary</h3>
-                                <AnalyticsCharts 
-                                    data={data.responseSummary || []} 
-                                    type="response" 
-                                />
-                            </div>
-                            <div className="bg-white rounded-lg shadow p-6">
-                                <h3 className="text-lg font-semibold mb-4">Email Volume Trend</h3>
-                                <AnalyticsCharts 
-                                    data={data.emailVolume || []} 
-                                    type="volume" 
-                                />
-                            </div>
+                        {/* Charts */}
+                        <div className="bg-white rounded-lg shadow p-6">
+                            <AnalyticsCharts />
                         </div>
 
                         {/* Detailed Stats */}
                         <div className="bg-white rounded-lg shadow p-6">
                             <h3 className="text-lg font-semibold mb-4">Response Details</h3>
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                 <div>
                                     <h4 className="text-gray-500 text-sm font-medium">Escalated Emails</h4>
                                     <p className="text-2xl font-semibold mt-1">{data.escalatedEmails || 0}</p>

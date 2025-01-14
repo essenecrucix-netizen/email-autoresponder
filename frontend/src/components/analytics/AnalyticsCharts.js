@@ -47,19 +47,33 @@ function AnalyticsCharts() {
     // Temporary test data
     async function fetchAnalyticsData() {
         try {
-            const token = localStorage.getItem('token');
-            if (!token) {
-                throw new Error('Authentication token not found');
-            }
-
             const response = await axios.get('/api/analytics');
+            const data = response.data;
+
+            // Process email volume data
+            const emailVolume = data.emailVolume || [];
+            const dateLabels = emailVolume.map(item => item.date);
+            const emailCounts = emailVolume.map(item => item.count);
+
+            // Process response summary data
+            const responseSummary = data.responseSummary || [];
+            const sentimentData = {
+                positive: Math.round(parseFloat(data.satisfactionRate || '0%')),
+                neutral: Math.round((100 - parseFloat(data.satisfactionRate || '0%')) / 2),
+                negative: Math.round((100 - parseFloat(data.satisfactionRate || '0%')) / 2)
+            };
+
+            // Language data (simplified since we don't have this in the current schema)
+            const languageData = {
+                'English': data.totalEmails || 0
+            };
 
             return {
-                dateLabels: response.data.dateLabels,
-                emailCounts: response.data.emailCounts,
-                responseTimes: response.data.responseTimes,
-                sentimentData: response.data.sentimentData,
-                languageData: response.data.languageData || { English: response.data.totalEmails }
+                dateLabels,
+                emailCounts,
+                responseTimes: [data.averageResponseTime],
+                sentimentData,
+                languageData
             };
         } catch (error) {
             console.error('Error fetching analytics data:', error);
@@ -76,7 +90,7 @@ function AnalyticsCharts() {
 
         const commonOptions = {
             responsive: true,
-            maintainAspectRatio: false, // Allow canvas resizing
+            maintainAspectRatio: false,
         };
 
         if (volumeChartRef.current) {
@@ -91,6 +105,7 @@ function AnalyticsCharts() {
                             borderColor: 'rgb(75, 192, 192)',
                             backgroundColor: 'rgba(75, 192, 192, 0.2)',
                             tension: 0.4,
+                            fill: true
                         },
                     ],
                 },
@@ -101,8 +116,15 @@ function AnalyticsCharts() {
                         tooltip: { enabled: true },
                     },
                     scales: {
-                        x: { title: { display: true, text: 'Date' } },
-                        y: { beginAtZero: true, title: { display: true, text: 'Email Count' } },
+                        x: { 
+                            title: { display: true, text: 'Date' },
+                            grid: { display: false }
+                        },
+                        y: { 
+                            beginAtZero: true, 
+                            title: { display: true, text: 'Email Count' },
+                            grid: { color: 'rgba(0,0,0,0.1)' }
+                        },
                     },
                 },
             });
@@ -110,19 +132,30 @@ function AnalyticsCharts() {
 
         if (responseTimeChartRef.current) {
             responseTimeChart = new Chart(responseTimeChartRef.current, {
-                type: 'line',
+                type: 'bar',
                 data: {
-                    labels: data.dateLabels,
+                    labels: ['Average Response Time'],
                     datasets: [
                         {
-                            label: 'Response Time (seconds)',
-                            data: data.responseTimes,
+                            label: 'Minutes',
+                            data: [parseFloat(data.responseTimes[0])],
+                            backgroundColor: 'rgb(255, 99, 132)',
                             borderColor: 'rgb(255, 99, 132)',
-                            tension: 0.4,
                         },
                     ],
                 },
-                options: commonOptions,
+                options: {
+                    ...commonOptions,
+                    plugins: {
+                        legend: { display: false },
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: { display: true, text: 'Minutes' }
+                        }
+                    }
+                },
             });
         }
 
@@ -130,7 +163,7 @@ function AnalyticsCharts() {
             sentimentChart = new Chart(sentimentChartRef.current, {
                 type: 'pie',
                 data: {
-                    labels: ['Positive', 'Neutral', 'Negative'],
+                    labels: ['Satisfied', 'Neutral', 'Unsatisfied'],
                     datasets: [
                         {
                             data: [
@@ -142,24 +175,43 @@ function AnalyticsCharts() {
                         },
                     ],
                 },
-                options: commonOptions,
+                options: {
+                    ...commonOptions,
+                    plugins: {
+                        legend: { position: 'bottom' }
+                    }
+                },
             });
         }
 
         if (languageChartRef.current) {
+            const languages = Object.keys(data.languageData);
+            const counts = Object.values(data.languageData);
+            
             languageChart = new Chart(languageChartRef.current, {
                 type: 'bar',
                 data: {
-                    labels: Object.keys(data.languageData),
+                    labels: languages,
                     datasets: [
                         {
                             label: 'Emails by Language',
-                            data: Object.values(data.languageData),
+                            data: counts,
                             backgroundColor: 'rgb(54, 162, 235)',
                         },
                     ],
                 },
-                options: commonOptions,
+                options: {
+                    ...commonOptions,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: { display: true, text: 'Count' }
+                        }
+                    }
+                },
             });
         }
     }
