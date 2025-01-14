@@ -27,11 +27,6 @@ try {
     // Serve static files from the React frontend build
     app.use(express.static(path.join(__dirname, '../frontend/build'))); // Updated path for React app
 
-    // Fallback to index.html for React routing
-    app.get('/*', (req, res) => {
-        res.sendFile(path.join(__dirname, '../frontend/build/index.html'));
-    });
-
     // Initialize EmailService
     const emailService = EmailService();
 
@@ -188,25 +183,32 @@ try {
             console.log('Analytics request received');
             console.log('User from token:', req.user);
 
-            // For now, return mock data for testing
             const mockData = {
-                totalEmails: 100,
-                automatedResponses: 75,
-                averageResponseTime: 30,
-                satisfactionRate: 85,
-                escalatedResponses: 25,
-                emailVolume: [
-                    { date: '2024-01-01', count: 10 },
-                    { date: '2024-01-02', count: 15 },
-                    { date: '2024-01-03', count: 20 }
-                ]
+                dateLabels: ['2024-01-01', '2024-01-02', '2024-01-03', '2024-01-04', '2024-01-05'],
+                emailCounts: [10, 15, 20, 12, 18],
+                responseTimes: [30, 25, 35, 28, 32],
+                sentimentData: {
+                    positive: 45,
+                    neutral: 35,
+                    negative: 20
+                },
+                languageData: {
+                    English: 75,
+                    Spanish: 15,
+                    French: 10
+                }
             };
 
-            res.status(200).json(mockData);
+            res.json(mockData);
         } catch (error) {
             console.error('Error in analytics endpoint:', error);
             res.status(500).json({ error: 'Failed to fetch analytics data' });
         }
+    });
+
+    // Fallback to index.html for React routing - MOVED TO END
+    app.get('/*', (req, res) => {
+        res.sendFile(path.join(__dirname, '../frontend/build/index.html'));
     });
 
     // Start the server
