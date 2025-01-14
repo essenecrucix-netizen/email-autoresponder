@@ -1,45 +1,41 @@
-import React, { useState, useEffect } from 'react';
-import dynamic from 'next/dynamic';
+import React, { useState, useEffect, lazy, Suspense } from 'react';
+import { Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  BarElement,
+  ArcElement,
+  Title,
+  Tooltip,
+  Legend
+} from 'chart.js';
+import { Bar, Pie } from 'react-chartjs-2';
 
-// Dynamically import Chart.js components with no SSR
-const Chart = dynamic(() => import('chart.js/auto'), { ssr: false });
-const { Bar, Pie } = dynamic(() => import('react-chartjs-2'), { ssr: false });
+// Register ChartJS components
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  BarElement,
+  ArcElement,
+  Title,
+  Tooltip,
+  Legend
+);
+
+const LoadingSpinner = () => (
+  <div className="flex justify-center items-center h-64">
+    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+  </div>
+);
 
 const AnalyticsCharts = () => {
   const [data, setData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [isClient, setIsClient] = useState(false);
-
-  useEffect(() => {
-    setIsClient(true);
-    const initChart = async () => {
-      const { Chart: ChartJS,
-        CategoryScale,
-        LinearScale,
-        PointElement,
-        LineElement,
-        BarElement,
-        ArcElement,
-        Title,
-        Tooltip,
-        Legend } = await import('chart.js');
-
-      ChartJS.register(
-        CategoryScale,
-        LinearScale,
-        PointElement,
-        LineElement,
-        BarElement,
-        ArcElement,
-        Title,
-        Tooltip,
-        Legend
-      );
-    };
-
-    initChart();
-  }, []);
+  const [chartInitialized, setChartInitialized] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -50,6 +46,7 @@ const AnalyticsCharts = () => {
         console.log('Analytics data:', jsonData);
         setData(jsonData);
         setError(null);
+        setChartInitialized(true);
       } catch (err) {
         console.error('Error fetching analytics:', err);
         setError(err.message);
@@ -58,17 +55,11 @@ const AnalyticsCharts = () => {
       }
     };
 
-    if (isClient) {
-      fetchData();
-    }
-  }, [isClient]);
+    fetchData();
+  }, []);
 
-  if (!isClient || isLoading) {
-    return (
-      <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
-      </div>
-    );
+  if (isLoading) {
+    return <LoadingSpinner />;
   }
 
   if (error) {
@@ -146,19 +137,25 @@ const AnalyticsCharts = () => {
       <div className="bg-white rounded-lg shadow p-4 h-80">
         <h3 className="text-lg font-semibold mb-2">Email Volume Over Time</h3>
         <div style={{ position: 'relative', height: '100%', width: '100%' }}>
-          {isClient && <Bar data={volumeChartData} options={commonOptions} />}
+          <Suspense fallback={<LoadingSpinner />}>
+            {chartInitialized && <Bar data={volumeChartData} options={commonOptions} />}
+          </Suspense>
         </div>
       </div>
       <div className="bg-white rounded-lg shadow p-4 h-80">
         <h3 className="text-lg font-semibold mb-2">Response Types</h3>
         <div style={{ position: 'relative', height: '100%', width: '100%' }}>
-          {isClient && <Pie data={responseTypesData} options={commonOptions} />}
+          <Suspense fallback={<LoadingSpinner />}>
+            {chartInitialized && <Pie data={responseTypesData} options={commonOptions} />}
+          </Suspense>
         </div>
       </div>
       <div className="bg-white rounded-lg shadow p-4 h-80">
         <h3 className="text-lg font-semibold mb-2">Average Response Time</h3>
         <div style={{ position: 'relative', height: '100%', width: '100%' }}>
-          {isClient && <Bar data={responseTimeData} options={commonOptions} />}
+          <Suspense fallback={<LoadingSpinner />}>
+            {chartInitialized && <Bar data={responseTimeData} options={commonOptions} />}
+          </Suspense>
         </div>
       </div>
     </div>
