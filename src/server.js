@@ -183,23 +183,71 @@ try {
             console.log('Analytics request received');
             console.log('User from token:', req.user);
 
-            const mockData = {
-                dateLabels: ['2024-01-01', '2024-01-02', '2024-01-03', '2024-01-04', '2024-01-05'],
-                emailCounts: [10, 15, 20, 12, 18],
-                responseTimes: [30, 25, 35, 28, 32],
-                sentimentData: {
-                    positive: 45,
-                    neutral: 35,
-                    negative: 20
-                },
-                languageData: {
-                    English: 75,
-                    Spanish: 15,
-                    French: 10
-                }
+            const database = DatabaseService();
+            const analyticsData = await database.getAnalyticsByUser(req.user.userId);
+            
+            if (!analyticsData || analyticsData.length === 0) {
+                return res.json({
+                    totalEmails: 0,
+                    automatedResponses: 0,
+                    averageResponseTime: '0m',
+                    satisfactionRate: '0%',
+                    escalatedEmails: 0,
+                    aiResponseRate: '0%',
+                    humanResponseRate: '0%',
+                    responseSummary: [],
+                    emailVolume: []
+                });
+            }
+
+            // Process analytics data
+            const totalEmails = analyticsData.length;
+            const automatedResponses = analyticsData.filter(entry => entry.type === 'automated').length;
+            const escalatedEmails = analyticsData.filter(entry => entry.needsEscalation).length;
+            
+            // Calculate average response time
+            const totalResponseTime = analyticsData.reduce((acc, entry) => acc + (entry.responseTime || 0), 0);
+            const averageResponseTime = totalEmails > 0 ? Math.round(totalResponseTime / totalEmails) : 0;
+            
+            // Calculate rates
+            const aiResponseRate = totalEmails > 0 ? Math.round((automatedResponses / totalEmails) * 100) : 0;
+            const humanResponseRate = totalEmails > 0 ? Math.round(((totalEmails - automatedResponses) / totalEmails) * 100) : 0;
+            
+            // Calculate satisfaction rate from non-pending responses
+            const respondedEmails = analyticsData.filter(entry => entry.satisfaction !== 'pending');
+            const satisfiedEmails = respondedEmails.filter(entry => entry.satisfaction === 'satisfied').length;
+            const satisfactionRate = respondedEmails.length > 0 
+                ? Math.round((satisfiedEmails / respondedEmails.length) * 100) 
+                : 0;
+
+            // Group emails by date for volume chart
+            const emailsByDate = analyticsData.reduce((acc, entry) => {
+                const date = entry.timestamp.split('T')[0];
+                acc[date] = (acc[date] || 0) + 1;
+                return acc;
+            }, {});
+
+            const emailVolume = Object.entries(emailsByDate)
+                .map(([date, count]) => ({ date, count }))
+                .sort((a, b) => a.date.localeCompare(b.date))
+                .slice(-5); // Last 5 days
+
+            const response = {
+                totalEmails,
+                automatedResponses,
+                averageResponseTime: `${averageResponseTime}m`,
+                satisfactionRate: `${satisfactionRate}%`,
+                escalatedEmails,
+                aiResponseRate: `${aiResponseRate}%`,
+                humanResponseRate: `${humanResponseRate}%`,
+                responseSummary: [
+                    { name: 'Automated', value: automatedResponses },
+                    { name: 'Manual', value: totalEmails - automatedResponses }
+                ],
+                emailVolume
             };
 
-            res.json(mockData);
+            res.json(response);
         } catch (error) {
             console.error('Error in analytics endpoint:', error);
             res.status(500).json({ error: 'Failed to fetch analytics data' });
