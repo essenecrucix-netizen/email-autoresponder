@@ -1,5 +1,4 @@
-import React from 'react';
-import { Line, Bar, Pie } from 'react-chartjs-2';
+import React, { useState, useEffect } from 'react';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -12,6 +11,7 @@ import {
   Tooltip,
   Legend
 } from 'chart.js';
+import { Bar, Pie } from 'react-chartjs-2';
 import axios from '../../utils/axios';
 
 // Register ChartJS components
@@ -28,11 +28,11 @@ ChartJS.register(
 );
 
 const AnalyticsCharts = () => {
-  const [data, setData] = React.useState(null);
-  const [isLoading, setIsLoading] = React.useState(true);
-  const [error, setError] = React.useState(null);
+  const [data, setData] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  React.useEffect(() => {
+  useEffect(() => {
     const fetchData = async () => {
       try {
         setIsLoading(true);
@@ -133,15 +133,21 @@ const AnalyticsCharts = () => {
     <div className="grid grid-cols-2 gap-6 p-4">
       <div className="bg-white rounded-lg shadow p-4 h-80">
         <h3 className="text-lg font-semibold mb-2">Email Volume Over Time</h3>
-        <Bar data={volumeChartData} options={commonOptions} />
+        <div style={{ position: 'relative', height: '100%', width: '100%' }}>
+          <Bar data={volumeChartData} options={commonOptions} />
+        </div>
       </div>
       <div className="bg-white rounded-lg shadow p-4 h-80">
         <h3 className="text-lg font-semibold mb-2">Response Types</h3>
-        <Pie data={responseTypesData} options={commonOptions} />
+        <div style={{ position: 'relative', height: '100%', width: '100%' }}>
+          <Pie data={responseTypesData} options={commonOptions} />
+        </div>
       </div>
       <div className="bg-white rounded-lg shadow p-4 h-80">
         <h3 className="text-lg font-semibold mb-2">Average Response Time</h3>
-        <Bar data={responseTimeData} options={commonOptions} />
+        <div style={{ position: 'relative', height: '100%', width: '100%' }}>
+          <Bar data={responseTimeData} options={commonOptions} />
+        </div>
       </div>
     </div>
   );
