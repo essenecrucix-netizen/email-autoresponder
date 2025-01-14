@@ -1,44 +1,54 @@
 import React, { useState, useEffect } from 'react';
-import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  BarElement,
-  ArcElement,
-  Title,
-  Tooltip,
-  Legend
-} from 'chart.js';
-import { Bar, Pie } from 'react-chartjs-2';
-import axios from '../../utils/axios';
+import dynamic from 'next/dynamic';
 
-// Register ChartJS components
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  BarElement,
-  ArcElement,
-  Title,
-  Tooltip,
-  Legend
-);
+// Dynamically import Chart.js components with no SSR
+const Chart = dynamic(() => import('chart.js/auto'), { ssr: false });
+const { Bar, Pie } = dynamic(() => import('react-chartjs-2'), { ssr: false });
 
 const AnalyticsCharts = () => {
   const [data, setData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+    const initChart = async () => {
+      const { Chart: ChartJS,
+        CategoryScale,
+        LinearScale,
+        PointElement,
+        LineElement,
+        BarElement,
+        ArcElement,
+        Title,
+        Tooltip,
+        Legend } = await import('chart.js');
+
+      ChartJS.register(
+        CategoryScale,
+        LinearScale,
+        PointElement,
+        LineElement,
+        BarElement,
+        ArcElement,
+        Title,
+        Tooltip,
+        Legend
+      );
+    };
+
+    initChart();
+  }, []);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         setIsLoading(true);
-        const response = await axios.get('/api/analytics');
-        console.log('Analytics data:', response.data);
-        setData(response.data);
+        const response = await fetch('/api/analytics');
+        const jsonData = await response.json();
+        console.log('Analytics data:', jsonData);
+        setData(jsonData);
         setError(null);
       } catch (err) {
         console.error('Error fetching analytics:', err);
@@ -48,10 +58,12 @@ const AnalyticsCharts = () => {
       }
     };
 
-    fetchData();
-  }, []);
+    if (isClient) {
+      fetchData();
+    }
+  }, [isClient]);
 
-  if (isLoading) {
+  if (!isClient || isLoading) {
     return (
       <div className="flex justify-center items-center h-64">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
@@ -134,19 +146,19 @@ const AnalyticsCharts = () => {
       <div className="bg-white rounded-lg shadow p-4 h-80">
         <h3 className="text-lg font-semibold mb-2">Email Volume Over Time</h3>
         <div style={{ position: 'relative', height: '100%', width: '100%' }}>
-          <Bar data={volumeChartData} options={commonOptions} />
+          {isClient && <Bar data={volumeChartData} options={commonOptions} />}
         </div>
       </div>
       <div className="bg-white rounded-lg shadow p-4 h-80">
         <h3 className="text-lg font-semibold mb-2">Response Types</h3>
         <div style={{ position: 'relative', height: '100%', width: '100%' }}>
-          <Pie data={responseTypesData} options={commonOptions} />
+          {isClient && <Pie data={responseTypesData} options={commonOptions} />}
         </div>
       </div>
       <div className="bg-white rounded-lg shadow p-4 h-80">
         <h3 className="text-lg font-semibold mb-2">Average Response Time</h3>
         <div style={{ position: 'relative', height: '100%', width: '100%' }}>
-          <Bar data={responseTimeData} options={commonOptions} />
+          {isClient && <Bar data={responseTimeData} options={commonOptions} />}
         </div>
       </div>
     </div>
