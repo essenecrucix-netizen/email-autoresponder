@@ -180,7 +180,7 @@ try {
     // Get analytics by user
     app.get('/api/analytics', authenticateToken, async (req, res) => {
         try {
-            const databaseService = new DatabaseService();
+            const databaseService = DatabaseService();
             const analyticsData = await databaseService.getAnalyticsByUser(req.user.userId);
             
             if (!analyticsData || analyticsData.length === 0) {
@@ -197,36 +197,25 @@ try {
                 });
             }
 
-            // Filter email entries and metrics entries
-            const emailEntries = analyticsData.filter(entry => entry.type);
-            const metricsEntries = analyticsData.filter(entry => entry.metrics);
-
-            // Calculate metrics from email entries
-            const totalEmails = emailEntries.length;
-            const automatedResponses = emailEntries.filter(entry => entry.type === 'automated').length;
-            const humanResponses = emailEntries.filter(entry => entry.type === 'human').length;
-            const escalatedEmails = emailEntries.filter(entry => entry.needsEscalation).length;
+            // Calculate metrics from analytics entries
+            const totalEmails = analyticsData.length;
+            const automatedResponses = analyticsData.filter(entry => entry.type === 'automated').length;
+            const humanResponses = analyticsData.filter(entry => entry.type === 'human').length;
+            const escalatedEmails = analyticsData.filter(entry => entry.needsEscalation).length;
 
             // Calculate response times and satisfaction
-            const validResponseTimes = emailEntries.filter(entry => entry.responseTime).map(entry => entry.responseTime);
+            const validResponseTimes = analyticsData
+                .filter(entry => typeof entry.responseTime === 'number')
+                .map(entry => entry.responseTime);
+            
             const averageResponseTime = validResponseTimes.length > 0 
                 ? Math.round(validResponseTimes.reduce((a, b) => a + b, 0) / validResponseTimes.length) 
                 : 0;
 
-            const respondedEmails = emailEntries.filter(entry => entry.satisfaction !== 'pending');
-            const satisfiedEmails = respondedEmails.filter(entry => entry.satisfaction === 'satisfied').length;
-            const satisfactionRate = respondedEmails.length > 0 
-                ? Math.round((satisfiedEmails / respondedEmails.length) * 100) 
-                : 0;
-
-            // Calculate AI and human response rates
-            const aiResponseRate = totalEmails > 0 ? Math.round((automatedResponses / totalEmails) * 100) : 0;
-            const humanResponseRate = totalEmails > 0 ? Math.round((humanResponses / totalEmails) * 100) : 0;
-
             // Group emails by date for volume chart
-            const emailsByDate = emailEntries.reduce((acc, entry) => {
-                if (entry.timestamp) {
-                    const date = entry.timestamp.split('T')[0];
+            const emailsByDate = analyticsData.reduce((acc, entry) => {
+                if (entry && entry.timestamp) {
+                    const date = new Date(entry.timestamp).toISOString().split('T')[0];
                     acc[date] = (acc[date] || 0) + 1;
                 }
                 return acc;
@@ -236,27 +225,20 @@ try {
                 .map(([date, count]) => ({ date, count }))
                 .sort((a, b) => new Date(a.date) - new Date(b.date));
 
-            // Prepare response summary
-            const responseSummary = [
-                { label: 'Automated', value: automatedResponses },
-                { label: 'Human', value: humanResponses },
-                { label: 'Escalated', value: escalatedEmails }
-            ];
-
             res.json({
                 totalEmails,
                 automatedResponses,
+                humanResponses,
                 averageResponseTime,
-                satisfactionRate,
                 escalatedEmails,
-                aiResponseRate,
-                humanResponseRate,
-                responseSummary,
                 emailVolume
             });
         } catch (error) {
-            console.error('Error fetching analytics:', error);
-            res.status(500).json({ error: 'Failed to fetch analytics data' });
+            console.error('Error in analytics endpoint:', error);
+            res.status(500).json({ 
+                error: 'Failed to fetch analytics data',
+                details: error.message 
+            });
         }
     });
 
