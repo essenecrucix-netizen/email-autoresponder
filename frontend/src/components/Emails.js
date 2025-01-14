@@ -17,7 +17,7 @@ function Emails() {
     const fetchEmails = async () => {
         try {
             const response = await axios.get('/api/emails');
-            setEmails(response.data);
+            setEmails(response.data || []);
             setLoading(false);
         } catch (err) {
             setError('Failed to fetch emails');
@@ -29,8 +29,33 @@ function Emails() {
         setSelectedEmail(email);
     };
 
-    if (loading) return <div>Loading...</div>;
-    if (error) return <div>Error: {error}</div>;
+    if (loading) {
+        return (
+            <div className="flex h-screen bg-gray-100">
+                <Sidebar />
+                <div className="flex-1 flex flex-col">
+                    <Header />
+                    <main className="flex-1 overflow-y-auto p-6">
+                        <div>Loading...</div>
+                    </main>
+                </div>
+            </div>
+        );
+    }
+
+    if (error) {
+        return (
+            <div className="flex h-screen bg-gray-100">
+                <Sidebar />
+                <div className="flex-1 flex flex-col">
+                    <Header />
+                    <main className="flex-1 overflow-y-auto p-6">
+                        <div>Error: {error}</div>
+                    </main>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="flex h-screen bg-gray-100">
@@ -44,7 +69,7 @@ function Emails() {
                             <div className="p-4">
                                 <h2 className="text-xl font-semibold mb-4">Emails</h2>
                                 <div className="space-y-4">
-                                    {emails.map((email) => (
+                                    {Array.isArray(emails) && emails.map((email) => (
                                         <div
                                             key={email.email_id}
                                             className={`p-3 rounded cursor-pointer ${
@@ -61,6 +86,11 @@ function Emails() {
                                             </div>
                                         </div>
                                     ))}
+                                    {Array.isArray(emails) && emails.length === 0 && (
+                                        <div className="text-center text-gray-500">
+                                            No emails found
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         </div>
