@@ -280,15 +280,26 @@ function EmailService() {
                         email.subject
                     );
 
+                    // Analyze sentiment of the response
+                    const sentiment = await openai.analyzeSentiment(response);
+                    console.log('Response sentiment:', sentiment);
+
                     await sendReply(email.from, email.subject, response);
                     
-                    // Add analytics entry
+                    // Calculate response time in minutes
+                    const receivedTime = email.date;
+                    const responseTime = new Date();
+                    const responseTimeMinutes = Math.round((responseTime - receivedTime) / (1000 * 60));
+                    
+                    // Add analytics entry with sentiment and response time
                     await database.addAnalyticsEntry({
                         timestamp: new Date().toISOString(),
                         emailSubject: email.subject,
                         response: response,
                         hasKnowledgeBase: !!knowledgeBaseContent,
-                        classification: 'responded'
+                        classification: 'responded',
+                        satisfaction: sentiment, // 'positive', 'neutral', or 'negative'
+                        responseTime: responseTimeMinutes // Response time in minutes
                     });
 
                     console.log('Successfully processed email:', email.subject);

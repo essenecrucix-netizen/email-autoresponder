@@ -158,8 +158,8 @@ function DatabaseService() {
                     subject: entry.emailSubject,
                     response: entry.response,
                     hasKnowledgeBase: entry.hasKnowledgeBase,
-                    satisfaction: 'pending',
-                    responseTime: 0,
+                    satisfaction: entry.satisfaction || 'pending',
+                    responseTime: entry.responseTime || 0,
                     needsEscalation: false,
                     createdAt: new Date().toISOString()
                 }
