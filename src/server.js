@@ -50,15 +50,15 @@ try {
             return res.status(401).json({ error: 'Access token is missing.' });
         }
 
-        jwt.verify(token, SECRET_KEY, (err, user) => {
-            if (err) {
-                console.log('Token verification error:', err);
-                return res.status(403).json({ error: 'Invalid token.' });
-            }
-            console.log('Decoded user:', user);
-            req.user = user;
+        try {
+            const decoded = jwt.verify(token, SECRET_KEY);
+            console.log('Token successfully decoded:', decoded);
+            req.user = decoded;
             next();
-        });
+        } catch (error) {
+            console.log('Token verification failed:', error.message);
+            return res.status(403).json({ error: 'Invalid token: ' + error.message });
+        }
     }
 
     // Backend routes
