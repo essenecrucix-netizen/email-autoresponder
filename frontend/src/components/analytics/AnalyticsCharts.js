@@ -41,14 +41,18 @@ function AnalyticsCharts() {
     const sentimentChartRef = useRef(null);
     const languageChartRef = useRef(null);
 
-    // Chart instances
-    let volumeChart, responseTimeChart, sentimentChart, languageChart;
+    // Refs for chart instances
+    const volumeChartInstance = useRef(null);
+    const responseTimeChartInstance = useRef(null);
+    const sentimentChartInstance = useRef(null);
+    const languageChartInstance = useRef(null);
 
-    // Temporary test data
+    // Fetch analytics data
     async function fetchAnalyticsData() {
         try {
             const response = await axios.get('/api/analytics');
             const data = response.data;
+            console.log('Analytics data:', data);  // Debug log
 
             // Process email volume data
             const emailVolume = data.emailVolume || [];
@@ -58,9 +62,9 @@ function AnalyticsCharts() {
             // Process response summary data
             const responseSummary = data.responseSummary || [];
             const sentimentData = {
-                positive: Math.round(parseFloat(data.satisfactionRate || '0%')),
-                neutral: Math.round((100 - parseFloat(data.satisfactionRate || '0%')) / 2),
-                negative: Math.round((100 - parseFloat(data.satisfactionRate || '0%')) / 2)
+                positive: Math.round(parseFloat(data.satisfactionRate || '0')),
+                neutral: Math.round((100 - parseFloat(data.satisfactionRate || '0')) / 2),
+                negative: Math.round((100 - parseFloat(data.satisfactionRate || '0')) / 2)
             };
 
             // Language data (simplified since we don't have this in the current schema)
@@ -71,7 +75,7 @@ function AnalyticsCharts() {
             return {
                 dateLabels,
                 emailCounts,
-                responseTimes: [data.averageResponseTime],
+                responseTimes: [parseFloat(data.averageResponseTime || '0')],
                 sentimentData,
                 languageData
             };
@@ -82,11 +86,11 @@ function AnalyticsCharts() {
     }
 
     async function initializeCharts(data) {
-        // Destroy existing chart instances to prevent duplicate rendering
-        if (volumeChart) volumeChart.destroy();
-        if (responseTimeChart) responseTimeChart.destroy();
-        if (sentimentChart) sentimentChart.destroy();
-        if (languageChart) languageChart.destroy();
+        // Destroy existing chart instances
+        if (volumeChartInstance.current) volumeChartInstance.current.destroy();
+        if (responseTimeChartInstance.current) responseTimeChartInstance.current.destroy();
+        if (sentimentChartInstance.current) sentimentChartInstance.current.destroy();
+        if (languageChartInstance.current) languageChartInstance.current.destroy();
 
         const commonOptions = {
             responsive: true,
@@ -94,7 +98,8 @@ function AnalyticsCharts() {
         };
 
         if (volumeChartRef.current) {
-            volumeChart = new Chart(volumeChartRef.current, {
+            const ctx = volumeChartRef.current.getContext('2d');
+            volumeChartInstance.current = new Chart(ctx, {
                 type: 'line',
                 data: {
                     labels: data.dateLabels,
@@ -131,14 +136,15 @@ function AnalyticsCharts() {
         }
 
         if (responseTimeChartRef.current) {
-            responseTimeChart = new Chart(responseTimeChartRef.current, {
+            const ctx = responseTimeChartRef.current.getContext('2d');
+            responseTimeChartInstance.current = new Chart(ctx, {
                 type: 'bar',
                 data: {
                     labels: ['Average Response Time'],
                     datasets: [
                         {
                             label: 'Minutes',
-                            data: [parseFloat(data.responseTimes[0])],
+                            data: data.responseTimes,
                             backgroundColor: 'rgb(255, 99, 132)',
                             borderColor: 'rgb(255, 99, 132)',
                         },
@@ -160,7 +166,8 @@ function AnalyticsCharts() {
         }
 
         if (sentimentChartRef.current) {
-            sentimentChart = new Chart(sentimentChartRef.current, {
+            const ctx = sentimentChartRef.current.getContext('2d');
+            sentimentChartInstance.current = new Chart(ctx, {
                 type: 'pie',
                 data: {
                     labels: ['Satisfied', 'Neutral', 'Unsatisfied'],
@@ -185,10 +192,11 @@ function AnalyticsCharts() {
         }
 
         if (languageChartRef.current) {
+            const ctx = languageChartRef.current.getContext('2d');
             const languages = Object.keys(data.languageData);
             const counts = Object.values(data.languageData);
             
-            languageChart = new Chart(languageChartRef.current, {
+            languageChartInstance.current = new Chart(ctx, {
                 type: 'bar',
                 data: {
                     labels: languages,
@@ -231,7 +239,19 @@ function AnalyticsCharts() {
         }
 
         loadCharts();
+
+        // Cleanup function to destroy charts when component unmounts
+        return () => {
+            if (volumeChartInstance.current) volumeChartInstance.current.destroy();
+            if (responseTimeChartInstance.current) responseTimeChartInstance.current.destroy();
+            if (sentimentChartInstance.current) sentimentChartInstance.current.destroy();
+            if (languageChartInstance.current) languageChartInstance.current.destroy();
+        };
     }, [selectedPeriod]);
+
+    if (isLoading) {
+        return <div className="text-center py-4">Loading charts...</div>;
+    }
 
     return (
         <div className="analytics-charts-container">
@@ -248,39 +268,25 @@ function AnalyticsCharts() {
                     <option value="year">Last Year</option>
                 </select>
             </div>
-
-            {isLoading ? (
-                <div className="flex justify-center items-center h-64">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="chart-container" style={{ height: '300px' }}>
+                    <h3 className="text-lg font-semibold mb-2">Email Volume</h3>
+                    <canvas ref={volumeChartRef}></canvas>
                 </div>
-            ) : (
-                <div className="grid grid-cols-2 gap-4">
-                    <div className="card">
-                        <h3 className="text-lg font-medium mb-2">Email Volume</h3>
-                        <div className="canvas-container" style={{ width: '100%', height: '300px' }}>
-                            <canvas ref={volumeChartRef}></canvas>
-                        </div>
-                    </div>
-                    <div className="card">
-                        <h3 className="text-lg font-medium mb-2">Response Times</h3>
-                        <div className="canvas-container" style={{ width: '100%', height: '300px' }}>
-                            <canvas ref={responseTimeChartRef}></canvas>
-                        </div>
-                    </div>
-                    <div className="card">
-                        <h3 className="text-lg font-medium mb-2">Sentiment Distribution</h3>
-                        <div className="canvas-container" style={{ width: '100%', height: '300px' }}>
-                            <canvas ref={sentimentChartRef}></canvas>
-                        </div>
-                    </div>
-                    <div className="card">
-                        <h3 className="text-lg font-medium mb-2">Language Distribution</h3>
-                        <div className="canvas-container" style={{ width: '100%', height: '300px' }}>
-                            <canvas ref={languageChartRef}></canvas>
-                        </div>
-                    </div>
+                <div className="chart-container" style={{ height: '300px' }}>
+                    <h3 className="text-lg font-semibold mb-2">Response Time</h3>
+                    <canvas ref={responseTimeChartRef}></canvas>
                 </div>
-            )}
+                <div className="chart-container" style={{ height: '300px' }}>
+                    <h3 className="text-lg font-semibold mb-2">Satisfaction Distribution</h3>
+                    <canvas ref={sentimentChartRef}></canvas>
+                </div>
+                <div className="chart-container" style={{ height: '300px' }}>
+                    <h3 className="text-lg font-semibold mb-2">Emails by Language</h3>
+                    <canvas ref={languageChartRef}></canvas>
+                </div>
+            </div>
         </div>
     );
 }
