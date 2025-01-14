@@ -121,7 +121,7 @@ try {
             }
 
             // Generate JWT token
-            const token = jwt.sign({ userId: user.id, role: user.role }, SECRET_KEY, { expiresIn: '1h' });
+            const token = jwt.sign({ userId: user.id, role: user.role }, SECRET_KEY, { expiresIn: '24h' });
 
             // Respond with user details (excluding password) and token
             const userResponse = { ...user, password_hash: undefined }; // Remove password hash
