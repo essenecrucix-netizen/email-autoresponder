@@ -2,7 +2,7 @@ import React from 'react';
 import Header from './Header';
 import Sidebar from './Sidebar';
 import { useAnalyticsData } from '../utils/useAnalyticsData';
-import AnalyticsCharts from './AnalyticsCharts';
+import AnalyticsCharts from './analytics/AnalyticsCharts';
 
 function Analytics() {
     const { data, loading, error } = useAnalyticsData();
