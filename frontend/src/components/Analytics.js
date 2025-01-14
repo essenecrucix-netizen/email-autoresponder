@@ -1,8 +1,16 @@
-import React from 'react';
+import React, { Suspense, lazy } from 'react';
 import Header from './Header';
 import Sidebar from './Sidebar';
 import { useAnalyticsData } from '../hooks/useAnalyticsData';
-import AnalyticsCharts from './analytics/AnalyticsCharts';
+
+// Lazy load the AnalyticsCharts component
+const AnalyticsCharts = lazy(() => import('./analytics/AnalyticsCharts'));
+
+const LoadingSpinner = () => (
+    <div className="flex justify-center items-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+    </div>
+);
 
 function Analytics() {
     const { data, loading, error } = useAnalyticsData();
@@ -14,9 +22,7 @@ function Analytics() {
                 <div className="flex-1 flex flex-col">
                     <Header />
                     <main className="flex-1 overflow-y-auto p-6">
-                        <div className="flex justify-center items-center h-64">
-                            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-                        </div>
+                        <LoadingSpinner />
                     </main>
                 </div>
             </div>
@@ -79,7 +85,9 @@ function Analytics() {
 
                         {/* Charts */}
                         <div className="bg-white rounded-lg shadow p-6">
-                            <AnalyticsCharts />
+                            <Suspense fallback={<LoadingSpinner />}>
+                                <AnalyticsCharts data={data} />
+                            </Suspense>
                         </div>
 
                         {/* Detailed Stats */}

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import axios from '../utils/axios';
 
 export function useAnalyticsData() {
@@ -6,33 +6,47 @@ export function useAnalyticsData() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
+    const fetchData = useCallback(async () => {
+        try {
+            setLoading(true);
+            const token = localStorage.getItem('token');
+            if (!token) {
+                throw new Error('No authentication token found');
+            }
+
+            const response = await axios.get('/api/analytics');
+            console.log('Analytics response:', response.data);
+            setData(response.data || {});
+            setError(null);
+        } catch (err) {
+            console.error('Error fetching analytics:', err);
+            setError(err.message);
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
     useEffect(() => {
-        const fetchData = async () => {
-            try {
-                const token = localStorage.getItem('token');
-                if (token) {
-                    // Decode and log the token payload
-                    const payload = JSON.parse(atob(token.split('.')[1]));
-                    console.log('Current user from token:', payload);
-                }
-                
-                const response = await axios.get('/api/analytics');
-                console.log('Analytics response:', response.data);
-                setData(response.data || {});
-                setError(null);
-            } catch (err) {
-                console.error('Error fetching analytics:', err);
-                setError(err.message);
-            } finally {
-                setLoading(false);
+        let mounted = true;
+        let intervalId = null;
+
+        const init = async () => {
+            if (mounted) {
+                await fetchData();
+                // Refresh data every 5 minutes
+                intervalId = setInterval(fetchData, 5 * 60 * 1000);
             }
         };
 
-        fetchData();
-        // Refresh data every 5 minutes
-        const interval = setInterval(fetchData, 5 * 60 * 1000);
-        return () => clearInterval(interval);
-    }, []);
+        init();
+
+        return () => {
+            mounted = false;
+            if (intervalId) {
+                clearInterval(intervalId);
+            }
+        };
+    }, [fetchData]);
 
     return { data, loading, error };
 }
