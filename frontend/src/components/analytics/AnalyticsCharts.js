@@ -1,6 +1,6 @@
 import React from 'react';
 import { Bar, Pie } from 'react-chartjs-2';
-import '../utils/chartConfig';  // Import Chart.js configuration
+import '../../utils/chartConfig';  // Fix import path
 
 const AnalyticsCharts = ({ data }) => {
   if (!data) {
