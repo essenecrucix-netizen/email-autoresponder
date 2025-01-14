@@ -13,7 +13,7 @@ import {
     Legend,
     Tooltip,
 } from 'chart.js';
-import axios from 'axios';
+import axios from '../../utils/axios';
 
 // Explicitly register Chart.js components
 Chart.register(
@@ -47,16 +47,12 @@ function AnalyticsCharts() {
     // Temporary test data
     async function fetchAnalyticsData() {
         try {
-            const token = localStorage.getItem('authToken');
+            const token = localStorage.getItem('token');
             if (!token) {
                 throw new Error('Authentication token not found');
             }
 
-            const response = await axios.get('/api/analytics', {
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
-            });
+            const response = await axios.get('/api/analytics');
 
             return {
                 dateLabels: response.data.dateLabels,
