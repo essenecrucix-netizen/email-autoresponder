@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
+import * as React from 'react';
+import { useState, useEffect, useRef } from 'react';
 import axios from '../../utils/axios';
 import {
     Chart as ChartJS,
@@ -25,7 +26,7 @@ ChartJS.register(
     Legend
 );
 
-function AnalyticsCharts() {
+const AnalyticsCharts = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [selectedPeriod, setSelectedPeriod] = useState('week');
     const [chartData, setChartData] = useState(null);
@@ -238,6 +239,6 @@ function AnalyticsCharts() {
             </div>
         </div>
     );
-}
+};
 
 export default AnalyticsCharts;
