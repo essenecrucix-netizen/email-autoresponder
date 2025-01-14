@@ -1,64 +1,80 @@
-import React, { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import AnalyticsCharts from './analytics/AnalyticsCharts';
-import { useAnalyticsData } from '../hooks/useAnalyticsData';
+import React from 'react';
+import Header from './Header';
+import Sidebar from './Sidebar';
+import { useAnalyticsData } from '../utils/useAnalyticsData';
+import AnalyticsCharts from './AnalyticsCharts';
 
 function Analytics() {
-    const navigate = useNavigate();
     const { data, loading, error } = useAnalyticsData();
 
-    useEffect(() => {
-        // Check if user is authenticated
-        const token = localStorage.getItem('token');
-        if (!token) {
-            navigate('/login', { state: { from: '/analytics' } });
-        }
-    }, [navigate]);
-
-    if (loading) {
-        return (
-            <div className="flex justify-center items-center h-64">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-            </div>
-        );
-    }
-
-    if (error) {
-        return <p className="text-red-500 p-4">{error}</p>;
-    }
-
-    if (!data) {
-        return <p className="p-4">No analytics data available.</p>;
-    }
+    if (loading) return <div>Loading...</div>;
+    if (error) return <div>Error: {error}</div>;
 
     return (
-        <div className="analytics-container p-4">
-            <h2 className="text-2xl font-bold mb-6">Analytics Overview</h2>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-                <div className="bg-white p-4 rounded-lg shadow">
-                    <h3 className="text-gray-500 text-sm">Total Emails</h3>
-                    <p className="text-2xl font-semibold">{data.totalEmails}</p>
-                </div>
-                
-                <div className="bg-white p-4 rounded-lg shadow">
-                    <h3 className="text-gray-500 text-sm">Automated Responses</h3>
-                    <p className="text-2xl font-semibold">{data.automatedResponses}</p>
-                </div>
-                
-                <div className="bg-white p-4 rounded-lg shadow">
-                    <h3 className="text-gray-500 text-sm">Average Response Time</h3>
-                    <p className="text-2xl font-semibold">{data.averageResponseTime}s</p>
-                </div>
-                
-                <div className="bg-white p-4 rounded-lg shadow">
-                    <h3 className="text-gray-500 text-sm">Satisfaction Rate</h3>
-                    <p className="text-2xl font-semibold">{data.satisfactionRate}%</p>
-                </div>
-            </div>
+        <div className="flex h-screen bg-gray-100">
+            <Sidebar />
+            <div className="flex-1 flex flex-col">
+                <Header />
+                <main className="flex-1 overflow-y-auto p-6">
+                    <div className="space-y-6">
+                        {/* Analytics Overview */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                            <div className="bg-white rounded-lg shadow p-6">
+                                <h3 className="text-gray-500 text-sm font-medium">Total Emails</h3>
+                                <p className="text-3xl font-bold mt-2">{data.totalEmails || 0}</p>
+                            </div>
+                            <div className="bg-white rounded-lg shadow p-6">
+                                <h3 className="text-gray-500 text-sm font-medium">Automated Responses</h3>
+                                <p className="text-3xl font-bold mt-2">{data.automatedResponses || 0}</p>
+                            </div>
+                            <div className="bg-white rounded-lg shadow p-6">
+                                <h3 className="text-gray-500 text-sm font-medium">Average Response Time</h3>
+                                <p className="text-3xl font-bold mt-2">{data.averageResponseTime || '0m'}</p>
+                            </div>
+                            <div className="bg-white rounded-lg shadow p-6">
+                                <h3 className="text-gray-500 text-sm font-medium">Satisfaction Rate</h3>
+                                <p className="text-3xl font-bold mt-2">{data.satisfactionRate || '0%'}</p>
+                            </div>
+                        </div>
 
-            <div className="bg-white rounded-lg shadow p-4">
-                <AnalyticsCharts data={data} />
+                        {/* Charts Section */}
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                            <div className="bg-white rounded-lg shadow p-6">
+                                <h3 className="text-lg font-semibold mb-4">Response Summary</h3>
+                                <AnalyticsCharts 
+                                    data={data.responseSummary || []} 
+                                    type="response" 
+                                />
+                            </div>
+                            <div className="bg-white rounded-lg shadow p-6">
+                                <h3 className="text-lg font-semibold mb-4">Email Volume Trend</h3>
+                                <AnalyticsCharts 
+                                    data={data.emailVolume || []} 
+                                    type="volume" 
+                                />
+                            </div>
+                        </div>
+
+                        {/* Detailed Stats */}
+                        <div className="bg-white rounded-lg shadow p-6">
+                            <h3 className="text-lg font-semibold mb-4">Response Details</h3>
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                <div>
+                                    <h4 className="text-gray-500 text-sm font-medium">Escalated Emails</h4>
+                                    <p className="text-2xl font-semibold mt-1">{data.escalatedEmails || 0}</p>
+                                </div>
+                                <div>
+                                    <h4 className="text-gray-500 text-sm font-medium">AI Response Rate</h4>
+                                    <p className="text-2xl font-semibold mt-1">{data.aiResponseRate || '0%'}</p>
+                                </div>
+                                <div>
+                                    <h4 className="text-gray-500 text-sm font-medium">Human Response Rate</h4>
+                                    <p className="text-2xl font-semibold mt-1">{data.humanResponseRate || '0%'}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </main>
             </div>
         </div>
     );
