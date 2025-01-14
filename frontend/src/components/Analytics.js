@@ -1,7 +1,7 @@
 import React from 'react';
 import Header from './Header';
 import Sidebar from './Sidebar';
-import { useAnalyticsData } from '../utils/useAnalyticsData';
+import { useAnalyticsData } from '../hooks/useAnalyticsData';
 import AnalyticsCharts from './analytics/AnalyticsCharts';
 
 function Analytics() {
