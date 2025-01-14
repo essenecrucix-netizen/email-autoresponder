@@ -2,47 +2,35 @@ import { useState, useEffect } from 'react';
 import axios from '../utils/axios';
 
 export function useAnalyticsData() {
-    const [data, setData] = useState(null);
+    const [data, setData] = useState({});
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
     useEffect(() => {
-        async function fetchData() {
+        const fetchData = async () => {
             try {
-                setLoading(true);
                 const token = localStorage.getItem('token');
-                console.log('Token from localStorage:', token);
-                
-                if (!token) {
-                    throw new Error('Authentication token not found');
+                if (token) {
+                    // Decode and log the token payload
+                    const payload = JSON.parse(atob(token.split('.')[1]));
+                    console.log('Current user from token:', payload);
                 }
-
-                console.log('Making request with token:', `Bearer ${token}`);
-                const response = await axios.get('/api/analytics');
-                console.log('Response:', response);
                 
-                setData(response.data);
+                const response = await axios.get('/api/analytics');
+                console.log('Analytics response:', response.data);
+                setData(response.data || {});
                 setError(null);
             } catch (err) {
                 console.error('Error fetching analytics:', err);
-                if (err.response) {
-                    console.log('Error response:', {
-                        status: err.response.status,
-                        data: err.response.data,
-                        headers: err.response.headers
-                    });
-                }
-                setError(err.message || 'Failed to fetch analytics data');
+                setError(err.message);
             } finally {
                 setLoading(false);
             }
-        }
+        };
 
         fetchData();
-        
         // Refresh data every 5 minutes
-        const interval = setInterval(fetchData, 300000);
-        
+        const interval = setInterval(fetchData, 5 * 60 * 1000);
         return () => clearInterval(interval);
     }, []);
 
