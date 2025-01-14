@@ -81,53 +81,67 @@ const AnalyticsCharts = () => {
     },
   };
 
+  // Email Volume Chart
   const volumeChartData = {
     labels: data.emailVolume?.map(entry => entry.date) || [],
     datasets: [{
       label: 'Email Volume',
       data: data.emailVolume?.map(entry => entry.count) || [],
       backgroundColor: 'rgba(53, 162, 235, 0.5)',
+      borderColor: 'rgba(53, 162, 235, 1)',
+      borderWidth: 1,
     }]
   };
 
+  // Response Types Chart
+  const responseTypesData = {
+    labels: ['Automated', 'Human', 'Escalated'],
+    datasets: [{
+      label: 'Response Types',
+      data: [
+        data.automatedResponses || 0,
+        data.humanResponses || 0,
+        data.escalatedEmails || 0
+      ],
+      backgroundColor: [
+        'rgba(75, 192, 192, 0.5)',
+        'rgba(53, 162, 235, 0.5)',
+        'rgba(255, 99, 132, 0.5)',
+      ],
+      borderColor: [
+        'rgba(75, 192, 192, 1)',
+        'rgba(53, 162, 235, 1)',
+        'rgba(255, 99, 132, 1)',
+      ],
+      borderWidth: 1,
+    }]
+  };
+
+  // Response Time Chart
   const responseTimeData = {
-    labels: ['Average Response Time'],
+    labels: ['Average Response Time (minutes)'],
     datasets: [{
       label: 'Minutes',
       data: [data.averageResponseTime || 0],
       backgroundColor: 'rgba(75, 192, 192, 0.5)',
-    }]
-  };
-
-  const sentimentData = {
-    labels: ['Satisfied', 'Neutral', 'Unsatisfied'],
-    datasets: [{
-      data: [
-        (data.satisfactionRate || 0) * 100,
-        100 - ((data.satisfactionRate || 0) * 100),
-        0
-      ],
-      backgroundColor: [
-        'rgba(75, 192, 192, 0.5)',
-        'rgba(255, 206, 86, 0.5)',
-        'rgba(255, 99, 132, 0.5)',
-      ],
+      borderColor: 'rgba(75, 192, 192, 1)',
+      borderWidth: 1,
     }]
   };
 
   return (
     <div className="grid grid-cols-2 gap-6 p-4">
       <div className="bg-white rounded-lg shadow p-4 h-80">
-        <h3 className="text-lg font-semibold mb-2">Email Volume</h3>
+        <h3 className="text-lg font-semibold mb-2">Email Volume Over Time</h3>
         <Bar data={volumeChartData} options={commonOptions} />
       </div>
       <div className="bg-white rounded-lg shadow p-4 h-80">
-        <h3 className="text-lg font-semibold mb-2">Response Time</h3>
-        <Bar data={responseTimeData} options={commonOptions} />
+        <h3 className="text-lg font-semibold mb-2">Response Types</h3>
+        <Pie data={responseTypesData} options={commonOptions} />
       </div>
       <div className="bg-white rounded-lg shadow p-4 h-80">
-        <h3 className="text-lg font-semibold mb-2">Satisfaction Rate</h3>
-        <Pie data={sentimentData} options={commonOptions} />
+        <h3 className="text-lg font-semibold mb-2">Average Response Time</h3>
+        <Bar data={responseTimeData} options={commonOptions} />
       </div>
     </div>
   );
