@@ -28,24 +28,24 @@ function Sidebar() {
     ];
 
     return (
-        <aside className="fixed left-0 top-0 h-screen w-[220px] bg-white border-r border-gray-200">
+        <aside className="fixed inset-y-0 left-0 w-56 bg-white border-r border-gray-200">
             {/* Logo Section */}
-            <div className="flex items-center gap-2 p-3">
-                <span className="material-icons text-[steelblue]">mail</span>
-                <span className="text-[steelblue] font-medium">Email Autoresponder</span>
+            <div className="flex items-center gap-2 p-4 border-b border-gray-200">
+                <span className="material-icons text-primary">mail</span>
+                <span className="font-medium text-primary">Email Autoresponder</span>
             </div>
 
             {/* Navigation */}
-            <nav className="mt-2">
+            <nav className="p-2">
                 {menuItems.map((item) => {
                     const isActive = location.pathname === item.path;
                     return (
                         <Link
                             key={item.path}
                             to={item.path}
-                            className={`flex items-center gap-2 px-3 py-2 text-sm ${
+                            className={`flex items-center gap-2 px-3 py-2 text-sm rounded-md transition-colors ${
                                 isActive 
-                                    ? 'text-[steelblue] bg-blue-50' 
+                                    ? 'text-primary bg-blue-50' 
                                     : 'text-gray-600 hover:bg-gray-50'
                             }`}
                         >
@@ -57,9 +57,9 @@ function Sidebar() {
             </nav>
 
             {/* Quick Tip */}
-            <div className="absolute bottom-0 left-0 right-0 p-3">
+            <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-200">
                 <div className="text-xs">
-                    <div className="flex items-center gap-1 text-[steelblue] mb-1">
+                    <div className="flex items-center gap-1 text-primary mb-1">
                         <span className="material-icons text-[14px]">tips_and_updates</span>
                         Quick Tip
                     </div>
