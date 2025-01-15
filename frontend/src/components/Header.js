@@ -1,48 +1,49 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
 
-function Header() {
-    const navigate = useNavigate();
-    const userEmail = localStorage.getItem('userEmail') || 'erik@gfisystems.ca';
+const Header = () => {
+  const userEmail = localStorage.getItem('userEmail') || 'erik@gfisystems.ca';
 
-    const handleLogout = () => {
-        localStorage.removeItem('token');
-        localStorage.removeItem('userEmail');
-        navigate('/login');
-    };
-
-    return (
-        <header className="fixed top-0 right-0 left-[220px] h-[48px] bg-white border-b border-gray-200 flex items-center px-3">
-            {/* Search */}
-            <div className="relative flex-1 max-w-[400px]">
-                <input
-                    type="text"
-                    placeholder="Search emails, knowledge base..."
-                    className="w-full h-[32px] pl-8 pr-3 text-sm border border-gray-200 rounded"
-                />
-                <span className="absolute left-2.5 top-1/2 -translate-y-1/2">
-                    <span className="material-icons text-gray-400 text-[18px]">search</span>
-                </span>
+  return (
+    <header className="bg-white border-b border-gray-200 sticky top-0 z-10">
+      <div className="flex items-center justify-between px-6 py-3">
+        <div className="flex items-center flex-1">
+          <h1 className="text-xl font-semibold text-gray-900">Email Autoresponder</h1>
+          
+          <div className="ml-8 max-w-lg w-full">
+            <div className="relative">
+              <span className="absolute inset-y-0 left-0 flex items-center pl-3">
+                <span className="material-icons text-gray-400">search</span>
+              </span>
+              <input
+                type="text"
+                placeholder="Search emails, knowledge base..."
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:border-primary"
+              />
             </div>
+          </div>
+        </div>
 
-            {/* Right Section */}
-            <div className="flex items-center gap-2 ml-auto">
-                {/* User Email */}
-                <div className="text-sm text-gray-600">
-                    {userEmail}
-                </div>
+        <div className="flex items-center space-x-4">
+          <button className="p-2 hover:bg-gray-100 rounded-full" title="Notifications">
+            <span className="material-icons text-gray-600">notifications</span>
+          </button>
+          
+          <button className="p-2 hover:bg-gray-100 rounded-full" title="Settings">
+            <span className="material-icons text-gray-600">settings</span>
+          </button>
 
-                {/* Logout */}
-                <button 
-                    onClick={handleLogout}
-                    className="flex items-center gap-1 ml-3 text-sm text-gray-600 hover:bg-gray-50 rounded px-2 py-1"
-                >
-                    <span className="material-icons text-[18px]">logout</span>
-                    Logout
-                </button>
-            </div>
-        </header>
-    );
-}
+          <div className="border-l border-gray-200 h-6 mx-2"></div>
+
+          <div className="flex items-center">
+            <span className="text-sm text-gray-700 mr-2">{userEmail}</span>
+            <button className="p-2 hover:bg-gray-100 rounded-full" title="Logout">
+              <span className="material-icons text-gray-600">logout</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </header>
+  );
+};
 
 export default Header;

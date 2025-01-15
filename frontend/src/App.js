@@ -1,61 +1,32 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import Dashboard from './components/Dashboard';
-import Analytics from './components/Analytics';
-import Login from './pages/Login';
-import Signup from './pages/Signup';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import Sidebar from './components/Sidebar';
 import Header from './components/Header';
-import ProtectedRoute from './components/auth/ProtectedRoute';
-import KnowledgeBase from './components/KnowledgeBase';
+import Dashboard from './components/Dashboard';
 import Emails from './components/Emails';
+import KnowledgeBase from './components/KnowledgeBase';
+import Settings from './components/Settings';
 
-function App() {
-    const isAuthenticated = () => {
-        const token = localStorage.getItem('token');
-        const userId = localStorage.getItem('userId');
-        return !!(token && userId);
-    };
-
-    return (
-        <Router>
-            <div className="min-h-screen bg-gray-100">
-                <Routes>
-                    <Route path="/login" element={
-                        isAuthenticated() ? <Navigate to="/dashboard" replace /> : <Login />
-                    } />
-                    <Route path="/signup" element={
-                        isAuthenticated() ? <Navigate to="/dashboard" replace /> : <Signup />
-                    } />
-                    <Route path="/" element={<Navigate to="/dashboard" replace />} />
-                    
-                    {/* Protected Routes */}
-                    <Route path="/dashboard" element={
-                        <ProtectedRoute>
-                            <Dashboard />
-                        </ProtectedRoute>
-                    } />
-                    <Route path="/analytics" element={
-                        <ProtectedRoute>
-                            <Analytics />
-                        </ProtectedRoute>
-                    } />
-                    <Route path="/knowledge-base" element={
-                        <ProtectedRoute>
-                            <KnowledgeBase />
-                        </ProtectedRoute>
-                    } />
-                    <Route path="/emails" element={
-                        <ProtectedRoute>
-                            <Emails />
-                        </ProtectedRoute>
-                    } />
-                    
-                    {/* Catch all route */}
-                    <Route path="*" element={<Navigate to="/dashboard" replace />} />
-                </Routes>
-            </div>
-        </Router>
-    );
-}
+const App = () => {
+  return (
+    <Router>
+      <div className="flex h-screen bg-gray-50">
+        <Sidebar />
+        <div className="flex-1 flex flex-col">
+          <Header />
+          <main className="flex-1 overflow-auto">
+            <Routes>
+              <Route path="/" element={<Dashboard />} />
+              <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/emails" element={<Emails />} />
+              <Route path="/knowledge-base" element={<KnowledgeBase />} />
+              <Route path="/settings" element={<Settings />} />
+            </Routes>
+          </main>
+        </div>
+      </div>
+    </Router>
+  );
+};
 
 export default App;

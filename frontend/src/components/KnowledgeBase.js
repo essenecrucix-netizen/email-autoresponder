@@ -1,237 +1,124 @@
 import React, { useState } from 'react';
-import Header from './Header';
-import Sidebar from './Sidebar';
 
-function KnowledgeBase() {
-    const [selectedFile, setSelectedFile] = useState(null);
-    const [uploadProgress, setUploadProgress] = useState(0);
-    const [documents, setDocuments] = useState([
-        {
-            id: 1,
-            name: 'Calamp 4230 and 3030- Scripts and Configurations.docx',
-            type: 'docx',
-            size: '2.4 MB',
-            lastModified: '2024-01-14'
-        },
-        {
-            id: 2,
-            name: 'Calamp Order Process Flow.pdf',
-            type: 'pdf',
-            size: '1.8 MB',
-            lastModified: '2024-01-13'
-        },
-        {
-            id: 3,
-            name: 'Data Line Management Process.pdf',
-            type: 'pdf',
-            size: '3.2 MB',
-            lastModified: '2024-01-12'
-        }
-    ]);
+const KnowledgeBase = () => {
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [documents] = useState([
+    { 
+      name: 'Calamp 4230 and 3030- Scripts and Configurations.docs',
+      size: '2.4 MB',
+      lastModified: '2024-01-14'
+    },
+    {
+      name: 'Calamp Order Process Flow.pdf',
+      size: '1.8 MB',
+      lastModified: '2024-01-13'
+    },
+    {
+      name: 'Data Line Management Process.pdf',
+      size: '3.2 MB',
+      lastModified: '2024-01-12'
+    }
+  ]);
 
-    const handleFileSelect = (event) => {
-        const file = event.target.files[0];
-        if (file) {
-            setSelectedFile(file);
-            // Simulate upload progress
-            setUploadProgress(0);
-            const interval = setInterval(() => {
-                setUploadProgress((prev) => {
-                    if (prev >= 100) {
-                        clearInterval(interval);
-                        // Add the file to documents list
-                        const newDoc = {
-                            id: documents.length + 1,
-                            name: file.name,
-                            type: file.name.split('.').pop().toLowerCase(),
-                            size: `${(file.size / (1024 * 1024)).toFixed(1)} MB`,
-                            lastModified: new Date().toISOString().split('T')[0]
-                        };
-                        setDocuments(prev => [...prev, newDoc]);
-                        setSelectedFile(null);
-                        return 0;
-                    }
-                    return prev + 10;
-                });
-            }, 300);
-        }
-    };
+  const handleFileSelect = () => {
+    // Simulate upload progress
+    let progress = 0;
+    const interval = setInterval(() => {
+      progress += 10;
+      setUploadProgress(progress);
+      if (progress >= 100) {
+        clearInterval(interval);
+        setTimeout(() => setUploadProgress(0), 1000);
+      }
+    }, 200);
+  };
 
-    const handleViewDocument = (doc) => {
-        // Implement document preview functionality
-        console.log('Viewing document:', doc.name);
-        // You would typically open a modal or navigate to a preview page
-        alert('Document preview coming soon!');
-    };
+  return (
+    <div className="p-6 max-w-6xl mx-auto">
+      <div className="mb-8">
+        <h1 className="text-2xl font-bold text-gray-900 mb-2">Knowledge Base</h1>
+        <p className="text-gray-600">Manage your documents and training materials</p>
+      </div>
 
-    const handleEditDocument = (doc) => {
-        // Implement document edit functionality
-        console.log('Editing document:', doc.name);
-        // You would typically open a modal or navigate to an edit page
-        alert('Document editing coming soon!');
-    };
+      <div className="mb-6">
+        <button className="inline-flex items-center px-4 py-2 bg-primary text-white rounded-md hover:bg-primary-hover transition-colors">
+          <span className="material-icons mr-2">sync</span>
+          Sync Documents
+        </button>
+      </div>
 
-    const handleDeleteDocument = (id) => {
-        setDocuments(prev => prev.filter(doc => doc.id !== id));
-    };
-
-    const getFileIcon = (type) => {
-        switch (type.toLowerCase()) {
-            case 'pdf':
-                return 'picture_as_pdf';
-            case 'docx':
-            case 'doc':
-                return 'description';
-            case 'txt':
-                return 'text_snippet';
-            default:
-                return 'insert_drive_file';
-        }
-    };
-
-    return (
-        <div className="app-container">
-            <Sidebar />
-            <div className="content-area">
-                <Header />
-                <div className="main-content">
-                    {/* Header Section */}
-                    <div className="card mb-6">
-                        <div className="flex justify-between items-center">
-                            <div>
-                                <h1 className="text-2xl font-semibold text-gray-900">Knowledge Base</h1>
-                                <p className="mt-1 text-sm text-gray-500">
-                                    Manage your documents and training materials
-                                </p>
-                            </div>
-                            <button 
-                                className="btn btn-primary"
-                                onClick={() => {
-                                    // Add loading state if needed
-                                    alert('Syncing documents with server...');
-                                }}
-                                title="Sync documents with server"
-                            >
-                                <span className="material-icons">cloud_sync</span>
-                                Sync Documents
-                            </button>
-                        </div>
-                    </div>
-
-                    {/* Upload Section */}
-                    <div className="card mb-6">
-                        <div className="flex items-center justify-between mb-4">
-                            <h2 className="text-lg font-semibold">Upload Documents</h2>
-                            <span className="text-sm text-gray-500">Supported formats: PDF, DOCX, TXT</span>
-                        </div>
-                        
-                        <div className="file-upload-area flex flex-col items-center justify-center min-h-[200px]">
-                            <input
-                                type="file"
-                                id="file-upload"
-                                className="hidden"
-                                onChange={handleFileSelect}
-                                accept=".pdf,.docx,.txt"
-                            />
-                            <span className="material-icons text-4xl" style={{ color: 'steelblue' }}>
-                                cloud_upload
-                            </span>
-                            <p className="text-gray-600 my-4">
-                                Drag and drop your files here, or click to browse
-                            </p>
-                            <label
-                                htmlFor="file-upload"
-                                className="file-upload-button"
-                            >
-                                Choose File
-                            </label>
-                        </div>
-
-                        {selectedFile && uploadProgress > 0 && (
-                            <div className="mt-4">
-                                <div className="flex items-center justify-between mb-2">
-                                    <span className="text-sm font-medium">{selectedFile.name}</span>
-                                    <span className="text-sm text-gray-500">{uploadProgress}%</span>
-                                </div>
-                                <div className="w-full bg-gray-200 rounded-full h-2">
-                                    <div
-                                        className="h-2 rounded-full transition-all duration-300"
-                                        style={{ width: `${uploadProgress}%`, backgroundColor: 'steelblue' }}
-                                    ></div>
-                                </div>
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Documents List */}
-                    <div className="card">
-                        <div className="flex items-center justify-between mb-6">
-                            <h2 className="text-lg font-semibold">Uploaded Documents</h2>
-                            <div className="flex gap-2">
-                                <button className="btn">
-                                    <span className="material-icons" style={{ color: 'steelblue' }}>filter_list</span>
-                                </button>
-                                <button className="btn">
-                                    <span className="material-icons" style={{ color: 'steelblue' }}>sort</span>
-                                </button>
-                            </div>
-                        </div>
-
-                        <div className="table-container">
-                            <table className="table">
-                                <thead>
-                                    <tr>
-                                        <th>Name</th>
-                                        <th>Size</th>
-                                        <th>Last Modified</th>
-                                        <th className="text-right">Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {documents.map((doc) => (
-                                        <tr key={doc.id}>
-                                            <td className="py-3 px-4">
-                                                <div className="flex items-center gap-3">
-                                                    <span className="material-icons" style={{ color: 'steelblue' }}>
-                                                        {getFileIcon(doc.type)}
-                                                    </span>
-                                                    <span className="font-medium">{doc.name}</span>
-                                                </div>
-                                            </td>
-                                            <td className="py-3 px-4 text-gray-600">{doc.size}</td>
-                                            <td className="py-3 px-4 text-gray-600">{doc.lastModified}</td>
-                                            <td className="py-3 px-4">
-                                                <div className="flex gap-2 justify-end">
-                                                    <button 
-                                                        className="p-2 hover:bg-gray-100 rounded-lg"
-                                                        onClick={() => handleViewDocument(doc)}
-                                                    >
-                                                        <span className="material-icons" style={{ color: 'steelblue' }}>visibility</span>
-                                                    </button>
-                                                    <button 
-                                                        className="p-2 hover:bg-gray-100 rounded-lg"
-                                                        onClick={() => handleEditDocument(doc)}
-                                                    >
-                                                        <span className="material-icons" style={{ color: 'steelblue' }}>edit</span>
-                                                    </button>
-                                                    <button 
-                                                        className="p-2 hover:bg-red-50 rounded-lg"
-                                                        onClick={() => handleDeleteDocument(doc.id)}
-                                                    >
-                                                        <span className="material-icons text-red-500">delete</span>
-                                                    </button>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-8">
+        <h2 className="text-lg font-semibold text-gray-900 mb-4">Upload Documents</h2>
+        <p className="text-sm text-gray-600 mb-4">Supported formats: PDF, DOCX, TXT</p>
+        
+        <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
+          <div className="flex flex-col items-center">
+            <span className="material-icons text-4xl text-gray-400 mb-2">cloud_upload</span>
+            <p className="text-gray-600 mb-4">Drag and drop your files here, or click to browse</p>
+            <button 
+              onClick={handleFileSelect}
+              className="bg-primary text-white px-4 py-2 rounded-md hover:bg-primary-hover transition-colors"
+            >
+              Choose File
+            </button>
+          </div>
+          {uploadProgress > 0 && (
+            <div className="mt-4">
+              <div className="w-full bg-gray-200 rounded-full h-2">
+                <div 
+                  className="bg-primary h-2 rounded-full transition-all duration-200"
+                  style={{ width: `${uploadProgress}%` }}
+                />
+              </div>
             </div>
+          )}
         </div>
-    );
-}
+      </div>
+
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <h2 className="text-lg font-semibold text-gray-900 mb-4">Uploaded Documents</h2>
+        <div className="overflow-x-auto">
+          <table className="min-w-full">
+            <thead>
+              <tr className="border-b border-gray-200">
+                <th className="text-left py-3 px-4 text-sm font-medium text-gray-600">Name</th>
+                <th className="text-left py-3 px-4 text-sm font-medium text-gray-600">Size</th>
+                <th className="text-left py-3 px-4 text-sm font-medium text-gray-600">Last Modified</th>
+                <th className="text-left py-3 px-4 text-sm font-medium text-gray-600">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {documents.map((doc, index) => (
+                <tr key={index} className="border-b border-gray-200 last:border-0">
+                  <td className="py-3 px-4">
+                    <div className="flex items-center">
+                      <span className="material-icons text-gray-400 mr-2">description</span>
+                      <span className="text-gray-900">{doc.name}</span>
+                    </div>
+                  </td>
+                  <td className="py-3 px-4 text-gray-600">{doc.size}</td>
+                  <td className="py-3 px-4 text-gray-600">{doc.lastModified}</td>
+                  <td className="py-3 px-4">
+                    <div className="flex items-center space-x-2">
+                      <button className="p-1 hover:bg-gray-100 rounded" title="View">
+                        <span className="material-icons text-gray-600">visibility</span>
+                      </button>
+                      <button className="p-1 hover:bg-gray-100 rounded" title="Edit">
+                        <span className="material-icons text-gray-600">edit</span>
+                      </button>
+                      <button className="p-1 hover:bg-gray-100 rounded" title="Delete">
+                        <span className="material-icons text-gray-600">delete</span>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 export default KnowledgeBase;

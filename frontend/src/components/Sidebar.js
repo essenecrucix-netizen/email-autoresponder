@@ -12,26 +12,27 @@ const Sidebar = () => {
   const location = useLocation();
 
   return (
-    <aside className="w-64 h-screen bg-white border-r border-gray-200">
+    <aside className="w-64 min-h-screen bg-white border-r border-gray-200">
       <div className="flex flex-col h-full">
         {/* Logo section */}
-        <div className="p-4 border-b border-gray-200">
-          <h1 className="text-xl font-semibold text-gray-800">Email Bot</h1>
+        <div className="flex items-center gap-2 p-4 border-b border-gray-200">
+          <span className="material-icons text-primary">mail</span>
+          <span className="font-semibold text-primary">Email Bot</span>
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 p-4 space-y-1">
+        <nav className="flex-1 p-4">
           {menuItems.map(item => (
             <Link
               key={item.path}
               to={item.path}
-              className={`flex items-center px-4 py-2 rounded-md transition-colors ${
+              className={`flex items-center h-10 px-3 mb-1 rounded-md transition-colors ${
                 location.pathname === item.path
                   ? 'bg-primary text-white'
                   : 'text-gray-600 hover:bg-gray-100'
               }`}
             >
-              <span className="material-icons mr-3 text-[20px]">{item.icon}</span>
+              <span className="material-icons mr-3">{item.icon}</span>
               <span>{item.label}</span>
             </Link>
           ))}
@@ -40,8 +41,12 @@ const Sidebar = () => {
         {/* Quick Tip */}
         <div className="p-4 border-t border-gray-200">
           <div className="bg-blue-50 p-3 rounded-md">
-            <p className="text-sm text-blue-800">
-              Upload documents to the Knowledge Base to improve response accuracy.
+            <div className="flex items-center gap-1 mb-1 text-blue-800">
+              <span className="material-icons text-sm">tips_and_updates</span>
+              <span className="text-sm font-medium">Quick Tip</span>
+            </div>
+            <p className="text-xs text-blue-800">
+              Upload documents to improve response accuracy
             </p>
           </div>
         </div>
