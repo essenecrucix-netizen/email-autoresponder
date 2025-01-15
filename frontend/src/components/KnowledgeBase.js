@@ -1,92 +1,93 @@
 import React, { useState } from 'react';
 import Header from './Header';
 import Sidebar from './Sidebar';
-import { useKnowledgeBase } from '../hooks/useKnowledgeBase';
 
 function KnowledgeBase() {
     const [selectedFile, setSelectedFile] = useState(null);
-    const {
-        documents,
-        loading,
-        error,
-        uploadProgress,
-        uploadDocument,
-        deleteDocument,
-        viewDocument,
-        refreshDocuments
-    } = useKnowledgeBase();
+    const [uploadProgress, setUploadProgress] = useState(0);
+    const [documents, setDocuments] = useState([
+        {
+            id: 1,
+            name: 'Calamp 4230 and 3030- Scripts and Configurations.docx',
+            type: 'docx',
+            size: '2.4 MB',
+            lastModified: '2024-01-14'
+        },
+        {
+            id: 2,
+            name: 'Calamp Order Process Flow.pdf',
+            type: 'pdf',
+            size: '1.8 MB',
+            lastModified: '2024-01-13'
+        },
+        {
+            id: 3,
+            name: 'Data Line Management Process.pdf',
+            type: 'pdf',
+            size: '3.2 MB',
+            lastModified: '2024-01-12'
+        }
+    ]);
 
-    const handleFileSelect = async (event) => {
+    const handleFileSelect = (event) => {
         const file = event.target.files[0];
         if (file) {
             setSelectedFile(file);
-            try {
-                await uploadDocument(file);
-                setSelectedFile(null);
-            } catch (error) {
-                console.error('Failed to upload file:', error);
-                setSelectedFile(null);
-            }
+            // Simulate upload progress
+            setUploadProgress(0);
+            const interval = setInterval(() => {
+                setUploadProgress((prev) => {
+                    if (prev >= 100) {
+                        clearInterval(interval);
+                        // Add the file to documents list
+                        const newDoc = {
+                            id: documents.length + 1,
+                            name: file.name,
+                            type: file.name.split('.').pop().toLowerCase(),
+                            size: `${(file.size / (1024 * 1024)).toFixed(1)} MB`,
+                            lastModified: new Date().toISOString().split('T')[0]
+                        };
+                        setDocuments(prev => [...prev, newDoc]);
+                        setSelectedFile(null);
+                        return 0;
+                    }
+                    return prev + 10;
+                });
+            }, 300);
         }
     };
 
-    const handleViewDocument = async (doc) => {
-        try {
-            await viewDocument(doc.s3_key);
-        } catch (error) {
-            console.error('Failed to view document:', error);
-        }
+    const handleViewDocument = (doc) => {
+        // Implement document preview functionality
+        console.log('Viewing document:', doc.name);
+        // You would typically open a modal or navigate to a preview page
+        alert('Document preview coming soon!');
     };
 
-    const handleDeleteDocument = async (doc) => {
-        try {
-            await deleteDocument(doc.id, doc.s3_key);
-        } catch (error) {
-            console.error('Failed to delete document:', error);
-        }
+    const handleEditDocument = (doc) => {
+        // Implement document edit functionality
+        console.log('Editing document:', doc.name);
+        // You would typically open a modal or navigate to an edit page
+        alert('Document editing coming soon!');
+    };
+
+    const handleDeleteDocument = (id) => {
+        setDocuments(prev => prev.filter(doc => doc.id !== id));
     };
 
     const getFileIcon = (type) => {
         switch (type.toLowerCase()) {
-            case 'application/pdf':
             case 'pdf':
                 return 'picture_as_pdf';
-            case 'application/vnd.openxmlformats-officedocument.wordprocessingml.document':
-            case 'application/msword':
             case 'docx':
             case 'doc':
                 return 'description';
-            case 'text/plain':
             case 'txt':
                 return 'text_snippet';
             default:
                 return 'insert_drive_file';
         }
     };
-
-    const formatFileSize = (bytes) => {
-        if (bytes === 0) return '0 Bytes';
-        const k = 1024;
-        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-        const i = Math.floor(Math.log(bytes) / Math.log(k));
-        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-    };
-
-    if (loading) {
-        return (
-            <div className="app-container">
-                <Sidebar />
-                <div className="content-area">
-                    <Header />
-                    <div className="main-content">
-                        <div className="flex justify-center items-center h-64">
-                            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        );
-    }
 
     return (
         <div className="app-container">
@@ -103,28 +104,12 @@ function KnowledgeBase() {
                                     Manage your documents and training materials
                                 </p>
                             </div>
-                            <button 
-                                className="btn btn-primary"
-                                onClick={refreshDocuments}
-                            >
+                            <button className="btn btn-primary">
                                 <span className="material-icons">cloud_sync</span>
                                 Sync Documents
                             </button>
                         </div>
                     </div>
-
-                    {error && (
-                        <div className="mb-6 p-4 bg-red-50 border-l-4 border-red-400 text-red-700">
-                            <div className="flex">
-                                <div className="flex-shrink-0">
-                                    <span className="material-icons">error</span>
-                                </div>
-                                <div className="ml-3">
-                                    <p className="text-sm">{error}</p>
-                                </div>
-                            </div>
-                        </div>
-                    )}
 
                     {/* Upload Section */}
                     <div className="card mb-6">
@@ -203,26 +188,28 @@ function KnowledgeBase() {
                                                     <span className="material-icons" style={{ color: 'steelblue' }}>
                                                         {getFileIcon(doc.type)}
                                                     </span>
-                                                    <span className="font-medium">{doc.filename}</span>
+                                                    <span className="font-medium">{doc.name}</span>
                                                 </div>
                                             </td>
-                                            <td className="py-3 px-4 text-gray-600">{formatFileSize(doc.size)}</td>
-                                            <td className="py-3 px-4 text-gray-600">
-                                                {new Date(doc.last_modified).toLocaleDateString()}
-                                            </td>
+                                            <td className="py-3 px-4 text-gray-600">{doc.size}</td>
+                                            <td className="py-3 px-4 text-gray-600">{doc.lastModified}</td>
                                             <td className="py-3 px-4">
                                                 <div className="flex gap-2 justify-end">
                                                     <button 
                                                         className="p-2 hover:bg-gray-100 rounded-lg"
                                                         onClick={() => handleViewDocument(doc)}
-                                                        title="View Document"
                                                     >
                                                         <span className="material-icons" style={{ color: 'steelblue' }}>visibility</span>
                                                     </button>
                                                     <button 
+                                                        className="p-2 hover:bg-gray-100 rounded-lg"
+                                                        onClick={() => handleEditDocument(doc)}
+                                                    >
+                                                        <span className="material-icons" style={{ color: 'steelblue' }}>edit</span>
+                                                    </button>
+                                                    <button 
                                                         className="p-2 hover:bg-red-50 rounded-lg"
-                                                        onClick={() => handleDeleteDocument(doc)}
-                                                        title="Delete Document"
+                                                        onClick={() => handleDeleteDocument(doc.id)}
                                                     >
                                                         <span className="material-icons text-red-500">delete</span>
                                                     </button>
