@@ -14,5 +14,12 @@
     "jsonwebtoken": "^9.0.2",
     "mailparser": "^3.7.2",
     "nodemailer": "^6.9.16"
+  },
+  "scripts": {
+    "start": "react-scripts start",
+    "build": "react-scripts build",
+    "test": "react-scripts test",
+    "eject": "react-scripts eject",
+    "build:css": "tailwindcss -i ./src/styles/tailwind.css -o ./src/styles/main.css --watch"
   }
 }
