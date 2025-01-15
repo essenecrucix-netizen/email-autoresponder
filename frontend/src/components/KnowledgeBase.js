@@ -104,7 +104,14 @@ function KnowledgeBase() {
                                     Manage your documents and training materials
                                 </p>
                             </div>
-                            <button className="btn btn-primary">
+                            <button 
+                                className="btn btn-primary"
+                                onClick={() => {
+                                    // Add loading state if needed
+                                    alert('Syncing documents with server...');
+                                }}
+                                title="Sync documents with server"
+                            >
                                 <span className="material-icons">cloud_sync</span>
                                 Sync Documents
                             </button>
@@ -118,7 +125,7 @@ function KnowledgeBase() {
                             <span className="text-sm text-gray-500">Supported formats: PDF, DOCX, TXT</span>
                         </div>
                         
-                        <div className="file-upload-area">
+                        <div className="file-upload-area flex flex-col items-center justify-center min-h-[200px]">
                             <input
                                 type="file"
                                 id="file-upload"
@@ -126,10 +133,10 @@ function KnowledgeBase() {
                                 onChange={handleFileSelect}
                                 accept=".pdf,.docx,.txt"
                             />
-                            <span className="material-icons text-4xl mb-4" style={{ color: 'steelblue' }}>
+                            <span className="material-icons text-4xl" style={{ color: 'steelblue' }}>
                                 cloud_upload
                             </span>
-                            <p className="text-gray-600 mb-4">
+                            <p className="text-gray-600 my-4">
                                 Drag and drop your files here, or click to browse
                             </p>
                             <label

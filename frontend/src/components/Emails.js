@@ -68,16 +68,16 @@ function Emails() {
             <Sidebar />
             <div className="content-area">
                 <Header />
-                <div className="space-y-6">
+                <div className="main-content">
                     {/* Header Section */}
-                    <div className="flex justify-between items-center">
-                        <div>
-                            <h1 className="text-2xl font-semibold text-gray-900">Email Management</h1>
-                            <p className="mt-1 text-sm text-gray-500">
-                                View and manage automated email responses
-                            </p>
-                        </div>
-                        <div className="flex gap-3">
+                    <div className="card mb-6">
+                        <div className="flex justify-between items-center">
+                            <div>
+                                <h1 className="text-2xl font-semibold text-gray-900">Email Management</h1>
+                                <p className="mt-1 text-sm text-gray-500">
+                                    View and manage automated email responses
+                                </p>
+                            </div>
                             <button className="btn btn-primary">
                                 <span className="material-icons">refresh</span>
                                 Refresh
@@ -85,36 +85,28 @@ function Emails() {
                         </div>
                     </div>
 
-                    {/* Filters */}
-                    <div className="flex gap-4 border-b border-gray-200 pb-4">
-                        <button
-                            className={`px-4 py-2 rounded-md ${
-                                filterStatus === 'all' ? 'bg-primary text-white' : 'text-gray-600 hover:bg-gray-50'
-                            }`}
+                    {/* Email Status Filters */}
+                    <div className="flex gap-2 mb-6">
+                        <button 
+                            className={`btn ${filterStatus === 'all' ? 'btn-primary' : ''}`}
                             onClick={() => setFilterStatus('all')}
                         >
                             All
                         </button>
-                        <button
-                            className={`px-4 py-2 rounded-md ${
-                                filterStatus === 'pending' ? 'bg-primary text-white' : 'text-gray-600 hover:bg-gray-50'
-                            }`}
+                        <button 
+                            className={`btn ${filterStatus === 'pending' ? 'btn-primary' : ''}`}
                             onClick={() => setFilterStatus('pending')}
                         >
                             Pending
                         </button>
-                        <button
-                            className={`px-4 py-2 rounded-md ${
-                                filterStatus === 'responded' ? 'bg-primary text-white' : 'text-gray-600 hover:bg-gray-50'
-                            }`}
+                        <button 
+                            className={`btn ${filterStatus === 'responded' ? 'btn-primary' : ''}`}
                             onClick={() => setFilterStatus('responded')}
                         >
                             Responded
                         </button>
-                        <button
-                            className={`px-4 py-2 rounded-md ${
-                                filterStatus === 'escalated' ? 'bg-primary text-white' : 'text-gray-600 hover:bg-gray-50'
-                            }`}
+                        <button 
+                            className={`btn ${filterStatus === 'escalated' ? 'btn-primary' : ''}`}
                             onClick={() => setFilterStatus('escalated')}
                         >
                             Escalated
@@ -124,34 +116,34 @@ function Emails() {
                     {/* Email List and Preview */}
                     <div className="grid grid-cols-12 gap-6">
                         {/* Email List */}
-                        <div className="col-span-12 lg:col-span-5 card">
+                        <div className="col-span-12 lg:col-span-5">
                             <div className="space-y-4">
-                                {emails.map((email) => (
-                                    <div
-                                        key={email.id}
-                                        className={`p-4 rounded-lg border cursor-pointer transition-all ${
-                                            selectedEmail?.id === email.id
-                                                ? 'border-primary bg-blue-50'
-                                                : 'border-gray-200 hover:border-primary'
-                                        }`}
-                                        onClick={() => setSelectedEmail(email)}
-                                    >
-                                        <div className="flex justify-between items-start mb-2">
-                                            <h3 className="font-medium text-gray-900">{email.subject}</h3>
-                                            <span className={`text-xs px-2 py-1 rounded-full ${getStatusColor(email.status)}`}>
-                                                {email.status}
-                                            </span>
+                                {emails
+                                    .filter(email => filterStatus === 'all' || email.status === filterStatus)
+                                    .map(email => (
+                                        <div
+                                            key={email.id}
+                                            className={`card cursor-pointer transition-shadow hover:shadow-md ${
+                                                selectedEmail?.id === email.id ? 'border-2 border-primary' : ''
+                                            }`}
+                                            onClick={() => setSelectedEmail(email)}
+                                        >
+                                            <div className="flex justify-between items-start mb-2">
+                                                <h3 className="font-medium text-gray-900">{email.subject}</h3>
+                                                <span className={`text-xs px-2 py-1 rounded-full ${getStatusColor(email.status)}`}>
+                                                    {email.status}
+                                                </span>
+                                            </div>
+                                            <div className="flex items-center gap-2 text-sm text-gray-500 mb-2">
+                                                <span className="material-icons text-sm">
+                                                    {getPriorityIcon(email.priority)}
+                                                </span>
+                                                <span>{email.sender}</span>
+                                            </div>
+                                            <p className="text-sm text-gray-600 line-clamp-2">{email.preview}</p>
+                                            <div className="mt-2 text-xs text-gray-400">{email.timestamp}</div>
                                         </div>
-                                        <div className="flex items-center gap-2 text-sm text-gray-500 mb-2">
-                                            <span className="material-icons text-sm">
-                                                {getPriorityIcon(email.priority)}
-                                            </span>
-                                            <span>{email.sender}</span>
-                                        </div>
-                                        <p className="text-sm text-gray-600 line-clamp-2">{email.preview}</p>
-                                        <div className="mt-2 text-xs text-gray-400">{email.timestamp}</div>
-                                    </div>
-                                ))}
+                                    ))}
                             </div>
                         </div>
 

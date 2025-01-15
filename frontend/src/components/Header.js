@@ -1,33 +1,33 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 
 function Header() {
+    const navigate = useNavigate();
     const userEmail = localStorage.getItem('userEmail') || 'erik@gfisystems.ca';
+
+    const handleLogout = () => {
+        localStorage.removeItem('token');
+        localStorage.removeItem('userEmail');
+        navigate('/login');
+    };
 
     return (
         <header className="header">
             <div className="flex items-center justify-between h-full">
-                {/* Logo and Title */}
-                <div className="flex items-center gap-3">
-                    <div className="flex items-center gap-2">
-                        <span className="material-icons text-3xl" style={{ color: 'steelblue' }}>mail_outline</span>
-                        <h1 className="text-xl font-semibold" style={{ color: 'steelblue' }}>Email Autoresponder</h1>
-                    </div>
+                {/* Search */}
+                <div className="relative">
+                    <span className="absolute inset-y-0 left-0 flex items-center pl-3">
+                        <span className="material-icons text-gray-400">search</span>
+                    </span>
+                    <input
+                        type="text"
+                        placeholder="Search emails, knowledge base..."
+                        className="pl-10 pr-4 py-2 border rounded-lg w-64 focus:outline-none focus:border-blue-500"
+                    />
                 </div>
 
                 {/* Right Section */}
                 <div className="flex items-center gap-6">
-                    {/* Search */}
-                    <div className="relative">
-                        <span className="absolute inset-y-0 left-0 flex items-center pl-3">
-                            <span className="material-icons text-gray-400">search</span>
-                        </span>
-                        <input
-                            type="text"
-                            placeholder="Search emails, knowledge base..."
-                            className="pl-10 pr-4 py-2 border rounded-lg w-64 focus:outline-none focus:border-blue-500"
-                        />
-                    </div>
-
                     {/* Actions */}
                     <div className="flex items-center gap-3">
                         <button className="p-2 hover:bg-gray-100 rounded-full" title="Notifications">
@@ -39,11 +39,17 @@ function Header() {
                     </div>
 
                     {/* User Menu */}
-                    <div className="flex items-center gap-3 pl-3 border-l border-gray-200">
-                        <span className="material-icons text-gray-400">account_circle</span>
-                        <span className="text-sm text-gray-600">{userEmail}</span>
-                        <button className="p-1 hover:bg-gray-100 rounded-full" title="Logout">
+                    <div className="flex items-center gap-3 pl-6 border-l border-gray-200">
+                        <div className="flex items-center gap-2">
+                            <span className="material-icons text-gray-400">account_circle</span>
+                            <span className="text-sm text-gray-600">{userEmail}</span>
+                        </div>
+                        <button 
+                            onClick={handleLogout}
+                            className="flex items-center gap-2 px-3 py-2 hover:bg-gray-100 rounded-lg text-sm text-gray-600"
+                        >
                             <span className="material-icons text-gray-400">logout</span>
+                            Logout
                         </button>
                     </div>
                 </div>
