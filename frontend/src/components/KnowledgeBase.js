@@ -48,12 +48,31 @@ function KnowledgeBase() {
                             lastModified: new Date().toISOString().split('T')[0]
                         };
                         setDocuments(prev => [...prev, newDoc]);
-                        return 100;
+                        setSelectedFile(null);
+                        return 0;
                     }
                     return prev + 10;
                 });
             }, 300);
         }
+    };
+
+    const handleViewDocument = (doc) => {
+        // Implement document preview functionality
+        console.log('Viewing document:', doc.name);
+        // You would typically open a modal or navigate to a preview page
+        alert('Document preview coming soon!');
+    };
+
+    const handleEditDocument = (doc) => {
+        // Implement document edit functionality
+        console.log('Editing document:', doc.name);
+        // You would typically open a modal or navigate to an edit page
+        alert('Document editing coming soon!');
+    };
+
+    const handleDeleteDocument = (id) => {
+        setDocuments(prev => prev.filter(doc => doc.id !== id));
     };
 
     const getFileIcon = (type) => {
@@ -70,26 +89,22 @@ function KnowledgeBase() {
         }
     };
 
-    const handleDeleteDocument = (id) => {
-        setDocuments(prev => prev.filter(doc => doc.id !== id));
-    };
-
     return (
         <div className="app-container">
             <Sidebar />
             <div className="content-area">
                 <Header />
-                <div className="space-y-6 p-6" style={{ backgroundColor: '#f8f9fa' }}>
+                <div className="main-content">
                     {/* Header Section */}
-                    <div className="flex justify-between items-center bg-white p-6 rounded-lg shadow-sm" style={{ borderLeft: '4px solid steelblue' }}>
-                        <div>
-                            <h1 className="text-2xl font-semibold text-gray-900">Knowledge Base</h1>
-                            <p className="mt-1 text-sm text-gray-500">
-                                Manage your documents and training materials
-                            </p>
-                        </div>
-                        <div className="flex gap-3">
-                            <button className="btn" style={{ backgroundColor: 'steelblue', color: 'white', padding: '8px 16px', borderRadius: '6px' }}>
+                    <div className="card mb-6">
+                        <div className="flex justify-between items-center">
+                            <div>
+                                <h1 className="text-2xl font-semibold text-gray-900">Knowledge Base</h1>
+                                <p className="mt-1 text-sm text-gray-500">
+                                    Manage your documents and training materials
+                                </p>
+                            </div>
+                            <button className="btn btn-primary">
                                 <span className="material-icons">cloud_sync</span>
                                 Sync Documents
                             </button>
@@ -97,38 +112,35 @@ function KnowledgeBase() {
                     </div>
 
                     {/* Upload Section */}
-                    <div className="bg-white p-6 rounded-lg shadow-sm">
+                    <div className="card mb-6">
                         <div className="flex items-center justify-between mb-4">
                             <h2 className="text-lg font-semibold">Upload Documents</h2>
                             <span className="text-sm text-gray-500">Supported formats: PDF, DOCX, TXT</span>
                         </div>
                         
-                        <div className="border-2 border-dashed rounded-lg p-8" style={{ borderColor: 'rgba(70, 130, 180, 0.3)' }}>
-                            <div className="flex flex-col items-center justify-center">
-                                <span className="material-icons text-4xl mb-4" style={{ color: 'steelblue' }}>
-                                    cloud_upload
-                                </span>
-                                <p className="text-gray-600 mb-4">
-                                    Drag and drop your files here, or click to browse
-                                </p>
-                                <input
-                                    type="file"
-                                    id="file-upload"
-                                    className="hidden"
-                                    onChange={handleFileSelect}
-                                    accept=".pdf,.docx,.txt"
-                                />
-                                <label
-                                    htmlFor="file-upload"
-                                    className="cursor-pointer px-4 py-2 rounded-lg"
-                                    style={{ backgroundColor: 'steelblue', color: 'white' }}
-                                >
-                                    Choose File
-                                </label>
-                            </div>
+                        <div className="file-upload-area">
+                            <input
+                                type="file"
+                                id="file-upload"
+                                className="hidden"
+                                onChange={handleFileSelect}
+                                accept=".pdf,.docx,.txt"
+                            />
+                            <span className="material-icons text-4xl mb-4" style={{ color: 'steelblue' }}>
+                                cloud_upload
+                            </span>
+                            <p className="text-gray-600 mb-4">
+                                Drag and drop your files here, or click to browse
+                            </p>
+                            <label
+                                htmlFor="file-upload"
+                                className="file-upload-button"
+                            >
+                                Choose File
+                            </label>
                         </div>
 
-                        {selectedFile && uploadProgress < 100 && (
+                        {selectedFile && uploadProgress > 0 && (
                             <div className="mt-4">
                                 <div className="flex items-center justify-between mb-2">
                                     <span className="text-sm font-medium">{selectedFile.name}</span>
@@ -145,36 +157,32 @@ function KnowledgeBase() {
                     </div>
 
                     {/* Documents List */}
-                    <div className="bg-white p-6 rounded-lg shadow-sm">
+                    <div className="card">
                         <div className="flex items-center justify-between mb-6">
                             <h2 className="text-lg font-semibold">Uploaded Documents</h2>
                             <div className="flex gap-2">
-                                <button className="p-2 hover:bg-gray-50 rounded-lg">
+                                <button className="btn">
                                     <span className="material-icons" style={{ color: 'steelblue' }}>filter_list</span>
                                 </button>
-                                <button className="p-2 hover:bg-gray-50 rounded-lg">
+                                <button className="btn">
                                     <span className="material-icons" style={{ color: 'steelblue' }}>sort</span>
                                 </button>
                             </div>
                         </div>
 
-                        <div className="overflow-x-auto">
-                            <table className="min-w-full">
+                        <div className="table-container">
+                            <table className="table">
                                 <thead>
-                                    <tr className="border-b" style={{ borderColor: 'rgba(70, 130, 180, 0.2)' }}>
-                                        <th className="text-left py-3 px-4">Name</th>
-                                        <th className="text-left py-3 px-4">Size</th>
-                                        <th className="text-left py-3 px-4">Last Modified</th>
-                                        <th className="text-right py-3 px-4">Actions</th>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Size</th>
+                                        <th>Last Modified</th>
+                                        <th className="text-right">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {documents.map((doc) => (
-                                        <tr 
-                                            key={doc.id} 
-                                            className="border-b hover:bg-gray-50"
-                                            style={{ borderColor: 'rgba(70, 130, 180, 0.1)' }}
-                                        >
+                                        <tr key={doc.id}>
                                             <td className="py-3 px-4">
                                                 <div className="flex items-center gap-3">
                                                     <span className="material-icons" style={{ color: 'steelblue' }}>
@@ -187,10 +195,16 @@ function KnowledgeBase() {
                                             <td className="py-3 px-4 text-gray-600">{doc.lastModified}</td>
                                             <td className="py-3 px-4">
                                                 <div className="flex gap-2 justify-end">
-                                                    <button className="p-2 hover:bg-gray-100 rounded-lg">
+                                                    <button 
+                                                        className="p-2 hover:bg-gray-100 rounded-lg"
+                                                        onClick={() => handleViewDocument(doc)}
+                                                    >
                                                         <span className="material-icons" style={{ color: 'steelblue' }}>visibility</span>
                                                     </button>
-                                                    <button className="p-2 hover:bg-gray-100 rounded-lg">
+                                                    <button 
+                                                        className="p-2 hover:bg-gray-100 rounded-lg"
+                                                        onClick={() => handleEditDocument(doc)}
+                                                    >
                                                         <span className="material-icons" style={{ color: 'steelblue' }}>edit</span>
                                                     </button>
                                                     <button 
