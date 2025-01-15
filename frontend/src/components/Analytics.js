@@ -81,9 +81,9 @@ function Analytics() {
             <Sidebar />
             <div className="content-area">
                 <Header />
-                <div className="space-y-6">
+                <div className="space-y-6 p-6" style={{ backgroundColor: '#f8f9fa' }}>
                     {/* Header Section */}
-                    <div className="flex justify-between items-center">
+                    <div className="flex justify-between items-center bg-white p-6 rounded-lg shadow-sm" style={{ borderLeft: '4px solid steelblue' }}>
                         <div>
                             <h1 className="text-2xl font-semibold text-gray-900">Analytics</h1>
                             <p className="mt-1 text-sm text-gray-500">
@@ -91,7 +91,7 @@ function Analytics() {
                             </p>
                         </div>
                         <div className="flex gap-3">
-                            <button className="btn btn-primary">
+                            <button className="btn" style={{ backgroundColor: 'steelblue', color: 'white', padding: '8px 16px', borderRadius: '6px' }}>
                                 <span className="material-icons">download</span>
                                 Export Report
                             </button>
@@ -101,78 +101,22 @@ function Analytics() {
                     {/* Metrics Grid */}
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                         {metrics.map((metric) => (
-                            <div key={metric.id} className="stat-card">
-                                <div className="stat-header">
-                                    <div className="stat-icon">
-                                        <span className="material-icons">{metric.icon}</span>
+                            <div key={metric.id} className="bg-white p-6 rounded-lg shadow-sm hover:shadow-md transition-shadow">
+                                <div className="flex justify-between items-center mb-4">
+                                    <div className="p-2 rounded-full" style={{ backgroundColor: 'rgba(70, 130, 180, 0.1)' }}>
+                                        <span className="material-icons" style={{ color: 'steelblue' }}>{metric.icon}</span>
                                     </div>
-                                    <div className={`stat-trend ${
-                                        metric.trend.startsWith('+') ? 'trend-up' : 'trend-down'
+                                    <div className={`px-2 py-1 rounded-full text-sm ${
+                                        metric.trend.startsWith('+') ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
                                     }`}>
-                                        <span className="material-icons">
-                                            {metric.trend.startsWith('+') ? 'trending_up' : 'trending_down'}
-                                        </span>
                                         {metric.trend}
                                     </div>
                                 </div>
-                                <div className="stat-value">{metric.value}</div>
-                                <div className="stat-label">{metric.label}</div>
-                                <div className="mt-2 text-sm text-gray-500">{metric.description}</div>
+                                <div className="text-3xl font-bold mb-2" style={{ color: 'steelblue' }}>{metric.value}</div>
+                                <div className="font-medium text-gray-900 mb-1">{metric.label}</div>
+                                <div className="text-sm text-gray-500">{metric.description}</div>
                             </div>
                         ))}
-                    </div>
-
-                    {/* Detailed Analytics */}
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                        {/* Response Time Distribution */}
-                        <div className="card">
-                            <div className="flex justify-between items-center mb-6">
-                                <h3 className="text-lg font-semibold">Response Time Distribution</h3>
-                                <button className="p-2 hover:bg-gray-50 rounded-lg">
-                                    <span className="material-icons text-gray-400">more_vert</span>
-                                </button>
-                            </div>
-                            <div className="h-64 flex items-center justify-center bg-gray-50 rounded-lg">
-                                <span className="text-gray-400">Chart will be displayed here</span>
-                            </div>
-                        </div>
-
-                        {/* Email Categories */}
-                        <div className="card">
-                            <div className="flex justify-between items-center mb-6">
-                                <h3 className="text-lg font-semibold">Email Categories</h3>
-                                <button className="p-2 hover:bg-gray-50 rounded-lg">
-                                    <span className="material-icons text-gray-400">more_vert</span>
-                                </button>
-                            </div>
-                            <div className="h-64 flex items-center justify-center bg-gray-50 rounded-lg">
-                                <span className="text-gray-400">Chart will be displayed here</span>
-                            </div>
-                        </div>
-
-                        {/* Recent Performance */}
-                        <div className="card lg:col-span-2">
-                            <div className="flex justify-between items-center mb-6">
-                                <div>
-                                    <h3 className="text-lg font-semibold">Recent Performance</h3>
-                                    <p className="text-sm text-gray-500">Last 30 days of activity</p>
-                                </div>
-                                <div className="flex gap-2">
-                                    <button className="px-3 py-1 text-sm border border-gray-200 rounded-md hover:bg-gray-50">
-                                        Daily
-                                    </button>
-                                    <button className="px-3 py-1 text-sm border border-gray-200 rounded-md hover:bg-gray-50">
-                                        Weekly
-                                    </button>
-                                    <button className="px-3 py-1 text-sm border border-gray-200 rounded-md hover:bg-gray-50">
-                                        Monthly
-                                    </button>
-                                </div>
-                            </div>
-                            <div className="h-80 flex items-center justify-center bg-gray-50 rounded-lg">
-                                <span className="text-gray-400">Performance chart will be displayed here</span>
-                            </div>
-                        </div>
                     </div>
                 </div>
             </div>
