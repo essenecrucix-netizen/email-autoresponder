@@ -5,6 +5,7 @@ const menuItems = [
   { path: '/dashboard', icon: 'dashboard', label: 'Dashboard' },
   { path: '/emails', icon: 'mail', label: 'Emails' },
   { path: '/knowledge-base', icon: 'folder', label: 'Knowledge Base' },
+  { path: '/analytics', icon: 'analytics', label: 'Analytics' },
   { path: '/settings', icon: 'settings', label: 'Settings' }
 ];
 

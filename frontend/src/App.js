@@ -5,6 +5,7 @@ import Header from './components/Header';
 import Dashboard from './components/Dashboard';
 import Emails from './components/Emails';
 import KnowledgeBase from './components/KnowledgeBase';
+import Analytics from './components/Analytics';
 import Settings from './components/Settings';
 
 const App = () => {
@@ -20,6 +21,7 @@ const App = () => {
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/emails" element={<Emails />} />
               <Route path="/knowledge-base" element={<KnowledgeBase />} />
+              <Route path="/analytics" element={<Analytics />} />
               <Route path="/settings" element={<Settings />} />
             </Routes>
           </main>
