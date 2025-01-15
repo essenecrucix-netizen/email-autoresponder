@@ -12,47 +12,34 @@ function Header() {
     };
 
     return (
-        <header className="header">
-            <div className="flex items-center justify-between h-full">
-                {/* Search */}
-                <div className="relative">
-                    <span className="absolute inset-y-0 left-0 flex items-center pl-3">
-                        <span className="material-icons text-gray-400">search</span>
-                    </span>
-                    <input
-                        type="text"
-                        placeholder="Search emails, knowledge base..."
-                        className="pl-10 pr-4 py-2 border rounded-lg w-64 focus:outline-none focus:border-blue-500"
-                    />
+        <header className="fixed top-0 right-0 left-[220px] h-[48px] bg-white border-b border-gray-200 flex items-center px-3">
+            {/* Search */}
+            <div className="relative flex-1 max-w-[400px]">
+                <input
+                    type="text"
+                    placeholder="Search emails, knowledge base..."
+                    className="w-full h-[32px] pl-8 pr-3 text-sm border border-gray-200 rounded"
+                />
+                <span className="absolute left-2.5 top-1/2 -translate-y-1/2">
+                    <span className="material-icons text-gray-400 text-[18px]">search</span>
+                </span>
+            </div>
+
+            {/* Right Section */}
+            <div className="flex items-center gap-2 ml-auto">
+                {/* User Email */}
+                <div className="text-sm text-gray-600">
+                    {userEmail}
                 </div>
 
-                {/* Right Section */}
-                <div className="flex items-center gap-6">
-                    {/* Actions */}
-                    <div className="flex items-center gap-3">
-                        <button className="p-2 hover:bg-gray-100 rounded-full" title="Notifications">
-                            <span className="material-icons" style={{ color: 'steelblue' }}>notifications</span>
-                        </button>
-                        <button className="p-2 hover:bg-gray-100 rounded-full" title="Settings">
-                            <span className="material-icons" style={{ color: 'steelblue' }}>settings</span>
-                        </button>
-                    </div>
-
-                    {/* User Menu */}
-                    <div className="flex items-center gap-3 pl-6 border-l border-gray-200">
-                        <div className="flex items-center gap-2">
-                            <span className="material-icons text-gray-400">account_circle</span>
-                            <span className="text-sm text-gray-600">{userEmail}</span>
-                        </div>
-                        <button 
-                            onClick={handleLogout}
-                            className="flex items-center gap-2 px-3 py-2 hover:bg-gray-100 rounded-lg text-sm text-gray-600"
-                        >
-                            <span className="material-icons text-gray-400">logout</span>
-                            Logout
-                        </button>
-                    </div>
-                </div>
+                {/* Logout */}
+                <button 
+                    onClick={handleLogout}
+                    className="flex items-center gap-1 ml-3 text-sm text-gray-600 hover:bg-gray-50 rounded px-2 py-1"
+                >
+                    <span className="material-icons text-[18px]">logout</span>
+                    Logout
+                </button>
             </div>
         </header>
     );

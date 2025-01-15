@@ -22,58 +22,48 @@ function Sidebar() {
         },
         {
             path: '/analytics',
-            icon: 'insights',
+            icon: 'analytics',
             label: 'Analytics'
         }
     ];
 
     return (
-        <aside className="sidebar">
+        <aside className="fixed left-0 top-0 h-screen w-[220px] bg-white border-r border-gray-200">
             {/* Logo Section */}
-            <div className="p-4 border-b" style={{ borderColor: 'rgba(70, 130, 180, 0.2)' }}>
-                <div className="flex items-center gap-3">
-                    <span className="material-icons text-2xl" style={{ color: 'steelblue' }}>mail_outline</span>
-                    <span className="font-semibold text-lg" style={{ color: 'steelblue' }}>Email Autoresponder</span>
-                </div>
+            <div className="flex items-center gap-2 p-3">
+                <span className="material-icons text-[steelblue]">mail</span>
+                <span className="text-[steelblue] font-medium">Email Autoresponder</span>
             </div>
 
-            {/* Navigation Links */}
-            <nav className="flex-1 p-4">
-                <div className="space-y-1">
-                    {menuItems.map((item) => {
-                        const isActive = location.pathname === item.path;
-                        return (
-                            <Link
-                                key={item.path}
-                                to={item.path}
-                                className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
-                                    isActive 
-                                        ? 'bg-blue-50 text-primary' 
-                                        : 'text-gray-600 hover:bg-gray-50'
-                                }`}
-                                style={{ color: isActive ? 'steelblue' : undefined }}
-                            >
-                                <span 
-                                    className="material-icons"
-                                    style={{ color: isActive ? 'steelblue' : '#64748b' }}
-                                >
-                                    {item.icon}
-                                </span>
-                                <span className="font-medium">{item.label}</span>
-                            </Link>
-                        );
-                    })}
-                </div>
+            {/* Navigation */}
+            <nav className="mt-2">
+                {menuItems.map((item) => {
+                    const isActive = location.pathname === item.path;
+                    return (
+                        <Link
+                            key={item.path}
+                            to={item.path}
+                            className={`flex items-center gap-2 px-3 py-2 text-sm ${
+                                isActive 
+                                    ? 'text-[steelblue] bg-blue-50' 
+                                    : 'text-gray-600 hover:bg-gray-50'
+                            }`}
+                        >
+                            <span className="material-icons text-[20px]">{item.icon}</span>
+                            {item.label}
+                        </Link>
+                    );
+                })}
             </nav>
 
-            {/* Quick Tip Section */}
-            <div className="p-4 border-t mt-auto" style={{ borderColor: 'rgba(70, 130, 180, 0.2)' }}>
-                <div className="bg-blue-50 p-3 rounded-lg">
-                    <div className="flex items-center gap-2 mb-1">
-                        <span className="material-icons text-sm" style={{ color: 'steelblue' }}>tips_and_updates</span>
-                        <span className="font-medium text-sm" style={{ color: 'steelblue' }}>Quick Tip</span>
+            {/* Quick Tip */}
+            <div className="absolute bottom-0 left-0 right-0 p-3">
+                <div className="text-xs">
+                    <div className="flex items-center gap-1 text-[steelblue] mb-1">
+                        <span className="material-icons text-[14px]">tips_and_updates</span>
+                        Quick Tip
                     </div>
-                    <p className="text-xs text-gray-600">
+                    <p className="text-gray-600">
                         Upload documents to improve response accuracy
                     </p>
                 </div>
