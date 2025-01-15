@@ -4,47 +4,87 @@ import Sidebar from './Sidebar';
 
 function Dashboard() {
     return (
-        <div className="flex h-screen bg-gray-100">
+        <div className="app-container">
             <Sidebar />
-            <div className="flex-1 flex flex-col">
+            <div className="content-area">
                 <Header />
-                <main className="flex-1 overflow-y-auto p-6">
-                    <div className="space-y-6">
-                        <h1 className="text-2xl font-semibold text-gray-900">Dashboard</h1>
-                        
-                        {/* Quick Stats */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                            <div className="bg-white rounded-lg shadow p-6">
-                                <h3 className="text-gray-500 text-sm font-medium">Total Emails</h3>
-                                <p className="text-3xl font-bold mt-2">0</p>
+                <div className="dashboard-container">
+                    <div className="dashboard-header">
+                        <h1 className="dashboard-title">Dashboard Overview</h1>
+                        <button className="btn btn-primary">
+                            <span className="material-icons">refresh</span>
+                            Refresh Data
+                        </button>
+                    </div>
+
+                    <div className="dashboard-stats">
+                        <div className="stat-card">
+                            <div className="stat-header">
+                                <div className="stat-icon">📧</div>
+                                <div className="stat-trend trend-up">
+                                    <span className="material-icons">trending_up</span>
+                                    +12.5%
+                                </div>
                             </div>
-                            <div className="bg-white rounded-lg shadow p-6">
-                                <h3 className="text-gray-500 text-sm font-medium">Automated Responses</h3>
-                                <p className="text-3xl font-bold mt-2">0</p>
-                            </div>
-                            <div className="bg-white rounded-lg shadow p-6">
-                                <h3 className="text-gray-500 text-sm font-medium">Average Response Time</h3>
-                                <p className="text-3xl font-bold mt-2">0m</p>
-                            </div>
-                            <div className="bg-white rounded-lg shadow p-6">
-                                <h3 className="text-gray-500 text-sm font-medium">Satisfaction Rate</h3>
-                                <p className="text-3xl font-bold mt-2">0%</p>
-                            </div>
+                            <div className="stat-value">12</div>
+                            <div className="stat-label">Total Emails</div>
                         </div>
 
-                        {/* Recent Activity */}
-                        <div className="bg-white rounded-lg shadow">
-                            <div className="px-6 py-4 border-b border-gray-200">
-                                <h3 className="text-lg font-medium text-gray-900">Recent Activity</h3>
+                        <div className="stat-card">
+                            <div className="stat-header">
+                                <div className="stat-icon">🤖</div>
+                                <div className="stat-trend trend-up">
+                                    <span className="material-icons">trending_up</span>
+                                    +8.2%
+                                </div>
                             </div>
-                            <div className="p-6">
-                                <div className="text-center text-gray-500">
-                                    No recent activity
+                            <div className="stat-value">10</div>
+                            <div className="stat-label">Automated Responses</div>
+                        </div>
+
+                        <div className="stat-card">
+                            <div className="stat-header">
+                                <div className="stat-icon">⚡</div>
+                                <div className="stat-trend trend-down">
+                                    <span className="material-icons">trending_down</span>
+                                    -2.4%
+                                </div>
+                            </div>
+                            <div className="stat-value">0m</div>
+                            <div className="stat-label">Average Response Time</div>
+                        </div>
+
+                        <div className="stat-card">
+                            <div className="stat-header">
+                                <div className="stat-icon">😊</div>
+                                <div className="stat-trend trend-up">
+                                    <span className="material-icons">trending_up</span>
+                                    +5.3%
+                                </div>
+                            </div>
+                            <div className="stat-value">0%</div>
+                            <div className="stat-label">Satisfaction Rate</div>
+                        </div>
+                    </div>
+
+                    <div className="recent-activity">
+                        <div className="activity-header">
+                            <h2 className="activity-title">Recent Activity</h2>
+                            <button className="btn btn-primary">View All</button>
+                        </div>
+                        
+                        {/* If there's no activity */}
+                        <div className="activity-list">
+                            <div className="activity-item">
+                                <div className="activity-icon">📝</div>
+                                <div className="activity-content">
+                                    <div className="activity-message">No recent activity</div>
+                                    <div className="activity-time">System is ready to process emails</div>
                                 </div>
                             </div>
                         </div>
                     </div>
-                </main>
+                </div>
             </div>
         </div>
     );

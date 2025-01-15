@@ -1,142 +1,197 @@
 // Example Emails.js
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import Header from './Header';
 import Sidebar from './Sidebar';
-import axios from '../utils/axios';
 
 function Emails() {
-    const [emails, setEmails] = useState([]);
     const [selectedEmail, setSelectedEmail] = useState(null);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
+    const [filterStatus, setFilterStatus] = useState('all');
 
-    useEffect(() => {
-        fetchEmails();
-    }, []);
+    const emails = [
+        {
+            id: 1,
+            subject: 'Technical Support Required',
+            sender: 'customer@example.com',
+            preview: 'I need help with configuring the FleetCam device...',
+            timestamp: '2024-01-14 14:30',
+            status: 'pending',
+            priority: 'high'
+        },
+        {
+            id: 2,
+            subject: 'Order Inquiry #1234',
+            sender: 'sales@client.com',
+            preview: 'I would like to know the status of my order...',
+            timestamp: '2024-01-14 13:15',
+            status: 'responded',
+            priority: 'medium'
+        },
+        {
+            id: 3,
+            subject: 'Integration Question',
+            sender: 'dev@company.com',
+            preview: 'We are trying to integrate your API with our system...',
+            timestamp: '2024-01-14 11:45',
+            status: 'escalated',
+            priority: 'high'
+        }
+    ];
 
-    const fetchEmails = async () => {
-        try {
-            const response = await axios.get('/api/emails');
-            setEmails(response.data || []);
-            setLoading(false);
-        } catch (err) {
-            setError('Failed to fetch emails');
-            setLoading(false);
+    const getStatusColor = (status) => {
+        switch (status) {
+            case 'pending':
+                return 'bg-yellow-100 text-yellow-800';
+            case 'responded':
+                return 'bg-green-100 text-green-800';
+            case 'escalated':
+                return 'bg-red-100 text-red-800';
+            default:
+                return 'bg-gray-100 text-gray-800';
         }
     };
 
-    const handleEmailClick = (email) => {
-        setSelectedEmail(email);
+    const getPriorityIcon = (priority) => {
+        switch (priority) {
+            case 'high':
+                return 'priority_high';
+            case 'medium':
+                return 'drag_handle';
+            case 'low':
+                return 'low_priority';
+            default:
+                return 'remove';
+        }
     };
 
-    if (loading) {
-        return (
-            <div className="flex h-screen bg-gray-100">
-                <Sidebar />
-                <div className="flex-1 flex flex-col">
-                    <Header />
-                    <main className="flex-1 overflow-y-auto p-6">
-                        <div>Loading...</div>
-                    </main>
-                </div>
-            </div>
-        );
-    }
-
-    if (error) {
-        return (
-            <div className="flex h-screen bg-gray-100">
-                <Sidebar />
-                <div className="flex-1 flex flex-col">
-                    <Header />
-                    <main className="flex-1 overflow-y-auto p-6">
-                        <div>Error: {error}</div>
-                    </main>
-                </div>
-            </div>
-        );
-    }
-
     return (
-        <div className="flex h-screen bg-gray-100">
+        <div className="app-container">
             <Sidebar />
-            <div className="flex-1 flex flex-col">
+            <div className="content-area">
                 <Header />
-                <main className="flex-1 overflow-y-auto p-6">
-                    <div className="grid grid-cols-3 gap-6">
-                        {/* Email List */}
-                        <div className="col-span-1 bg-white rounded-lg shadow">
-                            <div className="p-4">
-                                <h2 className="text-xl font-semibold mb-4">Emails</h2>
-                                <div className="space-y-4">
-                                    {Array.isArray(emails) && emails.map((email) => (
-                                        <div
-                                            key={email.email_id}
-                                            className={`p-3 rounded cursor-pointer ${
-                                                selectedEmail?.email_id === email.email_id
-                                                    ? 'bg-blue-50'
-                                                    : 'hover:bg-gray-50'
-                                            }`}
-                                            onClick={() => handleEmailClick(email)}
-                                        >
-                                            <div className="font-medium">{email.subject}</div>
-                                            <div className="text-sm text-gray-500">{email.sender}</div>
-                                            <div className="text-sm text-gray-400">
-                                                {new Date(email.received_at).toLocaleString()}
-                                            </div>
-                                        </div>
-                                    ))}
-                                    {Array.isArray(emails) && emails.length === 0 && (
-                                        <div className="text-center text-gray-500">
-                                            No emails found
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
+                <div className="space-y-6">
+                    {/* Header Section */}
+                    <div className="flex justify-between items-center">
+                        <div>
+                            <h1 className="text-2xl font-semibold text-gray-900">Email Management</h1>
+                            <p className="mt-1 text-sm text-gray-500">
+                                View and manage automated email responses
+                            </p>
                         </div>
-
-                        {/* Email Details */}
-                        <div className="col-span-2 bg-white rounded-lg shadow">
-                            <div className="p-4">
-                                {selectedEmail ? (
-                                    <div>
-                                        <h2 className="text-xl font-semibold mb-4">
-                                            {selectedEmail.subject}
-                                        </h2>
-                                        <div className="mb-4">
-                                            <div className="text-gray-600">
-                                                From: {selectedEmail.sender}
-                                            </div>
-                                            <div className="text-gray-600">
-                                                Received:{' '}
-                                                {new Date(
-                                                    selectedEmail.received_at
-                                                ).toLocaleString()}
-                                            </div>
-                                        </div>
-                                        <div className="prose max-w-none">
-                                            {selectedEmail.content}
-                                        </div>
-                                        {selectedEmail.response && (
-                                            <div className="mt-6">
-                                                <h3 className="text-lg font-semibold mb-2">
-                                                    Response
-                                                </h3>
-                                                <div className="bg-gray-50 p-4 rounded">
-                                                    {selectedEmail.response}
-                                                </div>
-                                            </div>
-                                        )}
-                                    </div>
-                                ) : (
-                                    <div className="text-center text-gray-500">
-                                        Select an email to view details
-                                    </div>
-                                )}
-                            </div>
+                        <div className="flex gap-3">
+                            <button className="btn btn-primary">
+                                <span className="material-icons">refresh</span>
+                                Refresh
+                            </button>
                         </div>
                     </div>
-                </main>
+
+                    {/* Filters */}
+                    <div className="flex gap-4 border-b border-gray-200 pb-4">
+                        <button
+                            className={`px-4 py-2 rounded-md ${
+                                filterStatus === 'all' ? 'bg-primary text-white' : 'text-gray-600 hover:bg-gray-50'
+                            }`}
+                            onClick={() => setFilterStatus('all')}
+                        >
+                            All
+                        </button>
+                        <button
+                            className={`px-4 py-2 rounded-md ${
+                                filterStatus === 'pending' ? 'bg-primary text-white' : 'text-gray-600 hover:bg-gray-50'
+                            }`}
+                            onClick={() => setFilterStatus('pending')}
+                        >
+                            Pending
+                        </button>
+                        <button
+                            className={`px-4 py-2 rounded-md ${
+                                filterStatus === 'responded' ? 'bg-primary text-white' : 'text-gray-600 hover:bg-gray-50'
+                            }`}
+                            onClick={() => setFilterStatus('responded')}
+                        >
+                            Responded
+                        </button>
+                        <button
+                            className={`px-4 py-2 rounded-md ${
+                                filterStatus === 'escalated' ? 'bg-primary text-white' : 'text-gray-600 hover:bg-gray-50'
+                            }`}
+                            onClick={() => setFilterStatus('escalated')}
+                        >
+                            Escalated
+                        </button>
+                    </div>
+
+                    {/* Email List and Preview */}
+                    <div className="grid grid-cols-12 gap-6">
+                        {/* Email List */}
+                        <div className="col-span-12 lg:col-span-5 card">
+                            <div className="space-y-4">
+                                {emails.map((email) => (
+                                    <div
+                                        key={email.id}
+                                        className={`p-4 rounded-lg border cursor-pointer transition-all ${
+                                            selectedEmail?.id === email.id
+                                                ? 'border-primary bg-blue-50'
+                                                : 'border-gray-200 hover:border-primary'
+                                        }`}
+                                        onClick={() => setSelectedEmail(email)}
+                                    >
+                                        <div className="flex justify-between items-start mb-2">
+                                            <h3 className="font-medium text-gray-900">{email.subject}</h3>
+                                            <span className={`text-xs px-2 py-1 rounded-full ${getStatusColor(email.status)}`}>
+                                                {email.status}
+                                            </span>
+                                        </div>
+                                        <div className="flex items-center gap-2 text-sm text-gray-500 mb-2">
+                                            <span className="material-icons text-sm">
+                                                {getPriorityIcon(email.priority)}
+                                            </span>
+                                            <span>{email.sender}</span>
+                                        </div>
+                                        <p className="text-sm text-gray-600 line-clamp-2">{email.preview}</p>
+                                        <div className="mt-2 text-xs text-gray-400">{email.timestamp}</div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Email Preview */}
+                        <div className="col-span-12 lg:col-span-7 card">
+                            {selectedEmail ? (
+                                <div className="space-y-6">
+                                    <div className="border-b border-gray-200 pb-4">
+                                        <h2 className="text-xl font-semibold mb-2">{selectedEmail.subject}</h2>
+                                        <div className="flex items-center gap-4">
+                                            <div className="flex items-center gap-2">
+                                                <span className="material-icons text-gray-400">account_circle</span>
+                                                <span className="text-sm text-gray-600">{selectedEmail.sender}</span>
+                                            </div>
+                                            <div className="text-sm text-gray-400">{selectedEmail.timestamp}</div>
+                                        </div>
+                                    </div>
+                                    <div className="prose max-w-none">
+                                        <p>{selectedEmail.preview}</p>
+                                    </div>
+                                    <div className="flex gap-3">
+                                        <button className="btn btn-primary">
+                                            <span className="material-icons">reply</span>
+                                            Reply
+                                        </button>
+                                        <button className="btn btn-primary">
+                                            <span className="material-icons">escalator</span>
+                                            Escalate
+                                        </button>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="flex flex-col items-center justify-center h-64 text-gray-400">
+                                    <span className="material-icons text-4xl mb-2">email</span>
+                                    <p>Select an email to view details</p>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     );

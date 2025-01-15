@@ -6,17 +6,50 @@ import { useAnalyticsData } from '../hooks/useAnalyticsData';
 function Analytics() {
     const { data, loading, error } = useAnalyticsData();
 
+    const metrics = [
+        {
+            id: 'response_rate',
+            label: 'Response Rate',
+            value: data?.responseRate || '0%',
+            trend: '+5.2%',
+            icon: 'speed',
+            description: 'Average response rate for incoming emails'
+        },
+        {
+            id: 'ai_accuracy',
+            label: 'AI Accuracy',
+            value: data?.aiAccuracy || '0%',
+            trend: '+3.1%',
+            icon: 'psychology',
+            description: 'Accuracy of AI-generated responses'
+        },
+        {
+            id: 'escalation_rate',
+            label: 'Escalation Rate',
+            value: data?.escalationRate || '0%',
+            trend: '-2.4%',
+            icon: 'escalator',
+            description: 'Percentage of emails requiring human escalation'
+        },
+        {
+            id: 'avg_response_time',
+            label: 'Avg. Response Time',
+            value: data?.avgResponseTime || '0m',
+            trend: '-12.5%',
+            icon: 'timer',
+            description: 'Average time to respond to emails'
+        }
+    ];
+
     if (loading) {
         return (
-            <div className="flex h-screen bg-gray-100">
+            <div className="app-container">
                 <Sidebar />
-                <div className="flex-1 flex flex-col">
+                <div className="content-area">
                     <Header />
-                    <main className="flex-1 overflow-y-auto p-6">
-                        <div className="flex justify-center items-center h-64">
-                            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-                        </div>
-                    </main>
+                    <div className="flex justify-center items-center h-64">
+                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+                    </div>
                 </div>
             </div>
         );
@@ -24,78 +57,124 @@ function Analytics() {
 
     if (error) {
         return (
-            <div className="flex h-screen bg-gray-100">
+            <div className="app-container">
                 <Sidebar />
-                <div className="flex-1 flex flex-col">
+                <div className="content-area">
                     <Header />
-                    <main className="flex-1 overflow-y-auto p-6">
-                        <div className="bg-red-50 border-l-4 border-red-400 p-4 mb-4">
-                            <div className="flex">
-                                <div className="flex-shrink-0">
-                                    <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
-                                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-                                    </svg>
-                                </div>
-                                <div className="ml-3">
-                                    <p className="text-sm text-red-700">
-                                        Error loading analytics data: {error}
-                                    </p>
-                                </div>
+                    <div className="bg-red-50 border-l-4 border-red-400 p-4 mb-4">
+                        <div className="flex">
+                            <div className="flex-shrink-0">
+                                <span className="material-icons text-red-400">error</span>
+                            </div>
+                            <div className="ml-3">
+                                <p className="text-sm text-red-700">{error}</p>
                             </div>
                         </div>
-                    </main>
+                    </div>
                 </div>
             </div>
         );
     }
 
     return (
-        <div className="flex h-screen bg-gray-100">
+        <div className="app-container">
             <Sidebar />
-            <div className="flex-1 flex flex-col">
+            <div className="content-area">
                 <Header />
-                <main className="flex-1 overflow-y-auto p-6">
-                    <div className="space-y-6">
-                        {/* Analytics Overview */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                            <div className="bg-white rounded-lg shadow p-6">
-                                <h3 className="text-gray-500 text-sm font-medium">Total Emails</h3>
-                                <p className="text-3xl font-bold mt-2">{data.totalEmails || 0}</p>
+                <div className="space-y-6">
+                    {/* Header Section */}
+                    <div className="flex justify-between items-center">
+                        <div>
+                            <h1 className="text-2xl font-semibold text-gray-900">Analytics</h1>
+                            <p className="mt-1 text-sm text-gray-500">
+                                Monitor and analyze your email automation performance
+                            </p>
+                        </div>
+                        <div className="flex gap-3">
+                            <button className="btn btn-primary">
+                                <span className="material-icons">download</span>
+                                Export Report
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Metrics Grid */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                        {metrics.map((metric) => (
+                            <div key={metric.id} className="stat-card">
+                                <div className="stat-header">
+                                    <div className="stat-icon">
+                                        <span className="material-icons">{metric.icon}</span>
+                                    </div>
+                                    <div className={`stat-trend ${
+                                        metric.trend.startsWith('+') ? 'trend-up' : 'trend-down'
+                                    }`}>
+                                        <span className="material-icons">
+                                            {metric.trend.startsWith('+') ? 'trending_up' : 'trending_down'}
+                                        </span>
+                                        {metric.trend}
+                                    </div>
+                                </div>
+                                <div className="stat-value">{metric.value}</div>
+                                <div className="stat-label">{metric.label}</div>
+                                <div className="mt-2 text-sm text-gray-500">{metric.description}</div>
                             </div>
-                            <div className="bg-white rounded-lg shadow p-6">
-                                <h3 className="text-gray-500 text-sm font-medium">Automated Responses</h3>
-                                <p className="text-3xl font-bold mt-2">{data.automatedResponses || 0}</p>
+                        ))}
+                    </div>
+
+                    {/* Detailed Analytics */}
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        {/* Response Time Distribution */}
+                        <div className="card">
+                            <div className="flex justify-between items-center mb-6">
+                                <h3 className="text-lg font-semibold">Response Time Distribution</h3>
+                                <button className="p-2 hover:bg-gray-50 rounded-lg">
+                                    <span className="material-icons text-gray-400">more_vert</span>
+                                </button>
                             </div>
-                            <div className="bg-white rounded-lg shadow p-6">
-                                <h3 className="text-gray-500 text-sm font-medium">Average Response Time</h3>
-                                <p className="text-3xl font-bold mt-2">{data.averageResponseTime || '0m'}</p>
-                            </div>
-                            <div className="bg-white rounded-lg shadow p-6">
-                                <h3 className="text-gray-500 text-sm font-medium">Satisfaction Rate</h3>
-                                <p className="text-3xl font-bold mt-2">{data.satisfactionRate || '0%'}</p>
+                            <div className="h-64 flex items-center justify-center bg-gray-50 rounded-lg">
+                                <span className="text-gray-400">Chart will be displayed here</span>
                             </div>
                         </div>
 
-                        {/* Detailed Stats */}
-                        <div className="bg-white rounded-lg shadow p-6">
-                            <h3 className="text-lg font-semibold mb-4">Response Details</h3>
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        {/* Email Categories */}
+                        <div className="card">
+                            <div className="flex justify-between items-center mb-6">
+                                <h3 className="text-lg font-semibold">Email Categories</h3>
+                                <button className="p-2 hover:bg-gray-50 rounded-lg">
+                                    <span className="material-icons text-gray-400">more_vert</span>
+                                </button>
+                            </div>
+                            <div className="h-64 flex items-center justify-center bg-gray-50 rounded-lg">
+                                <span className="text-gray-400">Chart will be displayed here</span>
+                            </div>
+                        </div>
+
+                        {/* Recent Performance */}
+                        <div className="card lg:col-span-2">
+                            <div className="flex justify-between items-center mb-6">
                                 <div>
-                                    <h4 className="text-gray-500 text-sm font-medium">Escalated Emails</h4>
-                                    <p className="text-2xl font-semibold mt-1">{data.escalatedEmails || 0}</p>
+                                    <h3 className="text-lg font-semibold">Recent Performance</h3>
+                                    <p className="text-sm text-gray-500">Last 30 days of activity</p>
                                 </div>
-                                <div>
-                                    <h4 className="text-gray-500 text-sm font-medium">AI Response Rate</h4>
-                                    <p className="text-2xl font-semibold mt-1">{data.aiResponseRate || '0%'}</p>
+                                <div className="flex gap-2">
+                                    <button className="px-3 py-1 text-sm border border-gray-200 rounded-md hover:bg-gray-50">
+                                        Daily
+                                    </button>
+                                    <button className="px-3 py-1 text-sm border border-gray-200 rounded-md hover:bg-gray-50">
+                                        Weekly
+                                    </button>
+                                    <button className="px-3 py-1 text-sm border border-gray-200 rounded-md hover:bg-gray-50">
+                                        Monthly
+                                    </button>
                                 </div>
-                                <div>
-                                    <h4 className="text-gray-500 text-sm font-medium">Human Response Rate</h4>
-                                    <p className="text-2xl font-semibold mt-1">{data.humanResponseRate || '0%'}</p>
-                                </div>
+                            </div>
+                            <div className="h-80 flex items-center justify-center bg-gray-50 rounded-lg">
+                                <span className="text-gray-400">Performance chart will be displayed here</span>
                             </div>
                         </div>
                     </div>
-                </main>
+                </div>
             </div>
         </div>
     );
