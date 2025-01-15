@@ -1,112 +1,98 @@
 import React from 'react';
-import Header from './Header';
-import Sidebar from './Sidebar';
 
-function Dashboard() {
-    return (
-        <div className="app-container">
-            <Sidebar />
-            <div className="content-area">
-                <Header />
-                <div className="main-content">
-                    {/* Header Section */}
-                    <div className="card mb-6">
-                        <div className="flex justify-between items-center">
-                            <div>
-                                <h1 className="text-2xl font-semibold text-gray-900">Dashboard Overview</h1>
-                                <p className="mt-1 text-sm text-gray-500">
-                                    Monitor your email automation performance
-                                </p>
-                            </div>
-                            <button className="btn btn-primary">
-                                <span className="material-icons">refresh</span>
-                                Refresh Data
-                            </button>
-                        </div>
-                    </div>
+const Dashboard = () => {
+  const stats = [
+    { label: 'Total Emails', value: '1,234', trend: '+12%', icon: 'mail' },
+    { label: 'Response Rate', value: '94%', trend: '+3%', icon: 'trending_up' },
+    { label: 'Avg Response Time', value: '2.4m', trend: '-18%', icon: 'timer' },
+    { label: 'Knowledge Base', value: '45', trend: '+5', icon: 'folder' }
+  ];
 
-                    {/* Stats Grid */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
-                        <div className="card">
-                            <div className="flex justify-between items-center mb-4">
-                                <div className="p-2 rounded-full" style={{ backgroundColor: 'rgba(70, 130, 180, 0.1)' }}>
-                                    <span className="material-icons" style={{ color: 'steelblue' }}>mail</span>
-                                </div>
-                                <div className="px-2 py-1 rounded-full text-sm bg-green-100 text-green-800">
-                                    +12.5%
-                                </div>
-                            </div>
-                            <div className="text-3xl font-bold mb-2" style={{ color: 'steelblue' }}>12</div>
-                            <div className="font-medium text-gray-900 mb-1">Total Emails</div>
-                            <div className="text-sm text-gray-500">Emails received today</div>
-                        </div>
+  const recentActivity = [
+    {
+      id: 1,
+      type: 'response',
+      message: 'Automated response sent to customer@example.com',
+      time: '5 minutes ago'
+    },
+    {
+      id: 2,
+      type: 'document',
+      message: 'New document added to Knowledge Base',
+      time: '2 hours ago'
+    },
+    {
+      id: 3,
+      type: 'escalation',
+      message: 'Technical support request escalated to team',
+      time: '4 hours ago'
+    }
+  ];
 
-                        <div className="card">
-                            <div className="flex justify-between items-center mb-4">
-                                <div className="p-2 rounded-full" style={{ backgroundColor: 'rgba(70, 130, 180, 0.1)' }}>
-                                    <span className="material-icons" style={{ color: 'steelblue' }}>smart_toy</span>
-                                </div>
-                                <div className="px-2 py-1 rounded-full text-sm bg-green-100 text-green-800">
-                                    +8.2%
-                                </div>
-                            </div>
-                            <div className="text-3xl font-bold mb-2" style={{ color: 'steelblue' }}>10</div>
-                            <div className="font-medium text-gray-900 mb-1">Automated Responses</div>
-                            <div className="text-sm text-gray-500">Responses sent automatically</div>
-                        </div>
+  const getActivityIcon = (type) => {
+    switch (type) {
+      case 'response':
+        return 'send';
+      case 'document':
+        return 'description';
+      case 'escalation':
+        return 'escalator';
+      default:
+        return 'info';
+    }
+  };
 
-                        <div className="card">
-                            <div className="flex justify-between items-center mb-4">
-                                <div className="p-2 rounded-full" style={{ backgroundColor: 'rgba(70, 130, 180, 0.1)' }}>
-                                    <span className="material-icons" style={{ color: 'steelblue' }}>timer</span>
-                                </div>
-                                <div className="px-2 py-1 rounded-full text-sm bg-red-100 text-red-800">
-                                    -2.4%
-                                </div>
-                            </div>
-                            <div className="text-3xl font-bold mb-2" style={{ color: 'steelblue' }}>0m</div>
-                            <div className="font-medium text-gray-900 mb-1">Average Response Time</div>
-                            <div className="text-sm text-gray-500">Time to respond to emails</div>
-                        </div>
+  return (
+    <div className="p-6 max-w-6xl mx-auto">
+      <div className="mb-8">
+        <h1 className="text-2xl font-bold text-gray-900 mb-2">Dashboard</h1>
+        <p className="text-gray-600">Overview of your email automation system</p>
+      </div>
 
-                        <div className="card">
-                            <div className="flex justify-between items-center mb-4">
-                                <div className="p-2 rounded-full" style={{ backgroundColor: 'rgba(70, 130, 180, 0.1)' }}>
-                                    <span className="material-icons" style={{ color: 'steelblue' }}>sentiment_satisfied</span>
-                                </div>
-                                <div className="px-2 py-1 rounded-full text-sm bg-green-100 text-green-800">
-                                    +5.3%
-                                </div>
-                            </div>
-                            <div className="text-3xl font-bold mb-2" style={{ color: 'steelblue' }}>0%</div>
-                            <div className="font-medium text-gray-900 mb-1">Satisfaction Rate</div>
-                            <div className="text-sm text-gray-500">Based on user feedback</div>
-                        </div>
-                    </div>
-
-                    {/* Recent Activity */}
-                    <div className="card">
-                        <div className="flex justify-between items-center mb-6">
-                            <h2 className="text-lg font-semibold">Recent Activity</h2>
-                            <button className="btn btn-primary">View All</button>
-                        </div>
-                        
-                        <div className="space-y-4">
-                            <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg">
-                                <div className="p-2 rounded-full" style={{ backgroundColor: 'rgba(70, 130, 180, 0.1)' }}>
-                                    <span className="material-icons" style={{ color: 'steelblue' }}>notifications</span>
-                                </div>
-                                <div>
-                                    <div className="font-medium">No recent activity</div>
-                                    <div className="text-sm text-gray-500">System is ready to process emails</div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+      {/* Stats Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        {stats.map((stat, index) => (
+          <div key={index} className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <div className="flex items-center justify-between mb-4">
+              <span className="material-icons text-primary text-2xl">{stat.icon}</span>
+              <span className={`text-sm font-medium ${
+                stat.trend.startsWith('+') ? 'text-green-600' : 'text-red-600'
+              }`}>
+                {stat.trend}
+              </span>
             </div>
+            <h3 className="text-2xl font-bold text-gray-900 mb-1">{stat.value}</h3>
+            <p className="text-gray-600">{stat.label}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* Recent Activity */}
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-lg font-semibold text-gray-900">Recent Activity</h2>
+          <button className="text-primary hover:text-primary-hover transition-colors">
+            View All
+          </button>
         </div>
-    );
-}
+        <div className="space-y-4">
+          {recentActivity.map((activity) => (
+            <div key={activity.id} className="flex items-start">
+              <div className="flex-shrink-0 w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center mr-3">
+                <span className="material-icons text-primary text-sm">
+                  {getActivityIcon(activity.type)}
+                </span>
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm text-gray-900">{activity.message}</p>
+                <p className="text-xs text-gray-500">{activity.time}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
 
 export default Dashboard;
