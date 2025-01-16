@@ -8,7 +8,8 @@ function Analytics() {
         humanResponses: 0,
         averageResponseTime: 0,
         escalatedEmails: 0,
-        emailVolume: []
+        emailVolume: [],
+        analyticsData: []
     });
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -32,7 +33,8 @@ function Analytics() {
                     ...response.data,
                     automatedResponses: automatedActualResponses,
                     humanResponses: humanActualResponses,
-                    totalResponses: actualResponses.length
+                    totalResponses: actualResponses.length,
+                    analyticsData: response.data.analyticsData || []
                 });
                 
                 setLoading(false);
@@ -49,8 +51,11 @@ function Analytics() {
     if (loading) return <div className="p-6">Loading analytics...</div>;
     if (error) return <div className="p-6 text-red-500">{error}</div>;
 
-    // Calculate total responses (automated + human)
-    const totalResponses = metrics.automatedResponses + metrics.humanResponses;
+    // Calculate metrics from actual responses
+    const actualResponses = metrics.analyticsData.filter(entry => entry.response);
+    const totalResponses = actualResponses.length;
+    const automatedResponses = actualResponses.filter(entry => entry.type === 'automated').length;
+    const aiResponseRate = totalResponses > 0 ? (automatedResponses / totalResponses) * 100 : 0;
 
     return (
         <div className="p-6">
@@ -66,36 +71,30 @@ function Analytics() {
                     <h3 className="text-gray-500 text-sm">Response Time</h3>
                     <div className="flex items-baseline mt-2">
                         <p className="text-2xl font-semibold">{(metrics.averageResponseTime || 0).toFixed(1)}s</p>
-                        <span className="ml-2 text-sm text-red-500">-12%</span>
                     </div>
-                    <p className="text-xs text-gray-400 mt-1">vs last week</p>
+                    <p className="text-xs text-gray-400 mt-1">average response time</p>
                 </div>
 
                 <div className="bg-white p-4 rounded-lg shadow">
                     <h3 className="text-gray-500 text-sm">AI Response Rate</h3>
                     <div className="flex items-baseline mt-2">
-                        <p className="text-2xl font-semibold">
-                            {totalResponses > 0 ? ((metrics.automatedResponses / totalResponses) * 100).toFixed(0) : 0}%
-                        </p>
-                        <span className="ml-2 text-sm text-green-500">+3%</span>
+                        <p className="text-2xl font-semibold">{aiResponseRate.toFixed(0)}%</p>
                     </div>
                     <p className="text-xs text-gray-400 mt-1">of business inquiries</p>
                 </div>
 
                 <div className="bg-white p-4 rounded-lg shadow">
-                    <h3 className="text-gray-500 text-sm">User Satisfaction</h3>
+                    <h3 className="text-gray-500 text-sm">Escalated Emails</h3>
                     <div className="flex items-baseline mt-2">
-                        <p className="text-2xl font-semibold">4.8/5</p>
-                        <span className="ml-2 text-sm text-green-500">+0.2</span>
+                        <p className="text-2xl font-semibold">{metrics.escalatedEmails || 0}</p>
                     </div>
-                    <p className="text-xs text-gray-400 mt-1">based on feedback</p>
+                    <p className="text-xs text-gray-400 mt-1">requiring human attention</p>
                 </div>
 
                 <div className="bg-white p-4 rounded-lg shadow">
                     <h3 className="text-gray-500 text-sm">Total Responses</h3>
                     <div className="flex items-baseline mt-2">
-                        <p className="text-2xl font-semibold">{metrics.totalResponses || 0}</p>
-                        <span className="ml-2 text-sm text-green-500">+8%</span>
+                        <p className="text-2xl font-semibold">{totalResponses}</p>
                     </div>
                     <p className="text-xs text-gray-400 mt-1">actual AI responses sent</p>
                 </div>
