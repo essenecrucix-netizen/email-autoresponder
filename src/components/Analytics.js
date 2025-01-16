@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
 
 function Analytics() {
     const [metrics, setMetrics] = useState({
@@ -13,19 +14,22 @@ function Analytics() {
     });
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const navigate = useNavigate();
 
     useEffect(() => {
         const fetchAnalytics = async () => {
             try {
+                // Get token from localStorage
                 const token = localStorage.getItem('token');
-                console.log('Token from localStorage:', token); // Debug log
+                console.log('Using token:', token); // Debug log
                 
                 if (!token) {
-                    setError('No authentication token found. Please log in again.');
-                    setLoading(false);
+                    console.log('No token found, redirecting to login');
+                    navigate('/login');
                     return;
                 }
 
+                // Make the API request
                 const response = await axios.get('/api/analytics', {
                     headers: { 
                         'Authorization': `Bearer ${token}`,
@@ -36,9 +40,7 @@ function Analytics() {
                 console.log('Analytics API Response:', response.data);
                 
                 if (!response.data) {
-                    setError('No data received from analytics endpoint');
-                    setLoading(false);
-                    return;
+                    throw new Error('No data received from analytics endpoint');
                 }
 
                 // Filter to only include entries with actual responses
@@ -57,9 +59,18 @@ function Analytics() {
                 setLoading(false);
             } catch (err) {
                 console.error('Analytics API Error:', err.response || err);
+                
+                // Handle different error cases
+                if (err.response?.status === 401 || err.response?.status === 403) {
+                    console.log('Authentication error, redirecting to login');
+                    localStorage.removeItem('token'); // Clear invalid token
+                    navigate('/login');
+                    return;
+                }
+                
                 setError(
-                    err.response?.status === 401 ? 'Authentication failed. Please log in again.' :
-                    err.response?.status === 403 ? 'Access forbidden. Please check your permissions.' :
+                    err.response?.status === 401 ? 'Please log in again.' :
+                    err.response?.status === 403 ? 'Access forbidden. Please log in again.' :
                     'Failed to fetch analytics data'
                 );
                 setLoading(false);
@@ -67,15 +78,23 @@ function Analytics() {
         };
 
         fetchAnalytics();
-    }, []);
+    }, [navigate]);
 
-    if (loading) return <div className="p-6">Loading analytics...</div>;
+    if (loading) return (
+        <div className="p-6">
+            <div className="text-lg">Loading analytics...</div>
+        </div>
+    );
+    
     if (error) return (
         <div className="p-6">
             <div className="text-red-500 mb-2">{error}</div>
-            <div className="text-sm text-gray-500">
-                Try refreshing the page or logging out and back in.
-            </div>
+            <button 
+                onClick={() => navigate('/login')}
+                className="text-blue-500 hover:text-blue-700"
+            >
+                Return to Login
+            </button>
         </div>
     );
 
