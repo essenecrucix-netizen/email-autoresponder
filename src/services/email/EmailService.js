@@ -336,55 +336,65 @@ function EmailService() {
     }
 
     async function monitorEmails() {
-        const accessToken = await getAccessToken();
-        const serviceStartTime = new Date();
-        console.log(`Email monitoring service started at: ${serviceStartTime.toISOString()}`);
+        try {
+            const accessToken = await getAccessToken();
+            const serviceStartTime = new Date();
+            console.log(`Email monitoring service started at: ${serviceStartTime.toISOString()}`);
 
-        imapConnection = new Imap({
-            user: EMAIL_CONFIG.user,
-            xoauth2: Buffer.from(`user=${EMAIL_CONFIG.user}\x01auth=Bearer ${accessToken}\x01\x01`).toString('base64'),
-            host: process.env.EMAIL_HOST || 'imap.gmail.com',
-            port: parseInt(process.env.EMAIL_PORT, 10) || 993,
-            tls: process.env.EMAIL_TLS === 'true',
-            tlsOptions: { rejectUnauthorized: false },
-            authTimeout: 30000,
-        });
+            imapConnection = new Imap({
+                user: EMAIL_CONFIG.user,
+                xoauth2: Buffer.from(`user=${EMAIL_CONFIG.user}\x01auth=Bearer ${accessToken}\x01\x01`).toString('base64'),
+                host: process.env.EMAIL_HOST || 'imap.gmail.com',
+                port: parseInt(process.env.EMAIL_PORT, 10) || 993,
+                tls: process.env.EMAIL_TLS === 'true',
+                tlsOptions: { rejectUnauthorized: false },
+                authTimeout: 30000,
+            });
 
-        return new Promise((resolve, reject) => {
-            imap.once('ready', async () => {
-                console.log('IMAP connection ready.');
+            return new Promise((resolve, reject) => {
+                imapConnection.once('ready', () => {
+                    console.log('IMAP connection ready.');
+                    
+                    imapConnection.openBox('INBOX', false, (err, box) => {
+                        if (err) {
+                            console.error('Error opening inbox:', err);
+                            reject(err);
+                            return;
+                        }
 
-                imap.openBox('INBOX', true, (err, box) => {
-                    if (err) {
-                        console.error('Error opening inbox:', err);
-                        reject(err);
-                        return;
-                    }
-
-                    console.log(`Mailbox opened. Total messages: ${box.messages.total}`);
-                    imap.on('mail', () => {
-                        console.log('New mail detected.');
-                        processNewEmails(imap, serviceStartTime);
+                        console.log(`Mailbox opened. Total messages: ${box.messages.total}`);
+                        
+                        // Set up listener for new emails
+                        imapConnection.on('mail', () => {
+                            console.log('New mail event detected');
+                            processNewEmails(imapConnection, serviceStartTime);
+                        });
                     });
                 });
-            });
 
-            imap.once('error', (err) => {
-                console.error('IMAP connection error:', err);
-                reject(err);
-            });
+                imapConnection.once('error', (err) => {
+                    console.error('IMAP connection error:', err);
+                    reject(err);
+                });
 
-            imap.once('end', () => {
-                console.log('IMAP connection ended.');
-                resolve();
-            });
+                imapConnection.once('end', () => {
+                    console.log('IMAP connection ended.');
+                    resolve();
+                });
 
-            imap.connect();
-        });
+                // Connect to the IMAP server
+                console.log('Connecting to IMAP server...');
+                imapConnection.connect();
+            });
+        } catch (error) {
+            console.error('Error in monitorEmails:', error);
+            throw error;
+        }
     }
 
     async function processNewEmails(imap, serviceStartTime) {
         try {
+            console.log('Searching for new emails...');
             imap.search(['UNSEEN'], async (err, results) => {
                 if (err) {
                     console.error('Error searching unseen emails:', err);
@@ -397,11 +407,9 @@ function EmailService() {
                 }
 
                 console.log(`Found ${results.length} new unseen emails to process.`);
-
                 const fetch = imap.fetch(results, { bodies: '' });
 
                 fetch.on('message', (msg) => {
-                    console.log('Processing new message...');
                     let emailBuffer = '';
 
                     msg.on('body', (stream) => {
@@ -419,6 +427,8 @@ function EmailService() {
                             }
 
                             const emailDate = new Date(email.date);
+                            console.log(`Processing email from ${emailDate.toISOString()} with subject: ${email.subject}`);
+                            
                             if (emailDate < serviceStartTime) {
                                 console.log(`Skipping email from ${emailDate.toISOString()} (before service start)`);
                                 return;
