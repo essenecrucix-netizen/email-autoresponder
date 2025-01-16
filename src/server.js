@@ -193,7 +193,8 @@ try {
                     aiResponseRate: 0,
                     humanResponseRate: 0,
                     responseSummary: [],
-                    emailVolume: []
+                    emailVolume: [],
+                    analyticsData: []
                 });
             }
 
@@ -231,7 +232,8 @@ try {
                 humanResponses,
                 averageResponseTime,
                 escalatedEmails,
-                emailVolume
+                emailVolume,
+                analyticsData // Include the raw data for frontend filtering
             });
         } catch (error) {
             console.error('Error in analytics endpoint:', error);
