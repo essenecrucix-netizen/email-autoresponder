@@ -253,7 +253,10 @@ function EmailService() {
                     // Add delay at the start of each email processing
                     await new Promise(resolve => setTimeout(resolve, 30000));
 
-                    // First, classify the email with minimal context
+                    // First, save the incoming email
+                    await database.saveEmail(email);
+
+                    // Classify the email
                     const shouldRespond = await openai.classifyEmail(
                         email.subject,
                         truncateContent(email.text, 1000),
@@ -265,7 +268,11 @@ function EmailService() {
                         continue;
                     }
 
-                    console.log('Email classified as requiring response. Generating response...');
+                    console.log('Email classified as requiring response. Fetching thread history...');
+
+                    // Fetch thread history
+                    const threadHistory = await database.getThreadHistory(email.messageId);
+                    console.log(`Found ${threadHistory.length} previous messages in thread`);
 
                     // Add delay between API calls
                     await new Promise(resolve => setTimeout(resolve, 10000));
@@ -274,16 +281,21 @@ function EmailService() {
                     const knowledgeBaseContent = await fetchKnowledgeBase();
                     const truncatedKnowledgeBase = truncateContent(knowledgeBaseContent, 8000);
                     
-                    // Generate response using both knowledge base and email content
+                    // Generate response using knowledge base, email content, and thread history
                     const response = await openai.generateResponse(
                         `Context from knowledge base: ${truncatedKnowledgeBase}\n\nEmail content: ${truncateContent(email.text, 2000)}`,
-                        email.subject
+                        email.subject,
+                        threadHistory.map(msg => msg.content)
                     );
+
+                    // Save the AI's response
+                    await database.saveEmailResponse(email.messageId, response, true);
 
                     // Analyze sentiment of the response
                     const sentiment = await openai.analyzeSentiment(response);
                     console.log('Response sentiment:', sentiment);
 
+                    // Send the reply
                     await sendReply(email.from, email.subject, response);
                     
                     // Calculate response time in minutes
@@ -291,15 +303,15 @@ function EmailService() {
                     const responseTime = new Date();
                     const responseTimeMinutes = Math.round((responseTime - receivedTime) / (1000 * 60));
                     
-                    // Add analytics entry with sentiment and response time
+                    // Add analytics entry
                     await database.addAnalyticsEntry({
                         timestamp: new Date().toISOString(),
                         emailSubject: email.subject,
                         response: response,
                         hasKnowledgeBase: !!knowledgeBaseContent,
                         classification: 'responded',
-                        satisfaction: sentiment, // 'positive', 'neutral', or 'negative'
-                        responseTime: responseTimeMinutes // Response time in minutes
+                        satisfaction: sentiment,
+                        responseTime: responseTimeMinutes
                     });
 
                     console.log('Successfully processed email:', email.subject);

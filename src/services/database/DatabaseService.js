@@ -183,6 +183,8 @@ function DatabaseService() {
                     satisfaction: entry.satisfaction || 'pending',
                     responseTime: entry.responseTime || 0,
                     needsEscalation: false,
+                    threadMessageId: entry.threadMessageId || null,
+                    isFollowUp: entry.isFollowUp || false,
                     createdAt: new Date().toISOString()
                 }
             };
@@ -195,15 +197,110 @@ function DatabaseService() {
         }
     }
 
+    async function saveEmail(email) {
+        try {
+            const params = {
+                TableName: 'emails',
+                Item: {
+                    id: email.messageId,
+                    subject: email.subject,
+                    from: email.from,
+                    to: email.to,
+                    content: email.text,
+                    timestamp: email.date.toISOString(),
+                    createdAt: new Date().toISOString()
+                }
+            };
+            await dynamodb.send(new PutCommand(params));
+            return params.Item;
+        } catch (error) {
+            console.error('Failed to save email:', error);
+            return null;
+        }
+    }
+
+    async function saveEmailResponse(emailId, response, isAiResponse = true) {
+        try {
+            const responseId = `${Date.now()}-${Math.random().toString(36).substring(7)}`;
+            const params = {
+                TableName: 'email_responses',
+                Item: {
+                    email_id: emailId,
+                    response_id: responseId,
+                    content: response,
+                    isAiResponse: isAiResponse,
+                    timestamp: new Date().toISOString(),
+                    createdAt: new Date().toISOString()
+                }
+            };
+            await dynamodb.send(new PutCommand(params));
+            return params.Item;
+        } catch (error) {
+            console.error('Failed to save email response:', error);
+            return null;
+        }
+    }
+
+    async function getThreadHistory(messageId) {
+        try {
+            // First, get the original email
+            const emailParams = {
+                TableName: 'emails',
+                Key: { id: messageId }
+            };
+            const emailResult = await dynamodb.send(new GetCommand(emailParams));
+            
+            // Then get all responses for this email
+            const responsesParams = {
+                TableName: 'email_responses',
+                KeyConditionExpression: 'email_id = :emailId',
+                ExpressionAttributeValues: {
+                    ':emailId': messageId
+                }
+            };
+            const responsesResult = await dynamodb.send(new QueryCommand(responsesParams));
+            
+            // Combine original email and responses, sorted by timestamp
+            const allMessages = [];
+            
+            if (emailResult.Item) {
+                allMessages.push({
+                    content: `${emailResult.Item.subject}\n${emailResult.Item.content}`,
+                    timestamp: emailResult.Item.timestamp,
+                    isOriginalEmail: true
+                });
+            }
+            
+            if (responsesResult.Items) {
+                allMessages.push(...responsesResult.Items.map(item => ({
+                    content: item.content,
+                    timestamp: item.timestamp,
+                    isAiResponse: item.isAiResponse
+                })));
+            }
+            
+            // Sort by timestamp
+            return allMessages.sort((a, b) => 
+                new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+            );
+        } catch (error) {
+            console.error('Failed to fetch thread history:', error);
+            return [];
+        }
+    }
+
     return {
-        dynamodb, // Expose raw DynamoDB client if needed
+        dynamodb,
         createItem,
         getItem,
         updateItem,
         saveAnalyticsData,
         getAnalyticsByUser,
         getItemByEmail,
-        addAnalyticsEntry
+        addAnalyticsEntry,
+        getThreadHistory,
+        saveEmail,
+        saveEmailResponse
     };
 }
 

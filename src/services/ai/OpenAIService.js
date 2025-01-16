@@ -85,7 +85,7 @@ function OpenAIService() {
         }
     }
 
-    async function generateResponse(context = "", question = "What do you need help with?") {
+    async function generateResponse(context = "", question = "What do you need help with?", threadHistory = []) {
         try {
             // Split context into knowledge base and email content if provided
             const hasKnowledgeBase = context.includes('Context from knowledge base:');
@@ -114,13 +114,22 @@ function OpenAIService() {
 - I avoid corporate jargon unless necessary
 - I write like I'm talking to a friend while maintaining professionalism
 
-3. My Company Context:
+3. Conversation Context:
+- This may be part of an ongoing email thread - maintain context from previous messages
+- If this is a follow-up message, acknowledge previous interactions
+- For technical issues that persist or recur, reference previous solutions attempted
+- Recognize when an issue needs human intervention (complex problems, recurring issues, or when previous solutions didn't work)
+- If a client mentions a previous similar issue, acknowledge it and adjust the response accordingly
+
+4. My Company Context:
 ${CONTEXT.companyContext}
 
-4. Response Structure:
+5. Response Structure:
 • Start with a warm, personal greeting
 • Acknowledge their situation with empathy
+• If this is a follow-up, reference previous interactions
 • Provide clear, actionable help
+• For recurring issues, suggest escalation to phone support when appropriate
 • Add a personal touch or comment when relevant
 • End EVERY email with EXACTLY this signature, no variations, no "Best regards", no "Cheers", just the following with a blank line before it:
 
@@ -133,9 +142,39 @@ IMPORTANT: NEVER use placeholders like [Your Name] or [Your Company]. ALWAYS use
 
 ${knowledgeBase ? `\nUse this knowledge base information to inform your response, but maintain the casual, friendly tone:\n${knowledgeBase}` : ''}
 
-\nRespond to the following email as if you're having a conversation, while still being helpful and professional. Remember to use the exact signature format specified above - no variations allowed.`;
+${threadHistory.length > 0 ? '\nPrevious messages in this thread:\n' + threadHistory.join('\n---\n') : ''}
 
-            return await createCompletion(systemPrompt, emailContent);
+\nRespond to the following email as if you're having a conversation, maintaining context from any previous messages. Remember to use the exact signature format specified above - no variations allowed.`;
+
+            const messages = [
+                { role: 'system', content: systemPrompt },
+                ...threadHistory.map(msg => ({ role: 'user', content: msg })),
+                { role: 'user', content: emailContent }
+            ];
+
+            const response = await fetch(`${API_CONFIG.baseUrl}/chat/completions`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${getCurrentApiKey()}`,
+                },
+                body: JSON.stringify({
+                    model: API_CONFIG.model,
+                    messages: messages,
+                    temperature: 0.7,
+                    max_tokens: 500,
+                }),
+            });
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error(`OpenAI API error: ${response.status} ${errorText}`);
+                rotateApiKey();
+                return 'Unable to process your request at this time.';
+            }
+
+            const data = await response.json();
+            return data.choices?.[0]?.message?.content.trim();
         } catch (error) {
             console.error('Failed to generate response:', error);
             throw error;
