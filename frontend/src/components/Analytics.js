@@ -1,39 +1,87 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 
-const Analytics = () => {
-  const metrics = [
-    { label: 'Response Time', value: '1.8s', change: '-12%', period: 'vs last week' },
-    { label: 'Accuracy Rate', value: '94%', change: '+3%', period: 'vs last week' },
-    { label: 'User Satisfaction', value: '4.8/5', change: '+0.2', period: 'vs last month' },
-    { label: 'Total Responses', value: '1,234', change: '+8%', period: 'vs last month' }
-  ];
+function Analytics() {
+    const [metrics, setMetrics] = useState({
+        totalEmails: 0,
+        automatedResponses: 0,
+        humanResponses: 0,
+        averageResponseTime: 0,
+        escalatedEmails: 0,
+        satisfactionRate: 0
+    });
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
 
-  return (
-    <div className="p-6 max-w-6xl mx-auto">
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">Analytics</h1>
-        <p className="text-gray-600">Monitor your email automation performance</p>
-      </div>
+    useEffect(() => {
+        const fetchAnalytics = async () => {
+            try {
+                const token = localStorage.getItem('token');
+                const response = await axios.get('/api/analytics', {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                setMetrics(response.data);
+                setLoading(false);
+            } catch (err) {
+                setError('Failed to fetch analytics data');
+                setLoading(false);
+            }
+        };
 
-      {/* Metrics Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {metrics.map((metric, index) => (
-          <div key={index} className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <h3 className="text-sm font-medium text-gray-500 mb-4">{metric.label}</h3>
-            <div className="flex items-baseline">
-              <p className="text-2xl font-semibold text-gray-900">{metric.value}</p>
-              <p className={`ml-2 text-sm font-medium ${
-                metric.change.startsWith('+') ? 'text-green-600' : 'text-red-600'
-              }`}>
-                {metric.change}
-              </p>
+        fetchAnalytics();
+    }, []);
+
+    if (loading) return <div className="p-6">Loading analytics...</div>;
+    if (error) return <div className="p-6 text-red-500">{error}</div>;
+
+    return (
+        <div className="p-6">
+            <h1 className="text-2xl font-bold mb-6">Analytics Dashboard</h1>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="bg-white p-4 rounded-lg shadow">
+                    <h3 className="text-gray-500 text-sm">Total Emails</h3>
+                    <p className="text-2xl font-semibold">{metrics.totalEmails}</p>
+                </div>
+
+                <div className="bg-white p-4 rounded-lg shadow">
+                    <h3 className="text-gray-500 text-sm">Automated Responses</h3>
+                    <p className="text-2xl font-semibold">{metrics.automatedResponses}</p>
+                    <p className="text-sm text-gray-400">
+                        {((metrics.automatedResponses / metrics.totalEmails) * 100).toFixed(1)}% of total
+                    </p>
+                </div>
+
+                <div className="bg-white p-4 rounded-lg shadow">
+                    <h3 className="text-gray-500 text-sm">Human Responses</h3>
+                    <p className="text-2xl font-semibold">{metrics.humanResponses}</p>
+                    <p className="text-sm text-gray-400">
+                        {((metrics.humanResponses / metrics.totalEmails) * 100).toFixed(1)}% of total
+                    </p>
+                </div>
+
+                <div className="bg-white p-4 rounded-lg shadow">
+                    <h3 className="text-gray-500 text-sm">Average Response Time</h3>
+                    <p className="text-2xl font-semibold">{metrics.averageResponseTime} min</p>
+                </div>
+
+                <div className="bg-white p-4 rounded-lg shadow">
+                    <h3 className="text-gray-500 text-sm">Escalated Emails</h3>
+                    <p className="text-2xl font-semibold">{metrics.escalatedEmails}</p>
+                    <p className="text-sm text-gray-400">
+                        {((metrics.escalatedEmails / metrics.totalEmails) * 100).toFixed(1)}% of total
+                    </p>
+                </div>
+
+                <div className="bg-white p-4 rounded-lg shadow">
+                    <h3 className="text-gray-500 text-sm">Satisfaction Rate</h3>
+                    <p className="text-2xl font-semibold">
+                        {((metrics.satisfactionRate || 0) * 100).toFixed(1)}%
+                    </p>
+                </div>
             </div>
-            <p className="mt-1 text-sm text-gray-500">{metric.period}</p>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-};
+        </div>
+    );
+}
 
 export default Analytics;
