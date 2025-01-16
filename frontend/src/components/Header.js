@@ -1,7 +1,19 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 
 const Header = () => {
+  const navigate = useNavigate();
   const userEmail = localStorage.getItem('userEmail') || 'erik@gfisystems.ca';
+
+  const handleLogout = () => {
+    // Clear all auth-related items from localStorage
+    localStorage.removeItem('token');
+    localStorage.removeItem('userEmail');
+    localStorage.removeItem('userId');
+    
+    // Navigate to login page
+    navigate('/login');
+  };
 
   return (
     <header className="bg-white border-b border-gray-200 sticky top-0 z-10">
@@ -36,7 +48,11 @@ const Header = () => {
 
           <div className="flex items-center">
             <span className="text-sm text-gray-700 mr-2">{userEmail}</span>
-            <button className="p-2 hover:bg-gray-100 rounded-full" title="Logout">
+            <button 
+              onClick={handleLogout}
+              className="p-2 hover:bg-gray-100 rounded-full" 
+              title="Logout"
+            >
               <span className="material-icons text-gray-600">logout</span>
             </button>
           </div>
