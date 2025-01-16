@@ -45,6 +45,7 @@ function EmailService() {
     const emailQueue = [];
     let isProcessingQueue = false;
     const processedMessageIds = new Set();
+    let imapConnection = null;
 
     async function getAccessToken() {
         try {
@@ -429,10 +430,29 @@ function EmailService() {
         }
     }
 
+    async function cleanup() {
+        try {
+            if (imapConnection && imapConnection.state !== 'disconnected') {
+                await new Promise((resolve) => {
+                    imapConnection.end();
+                    imapConnection.once('end', resolve);
+                });
+            }
+            // Clear any timers or intervals if they exist
+            if (global.emailMonitorInterval) {
+                clearInterval(global.emailMonitorInterval);
+            }
+            console.log('Email service cleaned up successfully');
+        } catch (error) {
+            console.error('Error during cleanup:', error);
+        }
+    }
+
     return {
         monitorEmails,
         sendReply,
         sendEscalationNotification,
+        cleanup,
     };
 }
 

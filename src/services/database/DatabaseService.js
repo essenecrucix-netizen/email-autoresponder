@@ -1,5 +1,6 @@
 const { DynamoDBClient } = require('@aws-sdk/client-dynamodb');
 const { DynamoDBDocumentClient, PutCommand, GetCommand, QueryCommand, UpdateCommand } = require('@aws-sdk/lib-dynamodb');
+const { S3Client, GetObjectCommand } = require('@aws-sdk/client-s3');
 
 function DatabaseService() {
     // Initialize DynamoDB Client
@@ -10,6 +11,20 @@ function DatabaseService() {
             secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
         },
     });
+
+    // Initialize S3 Client
+    const s3Client = new S3Client({
+        region: process.env.AWS_REGION || 'us-west-2',
+        credentials: {
+            accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+            secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+        },
+    });
+
+    const S3_BUCKET_NAME = process.env.S3_BUCKET_NAME;
+    if (!S3_BUCKET_NAME) {
+        console.warn('S3_BUCKET_NAME not set in environment variables');
+    }
 
     // Create Document Client for easier interactions
     const dynamodb = DynamoDBDocumentClient.from(dynamodbClient);
@@ -289,6 +304,26 @@ function DatabaseService() {
         }
     }
 
+    async function getContentFromS3(filename) {
+        if (!S3_BUCKET_NAME) {
+            console.error('S3_BUCKET_NAME not configured');
+            return null;
+        }
+
+        try {
+            const command = new GetObjectCommand({
+                Bucket: S3_BUCKET_NAME,
+                Key: filename
+            });
+
+            const response = await s3Client.send(command);
+            return await response.Body.transformToByteArray();
+        } catch (error) {
+            console.error(`Error fetching content for file ${filename}:`, error);
+            return null;
+        }
+    }
+
     return {
         dynamodb,
         createItem,
@@ -300,7 +335,8 @@ function DatabaseService() {
         addAnalyticsEntry,
         getThreadHistory,
         saveEmail,
-        saveEmailResponse
+        saveEmailResponse,
+        getContentFromS3
     };
 }
 
