@@ -18,12 +18,29 @@ function Analytics() {
         const fetchAnalytics = async () => {
             try {
                 const token = localStorage.getItem('token');
+                console.log('Token from localStorage:', token); // Debug log
+                
+                if (!token) {
+                    setError('No authentication token found. Please log in again.');
+                    setLoading(false);
+                    return;
+                }
+
                 const response = await axios.get('/api/analytics', {
-                    headers: { Authorization: `Bearer ${token}` }
+                    headers: { 
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
                 });
                 
                 console.log('Analytics API Response:', response.data);
                 
+                if (!response.data) {
+                    setError('No data received from analytics endpoint');
+                    setLoading(false);
+                    return;
+                }
+
                 // Filter to only include entries with actual responses
                 const actualResponses = response.data.analyticsData?.filter(entry => entry.response) || [];
                 const automatedActualResponses = actualResponses.filter(entry => entry.type === 'automated').length;
@@ -39,8 +56,12 @@ function Analytics() {
                 
                 setLoading(false);
             } catch (err) {
-                console.error('Analytics API Error:', err);
-                setError('Failed to fetch analytics data');
+                console.error('Analytics API Error:', err.response || err);
+                setError(
+                    err.response?.status === 401 ? 'Authentication failed. Please log in again.' :
+                    err.response?.status === 403 ? 'Access forbidden. Please check your permissions.' :
+                    'Failed to fetch analytics data'
+                );
                 setLoading(false);
             }
         };
@@ -49,7 +70,14 @@ function Analytics() {
     }, []);
 
     if (loading) return <div className="p-6">Loading analytics...</div>;
-    if (error) return <div className="p-6 text-red-500">{error}</div>;
+    if (error) return (
+        <div className="p-6">
+            <div className="text-red-500 mb-2">{error}</div>
+            <div className="text-sm text-gray-500">
+                Try refreshing the page or logging out and back in.
+            </div>
+        </div>
+    );
 
     // Calculate metrics from actual responses
     const actualResponses = metrics.analyticsData.filter(entry => entry.response);
