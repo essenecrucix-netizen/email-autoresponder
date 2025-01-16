@@ -8,7 +8,7 @@ function Analytics() {
         humanResponses: 0,
         averageResponseTime: 0,
         escalatedEmails: 0,
-        satisfactionRate: 0
+        emailVolume: []
     });
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -20,9 +20,14 @@ function Analytics() {
                 const response = await axios.get('/api/analytics', {
                     headers: { Authorization: `Bearer ${token}` }
                 });
+                
+                console.log('Analytics API Response:', response.data);
+                
+                // Use the exact data structure from the server
                 setMetrics(response.data);
                 setLoading(false);
             } catch (err) {
+                console.error('Analytics API Error:', err);
                 setError('Failed to fetch analytics data');
                 setLoading(false);
             }
@@ -33,6 +38,11 @@ function Analytics() {
 
     if (loading) return <div className="p-6">Loading analytics...</div>;
     if (error) return <div className="p-6 text-red-500">{error}</div>;
+
+    // Calculate satisfaction rate based on automated responses
+    const automationRate = metrics.totalEmails > 0 
+        ? ((metrics.automatedResponses / metrics.totalEmails) * 100).toFixed(1) 
+        : '0';
 
     return (
         <div className="p-6">
@@ -48,7 +58,7 @@ function Analytics() {
                     <h3 className="text-gray-500 text-sm">Automated Responses</h3>
                     <p className="text-2xl font-semibold">{metrics.automatedResponses}</p>
                     <p className="text-sm text-gray-400">
-                        {((metrics.automatedResponses / metrics.totalEmails) * 100).toFixed(1)}% of total
+                        {automationRate}% of total
                     </p>
                 </div>
 
@@ -56,7 +66,7 @@ function Analytics() {
                     <h3 className="text-gray-500 text-sm">Human Responses</h3>
                     <p className="text-2xl font-semibold">{metrics.humanResponses}</p>
                     <p className="text-sm text-gray-400">
-                        {((metrics.humanResponses / metrics.totalEmails) * 100).toFixed(1)}% of total
+                        {metrics.totalEmails > 0 ? ((metrics.humanResponses / metrics.totalEmails) * 100).toFixed(1) : '0'}% of total
                     </p>
                 </div>
 
@@ -69,14 +79,14 @@ function Analytics() {
                     <h3 className="text-gray-500 text-sm">Escalated Emails</h3>
                     <p className="text-2xl font-semibold">{metrics.escalatedEmails}</p>
                     <p className="text-sm text-gray-400">
-                        {((metrics.escalatedEmails / metrics.totalEmails) * 100).toFixed(1)}% of total
+                        {metrics.totalEmails > 0 ? ((metrics.escalatedEmails / metrics.totalEmails) * 100).toFixed(1) : '0'}% of total
                     </p>
                 </div>
 
                 <div className="bg-white p-4 rounded-lg shadow">
-                    <h3 className="text-gray-500 text-sm">Satisfaction Rate</h3>
+                    <h3 className="text-gray-500 text-sm">Automation Rate</h3>
                     <p className="text-2xl font-semibold">
-                        {((metrics.satisfactionRate || 0) * 100).toFixed(1)}%
+                        {automationRate}%
                     </p>
                 </div>
             </div>
