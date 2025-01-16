@@ -48,9 +48,15 @@ const KnowledgeBase = () => {
       const formData = new FormData();
       formData.append('file', file);
 
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('No authentication token found. Please log in again.');
+      }
+
       await axios.post('/api/documents/upload', formData, {
         headers: {
-          'Content-Type': 'multipart/form-data'
+          'Content-Type': 'multipart/form-data',
+          'Authorization': `Bearer ${token}`
         },
         onUploadProgress: (progressEvent) => {
           const progress = Math.round((progressEvent.loaded * 100) / progressEvent.total);
@@ -67,7 +73,10 @@ const KnowledgeBase = () => {
       
     } catch (error) {
       console.error('Error uploading file:', error);
-      alert('Failed to upload file. Please try again.');
+      const errorMessage = error.response?.status === 401 
+        ? 'Authentication failed. Please log in again.'
+        : 'Failed to upload file. Please try again.';
+      alert(errorMessage);
     } finally {
       setTimeout(() => setUploadProgress(0), 1000);
     }
