@@ -9,6 +9,7 @@ try {
     const jwt = require('jsonwebtoken');
     const EmailService = require('./services/email/EmailService');
     const DatabaseService = require('./services/database/DatabaseService');
+    const AWS = require('aws-sdk');
 
     dotenv.config();
     app = express();
@@ -248,6 +249,55 @@ try {
                 error: 'Failed to fetch analytics data',
                 details: error.message 
             });
+        }
+    });
+
+    // Document preview endpoint
+    app.get('/api/documents/:id/preview', authenticateToken, async (req, res) => {
+        try {
+            const { id } = req.params;
+            const { userId } = req.user;
+
+            const database = DatabaseService();
+            
+            // Get file metadata from DynamoDB
+            const fileMetadata = await database.getItem('user_knowledge_files', id);
+            if (!fileMetadata || fileMetadata.userId !== userId) {
+                return res.status(404).json({ error: 'File not found' });
+            }
+
+            // Get file from S3
+            const s3 = new AWS.S3();
+            const s3Params = {
+                Bucket: process.env.AWS_S3_BUCKET,
+                Key: fileMetadata.s3Key
+            };
+
+            const fileData = await s3.getObject(s3Params).promise();
+            const fileContent = fileData.Body;
+            const contentType = fileData.ContentType;
+
+            // Handle different file types
+            let content;
+            if (contentType.includes('pdf')) {
+                // Return PDF as base64
+                content = fileContent.toString('base64');
+            } else if (contentType.includes('text') || contentType.includes('json')) {
+                // Return text content directly
+                content = fileContent.toString('utf-8');
+            } else if (contentType.includes('document')) {
+                // Convert DOCX to HTML using mammoth
+                const mammoth = require('mammoth');
+                const result = await mammoth.convertToHtml({ buffer: fileContent });
+                content = result.value;
+            } else {
+                throw new Error('Unsupported file type');
+            }
+
+            res.json({ content });
+        } catch (error) {
+            console.error('Error generating preview:', error);
+            res.status(500).json({ error: 'Failed to generate preview' });
         }
     });
 

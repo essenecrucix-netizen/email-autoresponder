@@ -1,22 +1,36 @@
 import React, { useState } from 'react';
+import Header from './Header';
+import Sidebar from './Sidebar';
+import axios from 'axios';
 
 const KnowledgeBase = () => {
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [previewContent, setPreviewContent] = useState('');
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const [previewError, setPreviewError] = useState('');
   const [documents] = useState([
     { 
+      id: '1',
       name: 'Calamp 4230 and 3030- Scripts and Configurations.docs',
       size: '2.4 MB',
-      lastModified: '2024-01-14'
+      lastModified: '2024-01-14',
+      type: 'docx'
     },
     {
+      id: '2',
       name: 'Calamp Order Process Flow.pdf',
       size: '1.8 MB',
-      lastModified: '2024-01-13'
+      lastModified: '2024-01-13',
+      type: 'pdf'
     },
     {
+      id: '3',
       name: 'Data Line Management Process.pdf',
       size: '3.2 MB',
-      lastModified: '2024-01-12'
+      lastModified: '2024-01-12',
+      type: 'pdf'
     }
   ]);
 
@@ -31,6 +45,73 @@ const KnowledgeBase = () => {
         setTimeout(() => setUploadProgress(0), 1000);
       }
     }, 200);
+  };
+
+  const handlePreview = async (doc) => {
+    try {
+      setSelectedFile(doc);
+      setPreviewLoading(true);
+      setPreviewError('');
+      setIsPreviewOpen(true);
+
+      // In a real implementation, this would be an API call to your backend
+      const response = await axios.get(`/api/documents/${doc.id}/preview`);
+      setPreviewContent(response.data.content);
+    } catch (error) {
+      console.error('Error loading preview:', error);
+      setPreviewError('Failed to load document preview. Please try again.');
+    } finally {
+      setPreviewLoading(false);
+    }
+  };
+
+  const closePreview = () => {
+    setIsPreviewOpen(false);
+    setSelectedFile(null);
+    setPreviewContent('');
+    setPreviewError('');
+  };
+
+  const PreviewModal = () => {
+    if (!isPreviewOpen) return null;
+
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="bg-white rounded-lg w-3/4 h-3/4 flex flex-col">
+          <div className="flex justify-between items-center p-4 border-b">
+            <h3 className="text-lg font-semibold">{selectedFile?.name}</h3>
+            <button 
+              onClick={closePreview}
+              className="text-gray-500 hover:text-gray-700"
+            >
+              <span className="material-icons">close</span>
+            </button>
+          </div>
+          
+          <div className="flex-1 p-4 overflow-auto">
+            {previewLoading ? (
+              <div className="flex items-center justify-center h-full">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+              </div>
+            ) : previewError ? (
+              <div className="text-red-500 text-center">{previewError}</div>
+            ) : (
+              <div className="h-full">
+                {selectedFile?.type === 'pdf' ? (
+                  <iframe
+                    src={`data:application/pdf;base64,${previewContent}`}
+                    className="w-full h-full"
+                    title="PDF Preview"
+                  />
+                ) : (
+                  <div className="prose max-w-none" dangerouslySetInnerHTML={{ __html: previewContent }} />
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
   };
 
   return (
@@ -88,8 +169,8 @@ const KnowledgeBase = () => {
               </tr>
             </thead>
             <tbody>
-              {documents.map((doc, index) => (
-                <tr key={index} className="border-b border-gray-200 last:border-0">
+              {documents.map((doc) => (
+                <tr key={doc.id} className="border-b border-gray-200 last:border-0">
                   <td className="py-3 px-4">
                     <div className="flex items-center">
                       <span className="material-icons text-gray-400 mr-2">description</span>
@@ -100,7 +181,11 @@ const KnowledgeBase = () => {
                   <td className="py-3 px-4 text-gray-600">{doc.lastModified}</td>
                   <td className="py-3 px-4">
                     <div className="flex items-center space-x-2">
-                      <button className="p-1 hover:bg-gray-100 rounded" title="View">
+                      <button 
+                        className="p-1 hover:bg-gray-100 rounded" 
+                        title="View"
+                        onClick={() => handlePreview(doc)}
+                      >
                         <span className="material-icons text-gray-600">visibility</span>
                       </button>
                       <button className="p-1 hover:bg-gray-100 rounded" title="Edit">
@@ -117,6 +202,8 @@ const KnowledgeBase = () => {
           </table>
         </div>
       </div>
+
+      <PreviewModal />
     </div>
   );
 };
