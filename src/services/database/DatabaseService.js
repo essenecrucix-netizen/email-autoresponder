@@ -114,7 +114,29 @@ function DatabaseService() {
             };
             console.log('DynamoDB GetAnalyticsByUser Params:', params); // Debugging
             const result = await dynamodb.send(new QueryCommand(params));
-            return result.Items || [];
+            
+            // Filter out entries with invalid timestamps and ensure required fields exist
+            const validItems = (result.Items || []).filter(item => {
+                if (!item) return false;
+                if (!item.timestamp) {
+                    console.warn('Analytics entry missing timestamp:', item);
+                    return false;
+                }
+                try {
+                    const date = new Date(item.timestamp);
+                    if (isNaN(date.getTime())) {
+                        console.warn('Invalid timestamp in analytics entry:', item);
+                        return false;
+                    }
+                    return true;
+                } catch (err) {
+                    console.warn('Error parsing timestamp:', err);
+                    return false;
+                }
+            });
+            
+            console.log(`Filtered ${result.Items?.length || 0} to ${validItems.length} valid entries`);
+            return validItems;
         } catch (error) {
             console.error('Failed to fetch analytics data:', error.message, error.stack);
             throw new Error('Failed to fetch analytics data.');

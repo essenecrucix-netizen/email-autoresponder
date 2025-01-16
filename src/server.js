@@ -216,8 +216,15 @@ try {
             // Group emails by date for volume chart
             const emailsByDate = analyticsData.reduce((acc, entry) => {
                 if (entry && entry.timestamp) {
-                    const date = new Date(entry.timestamp).toISOString().split('T')[0];
-                    acc[date] = (acc[date] || 0) + 1;
+                    try {
+                        const date = new Date(entry.timestamp);
+                        if (!isNaN(date.getTime())) {  // Check if date is valid
+                            const dateStr = date.toISOString().split('T')[0];
+                            acc[dateStr] = (acc[dateStr] || 0) + 1;
+                        }
+                    } catch (err) {
+                        console.warn('Invalid timestamp in analytics entry:', entry);
+                    }
                 }
                 return acc;
             }, {});
