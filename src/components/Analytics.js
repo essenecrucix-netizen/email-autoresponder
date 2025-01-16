@@ -22,8 +22,6 @@ function Analytics() {
                 });
                 
                 console.log('Analytics API Response:', response.data);
-                
-                // Use the exact data structure from the server
                 setMetrics(response.data);
                 setLoading(false);
             } catch (err) {
@@ -39,14 +37,19 @@ function Analytics() {
     if (loading) return <div className="p-6">Loading analytics...</div>;
     if (error) return <div className="p-6 text-red-500">{error}</div>;
 
-    // Calculate satisfaction rate based on automated responses
+    // Calculate automation rate
     const automationRate = metrics.totalEmails > 0 
         ? ((metrics.automatedResponses / metrics.totalEmails) * 100).toFixed(1) 
         : '0';
 
     return (
         <div className="p-6">
-            <h1 className="text-2xl font-bold mb-6">Analytics Dashboard</h1>
+            <div className="flex items-center justify-between mb-6">
+                <div>
+                    <h1 className="text-2xl font-bold">Analytics</h1>
+                    <p className="text-gray-500">Monitor your email automation performance</p>
+                </div>
+            </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 <div className="bg-white p-4 rounded-lg shadow">
