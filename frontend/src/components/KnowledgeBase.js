@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import Header from './Header';
 import Sidebar from './Sidebar';
 import axios from 'axios';
@@ -10,6 +10,7 @@ const KnowledgeBase = () => {
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [previewLoading, setPreviewLoading] = useState(false);
   const [previewError, setPreviewError] = useState('');
+  const fileInputRef = useRef(null);
   const [documents] = useState([
     { 
       id: '1',
@@ -35,16 +36,41 @@ const KnowledgeBase = () => {
   ]);
 
   const handleFileSelect = () => {
-    // Simulate upload progress
-    let progress = 0;
-    const interval = setInterval(() => {
-      progress += 10;
-      setUploadProgress(progress);
-      if (progress >= 100) {
-        clearInterval(interval);
-        setTimeout(() => setUploadProgress(0), 1000);
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    try {
+      setUploadProgress(0);
+      const formData = new FormData();
+      formData.append('file', file);
+
+      await axios.post('/api/documents/upload', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        },
+        onUploadProgress: (progressEvent) => {
+          const progress = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+          setUploadProgress(progress);
+        }
+      });
+
+      // Reset the file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
       }
-    }, 200);
+
+      // TODO: Refresh document list after successful upload
+      
+    } catch (error) {
+      console.error('Error uploading file:', error);
+      alert('Failed to upload file. Please try again.');
+    } finally {
+      setTimeout(() => setUploadProgress(0), 1000);
+    }
   };
 
   const handlePreview = async (doc) => {
@@ -136,6 +162,13 @@ const KnowledgeBase = () => {
           <div className="flex flex-col items-center">
             <span className="material-icons text-4xl text-gray-400 mb-2">cloud_upload</span>
             <p className="text-gray-600 mb-4">Drag and drop your files here, or click to browse</p>
+            <input
+              type="file"
+              ref={fileInputRef}
+              onChange={handleFileChange}
+              className="hidden"
+              accept=".pdf,.doc,.docx,.txt"
+            />
             <button 
               onClick={handleFileSelect}
               className="bg-primary text-white px-4 py-2 rounded-md hover:bg-primary-hover transition-colors"

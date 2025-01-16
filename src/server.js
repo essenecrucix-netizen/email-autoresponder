@@ -10,6 +10,7 @@ try {
     const EmailService = require('./services/email/EmailService');
     const DatabaseService = require('./services/database/DatabaseService');
     const AWS = require('aws-sdk');
+    const fileUpload = require('express-fileupload');
 
     dotenv.config();
     app = express();
@@ -24,6 +25,10 @@ try {
     // Middleware
     app.use(bodyParser.json());
     app.use(bodyParser.urlencoded({ extended: true }));
+    app.use(fileUpload({
+        limits: { fileSize: 50 * 1024 * 1024 }, // 50MB max file size
+        abortOnLimit: true
+    }));
 
     // Serve static files from the React frontend build
     app.use(express.static(path.join(__dirname, '../frontend/build'))); // Updated path for React app
@@ -298,6 +303,56 @@ try {
         } catch (error) {
             console.error('Error generating preview:', error);
             res.status(500).json({ error: 'Failed to generate preview' });
+        }
+    });
+
+    // File upload endpoint
+    app.post('/api/documents/upload', authenticateToken, async (req, res) => {
+        try {
+            if (!req.files || !req.files.file) {
+                return res.status(400).json({ error: 'No file uploaded' });
+            }
+
+            const file = req.files.file;
+            const { userId } = req.user;
+            const fileId = Date.now().toString();
+            const s3Key = `${userId}/${fileId}-${file.name}`;
+
+            // Upload to S3
+            const s3 = new AWS.S3();
+            await s3.upload({
+                Bucket: process.env.AWS_S3_BUCKET,
+                Key: s3Key,
+                Body: file.data,
+                ContentType: file.mimetype
+            }).promise();
+
+            // Store metadata in DynamoDB
+            const database = DatabaseService();
+            const fileMetadata = {
+                id: fileId,
+                userId,
+                filename: file.name,
+                s3Key,
+                size: file.size,
+                type: file.mimetype,
+                uploadedAt: new Date().toISOString()
+            };
+
+            await database.createItem('user_knowledge_files', fileMetadata);
+
+            res.json({ 
+                message: 'File uploaded successfully',
+                file: {
+                    id: fileId,
+                    name: file.name,
+                    size: file.size,
+                    type: file.mimetype
+                }
+            });
+        } catch (error) {
+            console.error('Error uploading file:', error);
+            res.status(500).json({ error: 'Failed to upload file' });
         }
     });
 
