@@ -340,7 +340,7 @@ function EmailService() {
         const serviceStartTime = new Date();
         console.log(`Email monitoring service started at: ${serviceStartTime.toISOString()}`);
 
-        const imap = new Imap({
+        imapConnection = new Imap({
             user: EMAIL_CONFIG.user,
             xoauth2: Buffer.from(`user=${EMAIL_CONFIG.user}\x01auth=Bearer ${accessToken}\x01\x01`).toString('base64'),
             host: process.env.EMAIL_HOST || 'imap.gmail.com',
@@ -396,53 +396,68 @@ function EmailService() {
                     return;
                 }
 
+                console.log(`Found ${results.length} new unseen emails to process.`);
+
                 const fetch = imap.fetch(results, { bodies: '' });
 
-                fetch.on('message', (msg, seqno) => {
-                    msg.on('body', async stream => {
+                fetch.on('message', (msg) => {
+                    console.log('Processing new message...');
+                    let emailBuffer = '';
+
+                    msg.on('body', (stream) => {
+                        stream.on('data', (chunk) => {
+                            emailBuffer += chunk.toString('utf8');
+                        });
+                    });
+
+                    msg.once('end', async () => {
                         try {
-                            const email = await parseEmail(stream);
-                            if (email && email.date > serviceStartTime) {
-                                if (email.messageId && !processedMessageIds.has(email.messageId)) {
-                                    processedMessageIds.add(email.messageId);
-                                    email.uid = seqno;
-                                    emailQueue.push(email);
-                                    console.log(`Added email ${email.messageId} to queue for processing`);
-                                    processQueue();
-                                } else {
-                                    console.log(`Skipping duplicate email ${email.messageId}`);
-                                }
-                            } else if (email) {
-                                console.log(`Skipping email from ${email.date.toISOString()} (before service start)`);
-                            } else {
-                                console.error(`Failed to parse email UID ${seqno}`);
+                            const email = await parseEmail(emailBuffer);
+                            if (!email) {
+                                console.error('Failed to parse email');
+                                return;
                             }
+
+                            const emailDate = new Date(email.date);
+                            if (emailDate < serviceStartTime) {
+                                console.log(`Skipping email from ${emailDate.toISOString()} (before service start)`);
+                                return;
+                            }
+
+                            console.log(`Adding email to queue: ${email.subject}`);
+                            emailQueue.push(email);
+                            processQueue();
                         } catch (error) {
-                            console.error(`Error processing email UID ${seqno}:`, error);
+                            console.error('Error processing message:', error);
                         }
                     });
                 });
 
-                fetch.once('end', () => console.log('Finished fetching new emails.'));
+                fetch.once('error', (err) => {
+                    console.error('Fetch error:', err);
+                });
+
+                fetch.once('end', () => {
+                    console.log('Done fetching all messages.');
+                });
             });
         } catch (error) {
-            console.error('Error processing emails:', error);
+            console.error('Error in processNewEmails:', error);
         }
     }
 
     async function cleanup() {
         try {
             if (imapConnection && imapConnection.state !== 'disconnected') {
+                console.log('Closing IMAP connection...');
                 await new Promise((resolve) => {
+                    imapConnection.once('end', () => {
+                        console.log('IMAP connection closed.');
+                        resolve();
+                    });
                     imapConnection.end();
-                    imapConnection.once('end', resolve);
                 });
             }
-            // Clear any timers or intervals if they exist
-            if (global.emailMonitorInterval) {
-                clearInterval(global.emailMonitorInterval);
-            }
-            console.log('Email service cleaned up successfully');
         } catch (error) {
             console.error('Error during cleanup:', error);
         }
@@ -453,6 +468,7 @@ function EmailService() {
         sendReply,
         sendEscalationNotification,
         cleanup,
+        processEmailQueue: processQueue
     };
 }
 
