@@ -15,6 +15,16 @@ try {
     dotenv.config();
     app = express();
 
+    // Configure AWS
+    AWS.config.update({
+        accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+        region: process.env.AWS_REGION || 'us-west-2'
+    });
+
+    // Set S3 bucket name from environment
+    const S3_BUCKET = process.env.REACT_APP_S3_BUCKET_NAME || 'knowledgebasefiles2234';
+
     // CORS configuration
     app.use(cors({
         origin: 'http://54.213.58.183:3000',
@@ -318,14 +328,23 @@ try {
             const fileId = Date.now().toString();
             const s3Key = `${userId}/${fileId}-${file.name}`;
 
+            console.log('Starting file upload to S3:', {
+                bucket: S3_BUCKET,
+                key: s3Key,
+                fileSize: file.size,
+                fileType: file.mimetype
+            });
+
             // Upload to S3
             const s3 = new AWS.S3();
             await s3.upload({
-                Bucket: process.env.AWS_S3_BUCKET,
+                Bucket: S3_BUCKET,
                 Key: s3Key,
                 Body: file.data,
                 ContentType: file.mimetype
             }).promise();
+
+            console.log('File uploaded to S3 successfully');
 
             // Store metadata in DynamoDB
             const database = DatabaseService();
@@ -340,6 +359,7 @@ try {
             };
 
             await database.createItem('user_knowledge_files', fileMetadata);
+            console.log('File metadata stored in DynamoDB');
 
             res.json({ 
                 message: 'File uploaded successfully',
@@ -352,7 +372,13 @@ try {
             });
         } catch (error) {
             console.error('Error uploading file:', error);
-            res.status(500).json({ error: 'Failed to upload file' });
+            const errorMessage = error.code === 'NoSuchBucket' 
+                ? 'S3 bucket not found. Please check your configuration.' 
+                : 'Failed to upload file';
+            res.status(500).json({ 
+                error: errorMessage,
+                details: error.message 
+            });
         }
     });
 
