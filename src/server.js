@@ -9,17 +9,19 @@ try {
     const jwt = require('jsonwebtoken');
     const EmailService = require('./services/email/EmailService');
     const DatabaseService = require('./services/database/DatabaseService');
-    const AWS = require('aws-sdk');
+    const { S3Client, PutObjectCommand } = require('@aws-sdk/client-s3');
     const fileUpload = require('express-fileupload');
 
     dotenv.config();
     app = express();
 
-    // Configure AWS
-    AWS.config.update({
-        accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-        region: process.env.AWS_REGION || 'us-west-2'
+    // Configure AWS S3
+    const s3Client = new S3Client({
+        region: process.env.AWS_REGION || 'us-west-2',
+        credentials: {
+            accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+            secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+        },
     });
 
     // Set S3 bucket name from environment
@@ -335,16 +337,19 @@ try {
                 fileType: file.mimetype
             });
 
-            // Upload to S3
-            const s3 = new AWS.S3();
-            await s3.upload({
-                Bucket: S3_BUCKET,
-                Key: s3Key,
-                Body: file.data,
-                ContentType: file.mimetype
-            }).promise();
-
-            console.log('File uploaded to S3 successfully');
+            // Upload to S3 using v3 SDK
+            try {
+                await s3Client.send(new PutObjectCommand({
+                    Bucket: S3_BUCKET,
+                    Key: s3Key,
+                    Body: file.data,
+                    ContentType: file.mimetype
+                }));
+                console.log('File uploaded to S3 successfully');
+            } catch (s3Error) {
+                console.error('S3 upload error:', s3Error);
+                throw s3Error;
+            }
 
             // Store metadata in DynamoDB
             const database = DatabaseService();
@@ -372,9 +377,9 @@ try {
             });
         } catch (error) {
             console.error('Error uploading file:', error);
-            const errorMessage = error.code === 'NoSuchBucket' 
+            const errorMessage = error.name === 'NoSuchBucket' 
                 ? 'S3 bucket not found. Please check your configuration.' 
-                : 'Failed to upload file';
+                : 'Failed to upload file: ' + error.message;
             res.status(500).json({ 
                 error: errorMessage,
                 details: error.message 
