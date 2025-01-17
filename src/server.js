@@ -357,10 +357,11 @@ try {
                 id: fileId,
                 user_id: userId,
                 filename: file.name,
-                s3Key,
+                s3_key: s3Key,
                 size: file.size,
                 type: file.mimetype,
-                uploadedAt: new Date().toISOString()
+                uploaded_at: new Date().toISOString(),
+                created_at: new Date().toISOString()
             };
 
             await database.createItem('user_knowledge_files', fileMetadata);
