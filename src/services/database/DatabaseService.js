@@ -324,6 +324,25 @@ function DatabaseService() {
         }
     }
 
+    async function getItemsByUserId(tableName, userId) {
+        try {
+            const params = {
+                TableName: tableName,
+                IndexName: 'user_id-index',
+                KeyConditionExpression: 'user_id = :userId',
+                ExpressionAttributeValues: {
+                    ':userId': userId,
+                },
+            };
+            console.log('DynamoDB Query Params for getItemsByUserId:', params);
+            const result = await dynamodb.send(new QueryCommand(params));
+            return result.Items || [];
+        } catch (error) {
+            console.error(`Failed to fetch items by user_id from ${tableName}:`, error);
+            throw new Error(`Failed to fetch items by user_id from ${tableName}`);
+        }
+    }
+
     return {
         dynamodb,
         createItem,
@@ -336,7 +355,8 @@ function DatabaseService() {
         getThreadHistory,
         saveEmail,
         saveEmailResponse,
-        getContentFromS3
+        getContentFromS3,
+        getItemsByUserId
     };
 }
 

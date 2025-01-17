@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import Header from './Header';
 import Sidebar from './Sidebar';
 import axios from 'axios';
@@ -11,29 +11,30 @@ const KnowledgeBase = () => {
   const [previewLoading, setPreviewLoading] = useState(false);
   const [previewError, setPreviewError] = useState('');
   const fileInputRef = useRef(null);
-  const [documents] = useState([
-    { 
-      id: '1',
-      name: 'Calamp 4230 and 3030- Scripts and Configurations.docs',
-      size: '2.4 MB',
-      lastModified: '2024-01-14',
-      type: 'docx'
-    },
-    {
-      id: '2',
-      name: 'Calamp Order Process Flow.pdf',
-      size: '1.8 MB',
-      lastModified: '2024-01-13',
-      type: 'pdf'
-    },
-    {
-      id: '3',
-      name: 'Data Line Management Process.pdf',
-      size: '3.2 MB',
-      lastModified: '2024-01-12',
-      type: 'pdf'
+  const [documents, setDocuments] = useState([]);
+
+  const fetchDocuments = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('No authentication token found');
+      }
+
+      const response = await axios.get('/api/documents', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      setDocuments(response.data.documents);
+    } catch (error) {
+      console.error('Error fetching documents:', error);
     }
-  ]);
+  };
+
+  useEffect(() => {
+    fetchDocuments();
+  }, []);
 
   const handleFileSelect = () => {
     fileInputRef.current?.click();
@@ -69,7 +70,8 @@ const KnowledgeBase = () => {
         fileInputRef.current.value = '';
       }
 
-      // TODO: Refresh document list after successful upload
+      // Refresh document list after successful upload
+      await fetchDocuments();
       
     } catch (error) {
       console.error('Error uploading file:', error);
@@ -216,11 +218,11 @@ const KnowledgeBase = () => {
                   <td className="py-3 px-4">
                     <div className="flex items-center">
                       <span className="material-icons text-gray-400 mr-2">description</span>
-                      <span className="text-gray-900">{doc.name}</span>
+                      <span className="text-gray-900">{doc.filename}</span>
                     </div>
                   </td>
-                  <td className="py-3 px-4 text-gray-600">{doc.size}</td>
-                  <td className="py-3 px-4 text-gray-600">{doc.lastModified}</td>
+                  <td className="py-3 px-4 text-gray-600">{(doc.size / (1024 * 1024)).toFixed(1)} MB</td>
+                  <td className="py-3 px-4 text-gray-600">{new Date(doc.uploaded_at).toLocaleDateString()}</td>
                   <td className="py-3 px-4">
                     <div className="flex items-center space-x-2">
                       <button 

@@ -388,6 +388,18 @@ try {
         }
     });
 
+    // Get user's documents
+    app.get('/api/documents', authenticateToken, async (req, res) => {
+        try {
+            const database = DatabaseService();
+            const documents = await database.getItemsByUserId('user_knowledge_files', req.user.userId);
+            res.json({ documents });
+        } catch (error) {
+            console.error('Error fetching documents:', error);
+            res.status(500).json({ error: 'Failed to fetch documents' });
+        }
+    });
+
     // Fallback to index.html for React routing - MOVED TO END
     app.get('/*', (req, res) => {
         res.sendFile(path.join(__dirname, '../frontend/build/index.html'));
