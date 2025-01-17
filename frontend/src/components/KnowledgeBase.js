@@ -89,30 +89,23 @@ const KnowledgeBase = () => {
 
   const handlePreview = async (doc) => {
     try {
-      setSelectedFile(doc);
       setPreviewLoading(true);
-      setPreviewError('');
-      setIsPreviewOpen(true);
-
-      const token = localStorage.getItem('token');
-      if (!token) {
-        throw new Error('No authentication token found. Please log in again.');
-      }
-
-      const response = await axios.get(`/api/documents/${doc.id}/preview`, {
+      const response = await axios.get(`/api/documents/${encodeURIComponent(doc.s3_key)}`, {
         headers: {
-          'Authorization': `Bearer ${token}`
+          Authorization: `Bearer ${localStorage.getItem('token')}`
         }
       });
-
-      setPreviewContent(response.data.content);
+      
+      if (response.data.type === 'pdf') {
+        setPdfPreviewUrl(`data:application/pdf;base64,${response.data.content}`);
+        setShowPdfPreview(true);
+      } else {
+        setTextPreview(response.data.content);
+        setShowTextPreview(true);
+      }
     } catch (error) {
-      console.error('Error loading preview:', error);
-      setPreviewError(
-        error.response?.status === 401 
-          ? 'Authentication failed. Please log in again.'
-          : 'Failed to load document preview. Please try again.'
-      );
+      console.error('Error previewing document:', error);
+      setPreviewError('Failed to load document preview');
     } finally {
       setPreviewLoading(false);
     }
@@ -230,7 +223,7 @@ const KnowledgeBase = () => {
             </thead>
             <tbody>
               {documents.map((doc) => (
-                <tr key={doc.id} className="border-b border-gray-200 last:border-0">
+                <tr key={doc.s3_key} className="border-b border-gray-200 last:border-0">
                   <td className="py-3 px-4">
                     <div className="flex items-center">
                       <span className="material-icons text-gray-400 mr-2">description</span>

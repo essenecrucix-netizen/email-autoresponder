@@ -330,15 +330,15 @@ function DatabaseService() {
                 TableName: tableName,
                 FilterExpression: 'user_id = :userId',
                 ExpressionAttributeValues: {
-                    ':userId': userId,
-                },
+                    ':userId': userId
+                }
             };
             console.log('DynamoDB Scan Params for getItemsByUserId:', params);
             const result = await dynamodb.send(new ScanCommand(params));
             return result.Items || [];
         } catch (error) {
-            console.error(`Failed to fetch items by user_id from ${tableName}:`, error);
-            throw new Error(`Failed to fetch items by user_id from ${tableName}`);
+            console.error(`Failed to get items for user from ${tableName}:`, error);
+            throw new Error(`Failed to get items for user from ${tableName}`);
         }
     }
 

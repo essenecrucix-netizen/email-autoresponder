@@ -270,17 +270,17 @@ try {
     });
 
     // Document preview endpoint
-    app.get('/api/documents/:id/preview', authenticateToken, async (req, res) => {
+    app.get('/api/documents/:s3Key(*)', authenticateToken, async (req, res) => {
         try {
-            const documentId = req.params.id;
-            if (!documentId) {
-                return res.status(400).json({ error: 'Document ID is required' });
+            const s3Key = req.params.s3Key;
+            if (!s3Key) {
+                return res.status(400).json({ error: 'Document key is required' });
             }
 
             const database = DatabaseService();
             const document = await database.getItem('user_knowledge_files', { 
-                id: documentId,
-                user_id: req.user.userId
+                user_id: req.user.userId,
+                s3_key: s3Key
             });
             
             if (!document) {
@@ -290,7 +290,7 @@ try {
             // Get file from S3
             const getObjectParams = {
                 Bucket: S3_BUCKET,
-                Key: document.s3_key
+                Key: s3Key
             };
 
             try {
@@ -357,17 +357,15 @@ try {
                 throw s3Error;
             }
 
-            // Store metadata in DynamoDB
+            // Store metadata in DynamoDB using the correct schema
             const database = DatabaseService();
             const fileMetadata = {
-                id: fileId,
-                user_id: userId,
+                user_id: userId,  // Primary key
+                s3_key: s3Key,    // Sort key
                 filename: file.name,
-                s3_key: s3Key,
                 size: file.size,
                 type: file.mimetype,
-                uploaded_at: new Date().toISOString(),
-                created_at: new Date().toISOString()
+                uploaded_at: new Date().toISOString()
             };
 
             await database.createItem('user_knowledge_files', fileMetadata);
@@ -376,7 +374,7 @@ try {
             res.json({ 
                 message: 'File uploaded successfully',
                 file: {
-                    id: fileId,
+                    s3_key: s3Key,
                     name: file.name,
                     size: file.size,
                     type: file.mimetype
