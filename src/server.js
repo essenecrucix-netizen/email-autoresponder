@@ -273,15 +273,13 @@ try {
     app.get('/api/documents/:id/preview', authenticateToken, async (req, res) => {
         try {
             const database = DatabaseService();
-            const document = await database.getItem('user_knowledge_files', { id: req.params.id });
+            const document = await database.getItem('user_knowledge_files', { 
+                id: req.params.id,
+                user_id: req.user.userId  // Add user_id as part of the key
+            });
             
             if (!document) {
                 return res.status(404).json({ error: 'Document not found' });
-            }
-
-            // Verify user has access to this document
-            if (document.user_id !== req.user.userId) {
-                return res.status(403).json({ error: 'Access denied' });
             }
 
             // Get file from S3
