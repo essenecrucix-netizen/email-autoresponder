@@ -16,6 +16,8 @@ const KnowledgeBase = () => {
   const [showPdfPreview, setShowPdfPreview] = useState(false);
   const [textPreview, setTextPreview] = useState('');
   const [showTextPreview, setShowTextPreview] = useState(false);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [documentToDelete, setDocumentToDelete] = useState(null);
   const fileInputRef = useRef(null);
 
   const fetchDocuments = async () => {
@@ -135,6 +137,70 @@ const KnowledgeBase = () => {
     setShowPdfPreview(false);
     setTextPreview('');
     setShowTextPreview(false);
+  };
+
+  const handleDeleteClick = (doc) => {
+    setDocumentToDelete(doc);
+    setDeleteConfirmOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!documentToDelete) return;
+
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('No authentication token found');
+      }
+
+      await axios.delete(`/api/documents/${encodeURIComponent(documentToDelete.s3_key)}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      // Remove the deleted document from the state
+      setDocuments(documents.filter(doc => doc.s3_key !== documentToDelete.s3_key));
+      setDeleteConfirmOpen(false);
+      setDocumentToDelete(null);
+    } catch (error) {
+      console.error('Error deleting document:', error);
+      alert('Failed to delete document. Please try again.');
+    }
+  };
+
+  const handleDeleteCancel = () => {
+    setDeleteConfirmOpen(false);
+    setDocumentToDelete(null);
+  };
+
+  const DeleteConfirmationDialog = () => {
+    if (!deleteConfirmOpen) return null;
+
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+          <h3 className="text-lg font-semibold mb-4">Confirm Delete</h3>
+          <p className="text-gray-600 mb-6">
+            Are you sure you want to delete "{documentToDelete?.filename}"? This action cannot be undone.
+          </p>
+          <div className="flex justify-end space-x-4">
+            <button
+              onClick={handleDeleteCancel}
+              className="px-4 py-2 text-gray-600 hover:text-gray-800"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleDeleteConfirm}
+              className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+            >
+              Delete
+            </button>
+          </div>
+        </div>
+      </div>
+    );
   };
 
   const PreviewModal = () => {
@@ -263,7 +329,11 @@ const KnowledgeBase = () => {
                       <button className="p-1 hover:bg-gray-100 rounded" title="Edit">
                         <span className="material-icons text-gray-600">edit</span>
                       </button>
-                      <button className="p-1 hover:bg-gray-100 rounded" title="Delete">
+                      <button 
+                        className="p-1 hover:bg-gray-100 rounded" 
+                        title="Delete"
+                        onClick={() => handleDeleteClick(doc)}
+                      >
                         <span className="material-icons text-gray-600">delete</span>
                       </button>
                     </div>
@@ -276,6 +346,7 @@ const KnowledgeBase = () => {
       </div>
 
       <PreviewModal />
+      <DeleteConfirmationDialog />
     </div>
   );
 };

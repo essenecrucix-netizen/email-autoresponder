@@ -9,7 +9,7 @@ try {
     const jwt = require('jsonwebtoken');
     const EmailService = require('./services/email/EmailService');
     const DatabaseService = require('./services/database/DatabaseService');
-    const { S3Client, PutObjectCommand, GetObjectCommand } = require('@aws-sdk/client-s3');
+    const { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand } = require('@aws-sdk/client-s3');
     const fileUpload = require('express-fileupload');
 
     dotenv.config();
@@ -419,6 +419,54 @@ try {
         } catch (error) {
             console.error('Error fetching documents:', error);
             res.status(500).json({ error: 'Failed to fetch documents' });
+        }
+    });
+
+    // Delete document endpoint
+    app.delete('/api/documents/:s3Key(*)', authenticateToken, async (req, res) => {
+        try {
+            const s3Key = decodeURIComponent(req.params.s3Key);
+            console.log('Attempting to delete document:', { s3Key });
+            
+            if (!s3Key) {
+                return res.status(400).json({ error: 'Document key is required' });
+            }
+
+            const database = DatabaseService();
+            
+            // First verify the document exists and belongs to the user
+            const document = await database.getItem('user_knowledge_files', {
+                user_id: req.user.userId,
+                s3_key: s3Key
+            });
+
+            if (!document) {
+                return res.status(404).json({ error: 'Document not found' });
+            }
+
+            // Delete from S3
+            try {
+                await s3Client.send(new DeleteObjectCommand({
+                    Bucket: S3_BUCKET,
+                    Key: s3Key
+                }));
+                console.log('File deleted from S3 successfully');
+            } catch (s3Error) {
+                console.error('S3 delete error:', s3Error);
+                throw s3Error;
+            }
+
+            // Delete from DynamoDB
+            await database.deleteItem('user_knowledge_files', {
+                user_id: req.user.userId,
+                s3_key: s3Key
+            });
+            console.log('File metadata deleted from DynamoDB successfully');
+
+            res.json({ message: 'Document deleted successfully' });
+        } catch (error) {
+            console.error('Error deleting document:', error);
+            res.status(500).json({ error: 'Failed to delete document' });
         }
     });
 

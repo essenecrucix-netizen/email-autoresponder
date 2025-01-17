@@ -1,5 +1,5 @@
 const { DynamoDBClient } = require('@aws-sdk/client-dynamodb');
-const { DynamoDBDocumentClient, PutCommand, GetCommand, QueryCommand, UpdateCommand, ScanCommand } = require('@aws-sdk/lib-dynamodb');
+const { DynamoDBDocumentClient, PutCommand, GetCommand, QueryCommand, UpdateCommand, ScanCommand, DeleteCommand } = require('@aws-sdk/lib-dynamodb');
 const { S3Client, GetObjectCommand } = require('@aws-sdk/client-s3');
 
 function DatabaseService() {
@@ -342,6 +342,21 @@ function DatabaseService() {
         }
     }
 
+    async function deleteItem(tableName, key) {
+        try {
+            const params = {
+                TableName: tableName,
+                Key: key
+            };
+            console.log('DynamoDB DeleteItem Params:', params);
+            await dynamodb.send(new DeleteCommand(params));
+            return true;
+        } catch (error) {
+            console.error(`Failed to delete item from ${tableName}:`, error.message, error.stack);
+            throw new Error(`Failed to delete item from ${tableName}`);
+        }
+    }
+
     return {
         dynamodb,
         createItem,
@@ -355,7 +370,8 @@ function DatabaseService() {
         saveEmail,
         saveEmailResponse,
         getContentFromS3,
-        getItemsByUserId
+        getItemsByUserId,
+        deleteItem
     };
 }
 
