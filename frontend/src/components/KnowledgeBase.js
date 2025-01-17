@@ -12,6 +12,10 @@ const KnowledgeBase = () => {
   const [previewError, setPreviewError] = useState('');
   const [documents, setDocuments] = useState([]);
   const [fetchError, setFetchError] = useState('');
+  const [pdfPreviewUrl, setPdfPreviewUrl] = useState('');
+  const [showPdfPreview, setShowPdfPreview] = useState(false);
+  const [textPreview, setTextPreview] = useState('');
+  const [showTextPreview, setShowTextPreview] = useState(false);
   const fileInputRef = useRef(null);
 
   const fetchDocuments = async () => {
@@ -116,6 +120,10 @@ const KnowledgeBase = () => {
     setSelectedFile(null);
     setPreviewContent('');
     setPreviewError('');
+    setPdfPreviewUrl('');
+    setShowPdfPreview(false);
+    setTextPreview('');
+    setShowTextPreview(false);
   };
 
   const PreviewModal = () => {
@@ -141,19 +149,15 @@ const KnowledgeBase = () => {
               </div>
             ) : previewError ? (
               <div className="text-red-500 text-center">{previewError}</div>
-            ) : (
-              <div className="h-full">
-                {selectedFile?.type === 'application/pdf' ? (
-                  <iframe
-                    src={`data:application/pdf;base64,${previewContent}`}
-                    className="w-full h-full"
-                    title="PDF Preview"
-                  />
-                ) : (
-                  <div className="prose max-w-none whitespace-pre-wrap">{previewContent}</div>
-                )}
-              </div>
-            )}
+            ) : showPdfPreview ? (
+              <iframe
+                src={pdfPreviewUrl}
+                className="w-full h-full"
+                title="PDF Preview"
+              />
+            ) : showTextPreview ? (
+              <div className="prose max-w-none whitespace-pre-wrap">{textPreview}</div>
+            ) : null}
           </div>
         </div>
       </div>
@@ -231,7 +235,7 @@ const KnowledgeBase = () => {
                     </div>
                   </td>
                   <td className="py-3 px-4 text-gray-600">
-                    {doc.size ? `${(doc.size / (1024 * 1024)).toFixed(1)} MB` : 'N/A'}
+                    {doc.size_bytes ? `${(doc.size_bytes / (1024 * 1024)).toFixed(1)} MB` : 'N/A'}
                   </td>
                   <td className="py-3 px-4 text-gray-600">
                     {doc.uploaded_at ? new Date(doc.uploaded_at).toLocaleDateString() : 'N/A'}

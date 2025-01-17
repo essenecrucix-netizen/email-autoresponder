@@ -363,20 +363,20 @@ try {
                 user_id: userId,  // Primary key
                 s3_key: s3Key,    // Sort key
                 filename: file.name,
-                size: file.size,
+                size_bytes: file.size,  // Store size in bytes
                 type: file.mimetype,
                 uploaded_at: new Date().toISOString()
             };
 
             await database.createItem('user_knowledge_files', fileMetadata);
-            console.log('File metadata stored in DynamoDB');
+            console.log('File metadata stored in DynamoDB:', fileMetadata);
 
             res.json({ 
                 message: 'File uploaded successfully',
                 file: {
                     s3_key: s3Key,
                     name: file.name,
-                    size: file.size,
+                    size_bytes: file.size,
                     type: file.mimetype
                 }
             });
