@@ -272,10 +272,15 @@ try {
     // Document preview endpoint
     app.get('/api/documents/:id/preview', authenticateToken, async (req, res) => {
         try {
+            const documentId = req.params.id;
+            if (!documentId) {
+                return res.status(400).json({ error: 'Document ID is required' });
+            }
+
             const database = DatabaseService();
             const document = await database.getItem('user_knowledge_files', { 
-                id: req.params.id,
-                user_id: req.user.userId  // Add user_id as part of the key
+                id: documentId,
+                user_id: req.user.userId
             });
             
             if (!document) {

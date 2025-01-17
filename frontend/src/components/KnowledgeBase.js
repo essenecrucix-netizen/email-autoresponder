@@ -237,8 +237,12 @@ const KnowledgeBase = () => {
                       <span className="text-gray-900">{doc.filename}</span>
                     </div>
                   </td>
-                  <td className="py-3 px-4 text-gray-600">{(doc.size / (1024 * 1024)).toFixed(1)} MB</td>
-                  <td className="py-3 px-4 text-gray-600">{new Date(doc.uploaded_at).toLocaleDateString()}</td>
+                  <td className="py-3 px-4 text-gray-600">
+                    {doc.size ? `${(doc.size / (1024 * 1024)).toFixed(1)} MB` : 'N/A'}
+                  </td>
+                  <td className="py-3 px-4 text-gray-600">
+                    {doc.uploaded_at ? new Date(doc.uploaded_at).toLocaleDateString() : 'N/A'}
+                  </td>
                   <td className="py-3 px-4">
                     <div className="flex items-center space-x-2">
                       <button 
