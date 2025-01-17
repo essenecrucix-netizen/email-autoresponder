@@ -94,12 +94,25 @@ const KnowledgeBase = () => {
       setPreviewError('');
       setIsPreviewOpen(true);
 
-      // In a real implementation, this would be an API call to your backend
-      const response = await axios.get(`/api/documents/${doc.id}/preview`);
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('No authentication token found. Please log in again.');
+      }
+
+      const response = await axios.get(`/api/documents/${doc.id}/preview`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
       setPreviewContent(response.data.content);
     } catch (error) {
       console.error('Error loading preview:', error);
-      setPreviewError('Failed to load document preview. Please try again.');
+      setPreviewError(
+        error.response?.status === 401 
+          ? 'Authentication failed. Please log in again.'
+          : 'Failed to load document preview. Please try again.'
+      );
     } finally {
       setPreviewLoading(false);
     }
@@ -119,7 +132,7 @@ const KnowledgeBase = () => {
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
         <div className="bg-white rounded-lg w-3/4 h-3/4 flex flex-col">
           <div className="flex justify-between items-center p-4 border-b">
-            <h3 className="text-lg font-semibold">{selectedFile?.name}</h3>
+            <h3 className="text-lg font-semibold">{selectedFile?.filename}</h3>
             <button 
               onClick={closePreview}
               className="text-gray-500 hover:text-gray-700"
@@ -137,14 +150,14 @@ const KnowledgeBase = () => {
               <div className="text-red-500 text-center">{previewError}</div>
             ) : (
               <div className="h-full">
-                {selectedFile?.type === 'pdf' ? (
+                {selectedFile?.type === 'application/pdf' ? (
                   <iframe
                     src={`data:application/pdf;base64,${previewContent}`}
                     className="w-full h-full"
                     title="PDF Preview"
                   />
                 ) : (
-                  <div className="prose max-w-none" dangerouslySetInnerHTML={{ __html: previewContent }} />
+                  <div className="prose max-w-none whitespace-pre-wrap">{previewContent}</div>
                 )}
               </div>
             )}

@@ -9,7 +9,7 @@ try {
     const jwt = require('jsonwebtoken');
     const EmailService = require('./services/email/EmailService');
     const DatabaseService = require('./services/database/DatabaseService');
-    const { S3Client, PutObjectCommand } = require('@aws-sdk/client-s3');
+    const { S3Client, PutObjectCommand, GetObjectCommand } = require('@aws-sdk/client-s3');
     const fileUpload = require('express-fileupload');
 
     dotenv.config();
@@ -272,51 +272,54 @@ try {
     // Document preview endpoint
     app.get('/api/documents/:id/preview', authenticateToken, async (req, res) => {
         try {
-            const { id } = req.params;
-            const { userId } = req.user;
-
             const database = DatabaseService();
+            const document = await database.getItem('user_knowledge_files', { id: req.params.id });
             
-            // Get file metadata from DynamoDB
-            const fileMetadata = await database.getItem('user_knowledge_files', id);
-            if (!fileMetadata || fileMetadata.userId !== userId) {
-                return res.status(404).json({ error: 'File not found' });
+            if (!document) {
+                return res.status(404).json({ error: 'Document not found' });
+            }
+
+            // Verify user has access to this document
+            if (document.user_id !== req.user.userId) {
+                return res.status(403).json({ error: 'Access denied' });
             }
 
             // Get file from S3
-            const s3 = new AWS.S3();
-            const s3Params = {
-                Bucket: process.env.AWS_S3_BUCKET,
-                Key: fileMetadata.s3Key
+            const getObjectParams = {
+                Bucket: S3_BUCKET,
+                Key: document.s3_key
             };
 
-            const fileData = await s3.getObject(s3Params).promise();
-            const fileContent = fileData.Body;
-            const contentType = fileData.ContentType;
+            try {
+                const { Body } = await s3Client.send(new GetObjectCommand(getObjectParams));
+                const fileContent = await streamToBuffer(Body);
 
-            // Handle different file types
-            let content;
-            if (contentType.includes('pdf')) {
-                // Return PDF as base64
-                content = fileContent.toString('base64');
-            } else if (contentType.includes('text') || contentType.includes('json')) {
-                // Return text content directly
-                content = fileContent.toString('utf-8');
-            } else if (contentType.includes('document')) {
-                // Convert DOCX to HTML using mammoth
-                const mammoth = require('mammoth');
-                const result = await mammoth.convertToHtml({ buffer: fileContent });
-                content = result.value;
-            } else {
-                throw new Error('Unsupported file type');
+                // For PDF files, return as base64
+                if (document.type === 'application/pdf') {
+                    res.json({ content: fileContent.toString('base64'), type: 'pdf' });
+                } else {
+                    // For text files, return as UTF-8 text
+                    res.json({ content: fileContent.toString('utf-8'), type: 'text' });
+                }
+            } catch (s3Error) {
+                console.error('Error fetching file from S3:', s3Error);
+                res.status(500).json({ error: 'Failed to fetch file content' });
             }
-
-            res.json({ content });
         } catch (error) {
-            console.error('Error generating preview:', error);
-            res.status(500).json({ error: 'Failed to generate preview' });
+            console.error('Error in document preview:', error);
+            res.status(500).json({ error: 'Failed to get document preview' });
         }
     });
+
+    // Helper function to convert stream to buffer
+    async function streamToBuffer(stream) {
+        return new Promise((resolve, reject) => {
+            const chunks = [];
+            stream.on('data', (chunk) => chunks.push(chunk));
+            stream.on('end', () => resolve(Buffer.concat(chunks)));
+            stream.on('error', reject);
+        });
+    }
 
     // File upload endpoint
     app.post('/api/documents/upload', authenticateToken, async (req, res) => {
