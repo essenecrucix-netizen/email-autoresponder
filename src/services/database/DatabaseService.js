@@ -1,5 +1,5 @@
 const { DynamoDBClient } = require('@aws-sdk/client-dynamodb');
-const { DynamoDBDocumentClient, PutCommand, GetCommand, QueryCommand, UpdateCommand } = require('@aws-sdk/lib-dynamodb');
+const { DynamoDBDocumentClient, PutCommand, GetCommand, QueryCommand, UpdateCommand, ScanCommand } = require('@aws-sdk/lib-dynamodb');
 const { S3Client, GetObjectCommand } = require('@aws-sdk/client-s3');
 
 function DatabaseService() {
@@ -328,14 +328,13 @@ function DatabaseService() {
         try {
             const params = {
                 TableName: tableName,
-                IndexName: 'user_id-index',
-                KeyConditionExpression: 'user_id = :userId',
+                FilterExpression: 'user_id = :userId',
                 ExpressionAttributeValues: {
                     ':userId': userId,
                 },
             };
-            console.log('DynamoDB Query Params for getItemsByUserId:', params);
-            const result = await dynamodb.send(new QueryCommand(params));
+            console.log('DynamoDB Scan Params for getItemsByUserId:', params);
+            const result = await dynamodb.send(new ScanCommand(params));
             return result.Items || [];
         } catch (error) {
             console.error(`Failed to fetch items by user_id from ${tableName}:`, error);

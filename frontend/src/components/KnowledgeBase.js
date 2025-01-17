@@ -10,11 +10,13 @@ const KnowledgeBase = () => {
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [previewLoading, setPreviewLoading] = useState(false);
   const [previewError, setPreviewError] = useState('');
-  const fileInputRef = useRef(null);
   const [documents, setDocuments] = useState([]);
+  const [fetchError, setFetchError] = useState('');
+  const fileInputRef = useRef(null);
 
   const fetchDocuments = async () => {
     try {
+      setFetchError('');
       const token = localStorage.getItem('token');
       if (!token) {
         throw new Error('No authentication token found');
@@ -26,9 +28,10 @@ const KnowledgeBase = () => {
         }
       });
 
-      setDocuments(response.data.documents);
+      setDocuments(response.data.documents || []);
     } catch (error) {
       console.error('Error fetching documents:', error);
+      setFetchError('Failed to fetch documents. Please try again later.');
     }
   };
 
