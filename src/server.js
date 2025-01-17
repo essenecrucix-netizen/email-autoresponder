@@ -355,7 +355,7 @@ try {
             const database = DatabaseService();
             const fileMetadata = {
                 id: fileId,
-                userId,
+                user_id: userId,
                 filename: file.name,
                 s3Key,
                 size: file.size,
