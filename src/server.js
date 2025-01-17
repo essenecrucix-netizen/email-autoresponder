@@ -272,16 +272,22 @@ try {
     // Document preview endpoint
     app.get('/api/documents/:s3Key(*)', authenticateToken, async (req, res) => {
         try {
-            const s3Key = req.params.s3Key;
+            const s3Key = decodeURIComponent(req.params.s3Key);
+            console.log('Attempting to preview document:', { s3Key });
+            
             if (!s3Key) {
                 return res.status(400).json({ error: 'Document key is required' });
             }
 
             const database = DatabaseService();
-            const document = await database.getItem('user_knowledge_files', { 
-                user_id: req.user.userId,
-                s3_key: s3Key
-            });
+            
+            // First get all documents for the user
+            const userDocs = await database.getItemsByUserId('user_knowledge_files', req.user.userId);
+            console.log('Retrieved user documents:', userDocs);
+            
+            // Find the specific document
+            const document = userDocs.find(doc => doc.s3_key === s3Key);
+            console.log('Found document:', document);
             
             if (!document) {
                 return res.status(404).json({ error: 'Document not found' });
@@ -333,14 +339,17 @@ try {
 
             const file = req.files.file;
             const { userId } = req.user;
-            const fileId = Date.now().toString();
+            const timestamp = Date.now();
+            const fileId = timestamp.toString();
             const s3Key = `${userId}/${fileId}-${file.name}`;
 
-            console.log('Starting file upload to S3:', {
-                bucket: S3_BUCKET,
-                key: s3Key,
-                fileSize: file.size,
-                fileType: file.mimetype
+            // Log file details for debugging
+            console.log('File upload details:', {
+                name: file.name,
+                size: file.size,
+                mimetype: file.mimetype,
+                md5: file.md5,
+                encoding: file.encoding
             });
 
             // Upload to S3 using v3 SDK
@@ -349,7 +358,8 @@ try {
                     Bucket: S3_BUCKET,
                     Key: s3Key,
                     Body: file.data,
-                    ContentType: file.mimetype
+                    ContentType: file.mimetype,
+                    ContentLength: file.size
                 }));
                 console.log('File uploaded to S3 successfully');
             } catch (s3Error) {
@@ -357,27 +367,35 @@ try {
                 throw s3Error;
             }
 
+            const currentTime = new Date().toISOString();
+
             // Store metadata in DynamoDB using the correct schema
             const database = DatabaseService();
             const fileMetadata = {
-                user_id: userId,  // Primary key
-                s3_key: s3Key,    // Sort key
+                user_id: userId,         // Primary key (HASH)
+                s3_key: s3Key,          // Sort key (RANGE)
+                id: fileId,             // Unique identifier
                 filename: file.name,
-                size_bytes: file.size,  // Store size in bytes
-                type: file.mimetype,
-                uploaded_at: new Date().toISOString()
+                size: parseInt(file.size, 10),
+                type: file.mimetype,    // File MIME type
+                uploaded_at: currentTime,
+                created_at: currentTime
             };
 
+            console.log('Saving file metadata to DynamoDB:', fileMetadata);
             await database.createItem('user_knowledge_files', fileMetadata);
-            console.log('File metadata stored in DynamoDB:', fileMetadata);
+            console.log('File metadata stored in DynamoDB successfully');
 
             res.json({ 
                 message: 'File uploaded successfully',
                 file: {
+                    id: fileId,
                     s3_key: s3Key,
                     name: file.name,
-                    size_bytes: file.size,
-                    type: file.mimetype
+                    size: file.size,
+                    type: file.mimetype,
+                    uploaded_at: currentTime,
+                    created_at: currentTime
                 }
             });
         } catch (error) {

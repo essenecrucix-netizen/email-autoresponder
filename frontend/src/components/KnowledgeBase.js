@@ -93,23 +93,34 @@ const KnowledgeBase = () => {
 
   const handlePreview = async (doc) => {
     try {
+      setSelectedFile(doc);
       setPreviewLoading(true);
+      setPreviewError('');
+      setIsPreviewOpen(true);
+
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('No authentication token found. Please log in again.');
+      }
+
       const response = await axios.get(`/api/documents/${encodeURIComponent(doc.s3_key)}`, {
         headers: {
-          Authorization: `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${token}`
         }
       });
-      
+
       if (response.data.type === 'pdf') {
-        setPdfPreviewUrl(`data:application/pdf;base64,${response.data.content}`);
-        setShowPdfPreview(true);
+        setPreviewContent(`data:application/pdf;base64,${response.data.content}`);
       } else {
-        setTextPreview(response.data.content);
-        setShowTextPreview(true);
+        setPreviewContent(response.data.content);
       }
     } catch (error) {
-      console.error('Error previewing document:', error);
-      setPreviewError('Failed to load document preview');
+      console.error('Error loading preview:', error);
+      setPreviewError(
+        error.response?.status === 401 
+          ? 'Authentication failed. Please log in again.'
+          : 'Failed to load document preview. Please try again.'
+      );
     } finally {
       setPreviewLoading(false);
     }
@@ -149,15 +160,15 @@ const KnowledgeBase = () => {
               </div>
             ) : previewError ? (
               <div className="text-red-500 text-center">{previewError}</div>
-            ) : showPdfPreview ? (
+            ) : selectedFile?.type === 'application/pdf' ? (
               <iframe
-                src={pdfPreviewUrl}
+                src={previewContent}
                 className="w-full h-full"
                 title="PDF Preview"
               />
-            ) : showTextPreview ? (
-              <div className="prose max-w-none whitespace-pre-wrap">{textPreview}</div>
-            ) : null}
+            ) : (
+              <div className="prose max-w-none whitespace-pre-wrap">{previewContent}</div>
+            )}
           </div>
         </div>
       </div>
@@ -235,7 +246,7 @@ const KnowledgeBase = () => {
                     </div>
                   </td>
                   <td className="py-3 px-4 text-gray-600">
-                    {doc.size_bytes ? `${(doc.size_bytes / (1024 * 1024)).toFixed(1)} MB` : 'N/A'}
+                    {doc.size ? `${(doc.size / (1024 * 1024)).toFixed(1)} MB` : 'N/A'}
                   </td>
                   <td className="py-3 px-4 text-gray-600">
                     {doc.uploaded_at ? new Date(doc.uploaded_at).toLocaleDateString() : 'N/A'}
