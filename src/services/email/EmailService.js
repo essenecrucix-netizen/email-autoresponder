@@ -341,6 +341,11 @@ function EmailService() {
             const serviceStartTime = new Date();
             console.log(`Email monitoring service started at: ${serviceStartTime.toISOString()}`);
 
+            if (imapConnection && imapConnection.state !== 'disconnected') {
+                console.log('Cleaning up existing IMAP connection...');
+                await cleanup();
+            }
+
             imapConnection = new Imap({
                 user: EMAIL_CONFIG.user,
                 xoauth2: Buffer.from(`user=${EMAIL_CONFIG.user}\x01auth=Bearer ${accessToken}\x01\x01`).toString('base64'),
@@ -349,16 +354,28 @@ function EmailService() {
                 tls: process.env.EMAIL_TLS === 'true',
                 tlsOptions: { rejectUnauthorized: false },
                 authTimeout: 30000,
+                keepalive: {
+                    interval: 10000,
+                    idleTimeout: 300000,
+                    forceNoop: true
+                }
             });
 
             return new Promise((resolve, reject) => {
+                const connectionTimeout = setTimeout(() => {
+                    reject(new Error('IMAP connection timeout'));
+                    cleanup();
+                }, 60000);
+
                 imapConnection.once('ready', () => {
+                    clearTimeout(connectionTimeout);
                     console.log('IMAP connection ready.');
                     
                     imapConnection.openBox('INBOX', false, (err, box) => {
                         if (err) {
                             console.error('Error opening inbox:', err);
                             reject(err);
+                            cleanup();
                             return;
                         }
 
@@ -369,15 +386,29 @@ function EmailService() {
                             console.log('New mail event detected');
                             processNewEmails(imapConnection, serviceStartTime);
                         });
+
+                        // Set up error handler for the mail event
+                        imapConnection.on('error', (err) => {
+                            console.error('IMAP mail event error:', err);
+                            cleanup();
+                            // Attempt to reconnect after error
+                            setTimeout(() => {
+                                console.log('Attempting to reconnect...');
+                                monitorEmails();
+                            }, 30000);
+                        });
                     });
                 });
 
                 imapConnection.once('error', (err) => {
+                    clearTimeout(connectionTimeout);
                     console.error('IMAP connection error:', err);
                     reject(err);
+                    cleanup();
                 });
 
                 imapConnection.once('end', () => {
+                    clearTimeout(connectionTimeout);
                     console.log('IMAP connection ended.');
                     resolve();
                 });
@@ -388,14 +419,20 @@ function EmailService() {
             });
         } catch (error) {
             console.error('Error in monitorEmails:', error);
+            await cleanup();
+            // Attempt to reconnect after error
+            setTimeout(() => {
+                console.log('Attempting to reconnect after error...');
+                monitorEmails();
+            }, 30000);
             throw error;
         }
     }
 
-    async function processNewEmails(imap, serviceStartTime) {
+    async function processNewEmails(imapConnection, serviceStartTime) {
         try {
             console.log('Searching for new emails...');
-            imap.search(['UNSEEN'], async (err, results) => {
+            imapConnection.search(['UNSEEN'], async (err, results) => {
                 if (err) {
                     console.error('Error searching unseen emails:', err);
                     return;
@@ -407,7 +444,7 @@ function EmailService() {
                 }
 
                 console.log(`Found ${results.length} new unseen emails to process.`);
-                const fetch = imap.fetch(results, { bodies: '' });
+                const fetch = imapConnection.fetch(results, { bodies: '' });
 
                 fetch.on('message', (msg) => {
                     let emailBuffer = '';
