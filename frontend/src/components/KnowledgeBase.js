@@ -181,33 +181,33 @@ const KnowledgeBase = () => {
         throw new Error('No authentication token found');
       }
 
-      // Create a temporary anchor element
-      const link = document.createElement('a');
-      link.href = `/api/documents/${encodeURIComponent(doc.s3_key)}/download`;
-      link.download = doc.filename;
-      
-      // Add authorization header through a fetch request
-      fetch(link.href, {
+      // Make the fetch request
+      const response = await fetch(`/api/documents/${encodeURIComponent(doc.s3_key)}/download`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
-      })
-      .then(response => response.blob())
-      .then(blob => {
-        const url = window.URL.createObjectURL(blob);
-        link.href = url;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        window.URL.revokeObjectURL(url);
-      })
-      .catch(error => {
-        console.error('Error downloading file:', error);
-        alert('Failed to download file. Please try again.');
       });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to download file');
+      }
+
+      // Get the blob from the response
+      const blob = await response.blob();
+      
+      // Create a download link
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = doc.filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
     } catch (error) {
-      console.error('Error initiating download:', error);
-      alert('Failed to download file. Please try again.');
+      console.error('Error downloading file:', error);
+      alert(error.message || 'Failed to download file. Please try again.');
     }
   };
 
