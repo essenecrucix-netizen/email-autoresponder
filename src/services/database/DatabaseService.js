@@ -53,12 +53,19 @@ function DatabaseService() {
                 TableName: tableName,
                 Key: key,
             };
-            console.log('DynamoDB GetItem Params:', params); // Debugging
+            console.log('DynamoDB GetItem Params:', JSON.stringify(params, null, 2));
             const result = await dynamodb.send(new GetCommand(params));
+            console.log('DynamoDB GetItem Result:', JSON.stringify(result, null, 2));
+            
+            if (!result.Item) {
+                console.log('No item found in DynamoDB for params:', JSON.stringify(params, null, 2));
+                return null;
+            }
+            
             return result.Item;
         } catch (error) {
             console.error(`Failed to get item from ${tableName}:`, error.message, error.stack);
-            throw new Error(`Failed to get item from ${tableName}`);
+            throw new Error(`Failed to get item from ${tableName}: ${error.message}`);
         }
     }
 

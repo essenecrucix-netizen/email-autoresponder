@@ -522,32 +522,42 @@ try {
                     console.error('No file content received from S3');
                     return res.status(404).json({ error: 'File content not found in S3' });
                 }
-                
+
                 // Set response headers for file download
                 res.setHeader('Content-Type', s3Response.ContentType || document.type || 'application/octet-stream');
-                res.setHeader('Content-Disposition', `attachment; filename="${document.filename}"`);
+                res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(document.filename)}"`);
+                res.setHeader('Content-Length', s3Response.ContentLength);
                 
-                // Stream the file directly to the response
-                s3Response.Body.pipe(res);
-
-                // Handle streaming errors
-                s3Response.Body.on('error', (error) => {
-                    console.error('Error streaming file:', error);
-                    if (!res.headersSent) {
-                        res.status(500).json({ error: 'Error streaming file' });
+                // Stream the file using async iterators
+                try {
+                    for await (const chunk of s3Response.Body) {
+                        if (!res.write(chunk)) {
+                            // Handle backpressure
+                            await new Promise(resolve => res.once('drain', resolve));
+                        }
                     }
-                });
-
-                // Log when streaming is complete
-                res.on('finish', () => {
+                    res.end();
+                    
                     console.log('File download completed successfully:', {
                         filename: document.filename,
                         s3Key,
                         userId
                     });
-                });
+                } catch (streamError) {
+                    console.error('Error streaming file:', streamError);
+                    // Only send error if headers haven't been sent
+                    if (!res.headersSent) {
+                        res.status(500).json({ error: 'Error streaming file' });
+                    } else {
+                        // If headers were sent, just end the response
+                        res.end();
+                    }
+                }
             } catch (s3Error) {
                 console.error('Error downloading file from S3:', s3Error);
+                if (s3Error.name === 'NoSuchKey') {
+                    return res.status(404).json({ error: 'File not found in storage' });
+                }
                 return res.status(500).json({ error: 'Error accessing file from storage' });
             }
         } catch (error) {
