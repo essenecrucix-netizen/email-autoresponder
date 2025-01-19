@@ -181,32 +181,10 @@ const KnowledgeBase = () => {
         throw new Error('No authentication token found');
       }
 
-      const response = await axios({
-        method: 'GET',
-        url: `/api/documents/${encodeURIComponent(doc.s3_key)}/download`,
-        responseType: 'blob',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-      
-      // Create blob link to download
-      const url = window.URL.createObjectURL(new Blob([response.data]));
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute('download', doc.filename);
-      
-      // Append to html link element page
-      document.body.appendChild(link);
-      
-      // Start download
-      link.click();
-      
-      // Clean up and remove the link
-      link.parentNode.removeChild(link);
-      window.URL.revokeObjectURL(url);
+      // Open download in new window/tab
+      window.open(`/api/documents/${encodeURIComponent(doc.s3_key)}/download?token=${encodeURIComponent(token)}`, '_blank');
     } catch (error) {
-      console.error('Error downloading file:', error);
+      console.error('Error initiating download:', error);
       alert('Failed to download file. Please try again.');
     }
   };
