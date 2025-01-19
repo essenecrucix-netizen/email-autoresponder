@@ -484,48 +484,43 @@ try {
     // Update download endpoint
     app.get('/api/documents/:s3Key(*)/download', authenticateToken, async (req, res) => {
         try {
-            // Don't decode the s3Key as it's already in the correct format
-            const s3Key = req.params.s3Key;
+            const s3Key = decodeURIComponent(req.params.s3Key);
             const userId = req.user.userId;
             
             console.log('Download request received:', {
                 s3Key,
                 userId,
-                headers: req.headers,
-                query: req.query,
-                params: req.params
+                headers: req.headers
             });
 
             const database = DatabaseService();
             
             // Get document metadata from DynamoDB
-            const lookupKey = {
+            const document = await database.getItem('user_knowledge_files', {
                 user_id: userId,
                 s3_key: s3Key
-            };
-            
-            console.log('Looking up document in DynamoDB with key:', JSON.stringify(lookupKey, null, 2));
-            
-            let document = await database.getItem('user_knowledge_files', lookupKey);
+            });
             
             console.log('DynamoDB lookup result:', {
                 document,
-                lookupKey,
-                tableName: 'user_knowledge_files'
+                lookupKey: {
+                    user_id: userId,
+                    s3_key: s3Key
+                }
             });
             
             if (!document) {
-                console.log('Document not found in DynamoDB:', lookupKey);
+                console.log('Document not found in database');
                 return res.status(404).json({ error: 'Document not found in database' });
             }
 
             // Get the file from S3
             const getObjectParams = {
                 Bucket: S3_BUCKET,
-                Key: document.s3_key
+                Key: s3Key
             };
 
-            console.log('Fetching from S3:', JSON.stringify(getObjectParams, null, 2));
+            console.log('Fetching from S3:', getObjectParams);
 
             try {
                 const s3Response = await s3Client.send(new GetObjectCommand(getObjectParams));
@@ -554,10 +549,16 @@ try {
                 res.on('finish', () => {
                     console.log('File download completed successfully:', {
                         filename: document.filename,
-                        s3Key: document.s3_key,
+                        s3Key,
                         userId
                     });
                 });
+
+                // Handle client disconnect
+                req.on('close', () => {
+                    s3Response.Body.destroy();
+                });
+
             } catch (s3Error) {
                 console.error('Error downloading file from S3:', s3Error);
                 if (s3Error.name === 'NoSuchKey') {

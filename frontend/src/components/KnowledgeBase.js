@@ -181,52 +181,30 @@ const KnowledgeBase = () => {
         throw new Error('No authentication token found');
       }
 
-      // Create the full URL using window.location.origin
-      const baseUrl = 'http://54.213.58.183:3000';
-      
-      // Don't encode the s3_key as it will be encoded by the fetch API
-      const downloadUrl = `${baseUrl}/api/documents/${doc.s3_key}/download`;
-      
-      console.log('Attempting download with:', {
-        originalKey: doc.s3_key,
-        downloadUrl
-      });
-      
-      // Set up headers for the request
-      const headers = new Headers();
-      headers.append('Authorization', `Bearer ${token}`);
-      
-      // Make the request
-      const response = await fetch(downloadUrl, {
+      // Use axios for consistent handling of requests
+      const response = await axios({
         method: 'GET',
-        headers: headers,
+        url: `/api/documents/${encodeURIComponent(doc.s3_key)}/download`,
+        responseType: 'blob',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
       });
       
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to download file');
-      }
-      
-      // Get the blob from the response
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      
-      // Create a temporary link element
+      // Create download link
+      const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement('a');
       link.href = url;
-      link.download = doc.filename;
-      
-      // Trigger the download
+      link.setAttribute('download', doc.filename);
       document.body.appendChild(link);
       link.click();
-      
-      // Clean up
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
       
     } catch (error) {
       console.error('Error downloading file:', error);
-      alert(error.message || 'Failed to download file. Please try again.');
+      const errorMessage = error.response?.data?.error || error.message || 'Failed to download file';
+      alert(errorMessage);
     }
   };
 
