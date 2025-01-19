@@ -181,14 +181,16 @@ const KnowledgeBase = () => {
         throw new Error('No authentication token found');
       }
 
-      // Use axios instance with baseURL
+      // Create the full URL
+      const baseURL = 'http://54.213.58.183:3000';
       const response = await axios({
         method: 'GET',
-        url: `/api/documents/${encodeURIComponent(doc.s3_key)}/download`,
+        url: `${baseURL}/api/documents/${encodeURIComponent(doc.s3_key)}/download`,
         responseType: 'blob',
         headers: {
           'Authorization': `Bearer ${token}`
-        }
+        },
+        withCredentials: true
       });
       
       // Create blob link to download

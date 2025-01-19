@@ -31,7 +31,8 @@ try {
     app.use(cors({
         origin: 'http://54.213.58.183:3000',
         methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-        allowedHeaders: ['Content-Type', 'Authorization']
+        allowedHeaders: ['Content-Type', 'Authorization'],
+        credentials: true
     }));
 
     // Middleware
