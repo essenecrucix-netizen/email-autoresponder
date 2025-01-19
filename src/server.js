@@ -473,6 +473,7 @@ try {
     // Add download endpoint
     app.get('/api/documents/:s3Key(*)/download', authenticateToken, async (req, res) => {
         try {
+            console.log('Download request received for:', req.params.s3Key);
             const database = DatabaseService();
             const s3Key = decodeURIComponent(req.params.s3Key);
             
@@ -481,9 +482,12 @@ try {
             const document = documents.find(doc => doc.s3_key === s3Key);
             
             if (!document) {
+                console.log('Document not found:', s3Key);
                 return res.status(404).json({ error: 'Document not found' });
             }
 
+            console.log('Fetching from S3:', { bucket: S3_BUCKET, key: s3Key });
+            
             // Get the file from S3
             const getObjectParams = {
                 Bucket: S3_BUCKET,
@@ -493,14 +497,14 @@ try {
             const { Body, ContentType } = await s3Client.send(new GetObjectCommand(getObjectParams));
             
             // Set headers for file download
-            res.setHeader('Content-Type', ContentType);
+            res.setHeader('Content-Type', ContentType || 'application/octet-stream');
             res.setHeader('Content-Disposition', `attachment; filename="${document.filename}"`);
             
             // Stream the file to response
             Body.pipe(res);
         } catch (error) {
             console.error('Error downloading file:', error);
-            res.status(500).json({ error: 'Failed to download file' });
+            res.status(500).json({ error: 'Failed to download file', details: error.message });
         }
     });
 

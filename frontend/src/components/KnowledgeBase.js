@@ -2,7 +2,6 @@ import React, { useState, useRef, useEffect } from 'react';
 import Header from './Header';
 import Sidebar from './Sidebar';
 import axios from 'axios';
-import { FaEye, FaTrash, FaDownload } from 'react-icons/fa';
 
 const KnowledgeBase = () => {
   const [uploadProgress, setUploadProgress] = useState(0);
@@ -177,9 +176,11 @@ const KnowledgeBase = () => {
 
   const handleDownload = async (doc) => {
     try {
-      setSelectedFile(doc);
       const response = await axios.get(`/api/documents/${encodeURIComponent(doc.s3_key)}/download`, {
-        responseType: 'blob'
+        responseType: 'blob',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
       });
       
       // Create blob link to download
@@ -345,27 +346,31 @@ const KnowledgeBase = () => {
                     {doc.uploaded_at ? new Date(doc.uploaded_at).toLocaleDateString() : 'N/A'}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-3">
-                    <button
-                      onClick={() => handlePreview(doc)}
-                      className="text-blue-600 hover:text-blue-900"
-                      title="Preview"
-                    >
-                      <FaEye />
-                    </button>
-                    <button
-                      onClick={() => handleDownload(doc)}
-                      className="text-green-600 hover:text-green-900"
-                      title="Download"
-                    >
-                      <FaDownload />
-                    </button>
-                    <button
-                      onClick={() => handleDeleteClick(doc)}
-                      className="text-red-600 hover:text-red-900"
-                      title="Delete"
-                    >
-                      <FaTrash />
-                    </button>
+                    <td className="py-3 px-4">
+                      <div className="flex items-center space-x-2">
+                        <button
+                          className="p-1 hover:bg-gray-100 rounded"
+                          title="Preview"
+                          onClick={() => handlePreview(doc)}
+                        >
+                          <span className="material-icons text-gray-600 text-xl">visibility</span>
+                        </button>
+                        <button
+                          className="p-1 hover:bg-gray-100 rounded"
+                          title="Download"
+                          onClick={() => handleDownload(doc)}
+                        >
+                          <span className="material-icons text-gray-600 text-xl">download</span>
+                        </button>
+                        <button
+                          className="p-1 hover:bg-gray-100 rounded"
+                          title="Delete"
+                          onClick={() => handleDeleteClick(doc)}
+                        >
+                          <span className="material-icons text-gray-600 text-xl">delete</span>
+                        </button>
+                      </div>
+                    </td>
                   </td>
                 </tr>
               ))}
