@@ -504,21 +504,28 @@ try {
                 res.setHeader('Content-Type', ContentType || 'application/octet-stream');
                 res.setHeader('Content-Disposition', `attachment; filename="${document.filename}"`);
                 
-                // Stream the file to the response
+                // Stream the file directly to the response
                 Body.pipe(res);
                 
-                // Handle errors in the stream
+                // Handle errors during streaming
                 Body.on('error', (error) => {
                     console.error('Error streaming file:', error);
-                    res.status(500).json({ error: 'Failed to download file' });
+                    if (!res.headersSent) {
+                        res.status(500).json({ error: 'Error downloading file' });
+                    }
+                });
+                
+                // Clean up after streaming is complete
+                Body.on('end', () => {
+                    console.log('File download completed successfully');
                 });
             } catch (s3Error) {
                 console.error('Error downloading file from S3:', s3Error);
-                res.status(500).json({ error: 'Failed to download file' });
+                res.status(500).json({ error: 'Error downloading file from S3' });
             }
         } catch (error) {
             console.error('Error in document download:', error);
-            res.status(500).json({ error: 'Failed to download document' });
+            res.status(500).json({ error: 'Error in document download' });
         }
     });
 
