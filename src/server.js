@@ -500,19 +500,25 @@ try {
             try {
                 const { Body, ContentType } = await s3Client.send(new GetObjectCommand(getObjectParams));
                 
-                // Set headers for file download
+                // Set response headers
                 res.setHeader('Content-Type', ContentType || 'application/octet-stream');
                 res.setHeader('Content-Disposition', `attachment; filename="${document.filename}"`);
                 
-                // Stream the file to response
+                // Stream the file to the response
                 Body.pipe(res);
+                
+                // Handle errors in the stream
+                Body.on('error', (error) => {
+                    console.error('Error streaming file:', error);
+                    res.status(500).json({ error: 'Failed to download file' });
+                });
             } catch (s3Error) {
-                console.error('Error fetching from S3:', s3Error);
-                res.status(500).json({ error: 'Failed to fetch file from storage' });
+                console.error('Error downloading file from S3:', s3Error);
+                res.status(500).json({ error: 'Failed to download file' });
             }
         } catch (error) {
-            console.error('Error downloading file:', error);
-            res.status(500).json({ error: 'Failed to download file', details: error.message });
+            console.error('Error in document download:', error);
+            res.status(500).json({ error: 'Failed to download document' });
         }
     });
 
