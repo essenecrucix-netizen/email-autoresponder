@@ -67,7 +67,8 @@ try {
     // Middleware to authenticate JWT tokens
     function authenticateToken(req, res, next) {
         console.log('Auth headers:', req.headers);
-        const authHeader = req.headers['authorization'];
+        // Check for token in Authorization header or query parameter
+        const authHeader = req.headers['authorization'] || req.query.Authorization;
         console.log('Auth header:', authHeader);
         
         const token = authHeader?.split(' ')[1];
@@ -489,7 +490,8 @@ try {
             console.log('Download request received:', {
                 s3Key,
                 userId,
-                headers: req.headers
+                headers: req.headers,
+                query: req.query
             });
 
             const database = DatabaseService();

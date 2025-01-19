@@ -182,26 +182,38 @@ const KnowledgeBase = () => {
       }
 
       // Create the full URL using window.location.origin
-      const baseUrl = window.location.protocol === 'https:' 
-        ? 'http://54.213.58.183:3000' 
-        : window.location.origin;
-      
+      const baseUrl = 'http://54.213.58.183:3000';
       const downloadUrl = `${baseUrl}/api/documents/${encodeURIComponent(doc.s3_key)}/download`;
       
-      // Use axios instead of fetch for consistent configuration
-      const response = await axios.get(downloadUrl, {
-        responseType: 'blob', // Important for handling file downloads
-      });
-
-      // Create a download link
-      const url = window.URL.createObjectURL(new Blob([response.data]));
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = doc.filename;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
+      // Create a hidden iframe for the download
+      const iframe = document.createElement('iframe');
+      iframe.style.display = 'none';
+      document.body.appendChild(iframe);
+      
+      // Set up the iframe document
+      const iframeDoc = iframe.contentWindow.document;
+      
+      // Create a form with the proper headers
+      const form = iframeDoc.createElement('form');
+      form.method = 'GET';
+      form.action = downloadUrl;
+      
+      // Add authorization header as a hidden input
+      const authInput = iframeDoc.createElement('input');
+      authInput.type = 'hidden';
+      authInput.name = 'Authorization';
+      authInput.value = `Bearer ${token}`;
+      form.appendChild(authInput);
+      
+      // Submit the form
+      iframeDoc.body.appendChild(form);
+      form.submit();
+      
+      // Clean up after a delay
+      setTimeout(() => {
+        document.body.removeChild(iframe);
+      }, 5000);
+      
     } catch (error) {
       console.error('Error downloading file:', error);
       alert(error.response?.data?.error || error.message || 'Failed to download file. Please try again.');
