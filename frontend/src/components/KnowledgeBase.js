@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import Header from './Header';
 import Sidebar from './Sidebar';
-import axios from 'axios';
+import axios from '../utils/axios';
 
 const KnowledgeBase = () => {
   const [uploadProgress, setUploadProgress] = useState(0);

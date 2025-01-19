@@ -29,7 +29,7 @@ try {
 
     // CORS configuration
     app.use(cors({
-        origin: 'http://54.213.58.183:3000',
+        origin: ['http://54.213.58.183:3000', 'https://54.213.58.183:3000'],
         methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
         allowedHeaders: ['Content-Type', 'Authorization'],
         credentials: true
