@@ -484,7 +484,8 @@ try {
     // Update download endpoint
     app.get('/api/documents/:s3Key(*)/download', authenticateToken, async (req, res) => {
         try {
-            const s3Key = decodeURIComponent(req.params.s3Key);
+            // Don't decode the s3Key as it's already in the correct format
+            const s3Key = req.params.s3Key;
             const userId = req.user.userId;
             
             console.log('Download request received:', {
@@ -492,8 +493,7 @@ try {
                 userId,
                 headers: req.headers,
                 query: req.query,
-                params: req.params,
-                decodedKey: decodeURIComponent(req.params.s3Key)
+                params: req.params
             });
 
             const database = DatabaseService();
@@ -506,7 +506,7 @@ try {
             
             console.log('Looking up document in DynamoDB with key:', JSON.stringify(lookupKey, null, 2));
             
-            const document = await database.getItem('user_knowledge_files', lookupKey);
+            let document = await database.getItem('user_knowledge_files', lookupKey);
             
             console.log('DynamoDB lookup result:', {
                 document,
@@ -515,32 +515,14 @@ try {
             });
             
             if (!document) {
-                // Try alternative key format
-                const altLookupKey = {
-                    user_id: userId,
-                    s3_key: `${userId}/${s3Key}`
-                };
-                
-                console.log('Trying alternative lookup key:', JSON.stringify(altLookupKey, null, 2));
-                
-                const altDocument = await database.getItem('user_knowledge_files', altLookupKey);
-                
-                if (!altDocument) {
-                    console.log('Document not found in DynamoDB with either key:', {
-                        originalKey: lookupKey,
-                        alternativeKey: altLookupKey
-                    });
-                    return res.status(404).json({ error: 'Document not found in database' });
-                }
-                
-                console.log('Found document with alternative key:', altDocument);
-                document = altDocument;
+                console.log('Document not found in DynamoDB:', lookupKey);
+                return res.status(404).json({ error: 'Document not found in database' });
             }
 
             // Get the file from S3
             const getObjectParams = {
                 Bucket: S3_BUCKET,
-                Key: document.s3_key // Use the key from the document record
+                Key: document.s3_key
             };
 
             console.log('Fetching from S3:', JSON.stringify(getObjectParams, null, 2));

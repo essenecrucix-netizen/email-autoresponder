@@ -184,13 +184,11 @@ const KnowledgeBase = () => {
       // Create the full URL using window.location.origin
       const baseUrl = 'http://54.213.58.183:3000';
       
-      // Remove any double slashes in the key except for http://
-      const cleanKey = doc.s3_key.replace(/([^:])\/+/g, '$1/');
-      const downloadUrl = `${baseUrl}/api/documents/${encodeURIComponent(cleanKey)}/download`;
+      // Don't encode the s3_key as it will be encoded by the fetch API
+      const downloadUrl = `${baseUrl}/api/documents/${doc.s3_key}/download`;
       
       console.log('Attempting download with:', {
         originalKey: doc.s3_key,
-        cleanKey,
         downloadUrl
       });
       
