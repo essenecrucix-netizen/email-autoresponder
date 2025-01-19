@@ -477,18 +477,22 @@ try {
             console.log('Download request received for:', req.params.s3Key);
             const database = DatabaseService();
             const s3Key = decodeURIComponent(req.params.s3Key);
+            const userId = req.user.userId;
+            
+            console.log('Attempting download with:', { userId, s3Key });
             
             // Get document metadata from DynamoDB using the correct key structure
             const document = await database.getItem('user_knowledge_files', {
-                user_id: req.user.userId,
+                user_id: userId,
                 s3_key: s3Key
             });
             
             if (!document) {
-                console.log('Document not found:', s3Key);
+                console.log('Document not found:', { userId, s3Key });
                 return res.status(404).json({ error: 'Document not found' });
             }
 
+            console.log('Found document in DynamoDB:', document);
             console.log('Fetching from S3:', { bucket: S3_BUCKET, key: s3Key });
             
             // Get the file from S3
@@ -500,32 +504,38 @@ try {
             try {
                 const { Body, ContentType } = await s3Client.send(new GetObjectCommand(getObjectParams));
                 
+                if (!Body) {
+                    console.error('No file content received from S3');
+                    return res.status(404).json({ error: 'File content not found' });
+                }
+                
                 // Set response headers
-                res.setHeader('Content-Type', ContentType || 'application/octet-stream');
+                res.setHeader('Content-Type', ContentType || document.type || 'application/octet-stream');
                 res.setHeader('Content-Disposition', `attachment; filename="${document.filename}"`);
                 
                 // Stream the file directly to the response
-                Body.pipe(res);
-                
-                // Handle errors during streaming
-                Body.on('error', (error) => {
-                    console.error('Error streaming file:', error);
-                    if (!res.headersSent) {
-                        res.status(500).json({ error: 'Error downloading file' });
-                    }
-                });
-                
-                // Clean up after streaming is complete
-                Body.on('end', () => {
-                    console.log('File download completed successfully');
+                await new Promise((resolve, reject) => {
+                    Body.pipe(res)
+                        .on('error', (error) => {
+                            console.error('Error streaming file:', error);
+                            reject(error);
+                        })
+                        .on('finish', () => {
+                            console.log('File download completed successfully');
+                            resolve();
+                        });
                 });
             } catch (s3Error) {
                 console.error('Error downloading file from S3:', s3Error);
-                res.status(500).json({ error: 'Error downloading file from S3' });
+                if (!res.headersSent) {
+                    res.status(500).json({ error: 'Error downloading file from S3' });
+                }
             }
         } catch (error) {
             console.error('Error in document download:', error);
-            res.status(500).json({ error: 'Error in document download' });
+            if (!res.headersSent) {
+                res.status(500).json({ error: 'Error in document download' });
+            }
         }
     });
 
