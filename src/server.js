@@ -472,28 +472,12 @@ try {
     });
 
     // Update download endpoint
-    app.get('/api/documents/:s3Key(*)/download', async (req, res) => {
+    app.get('/api/documents/:s3Key(*)/download', authenticateToken, async (req, res) => {
         try {
             console.log('Download request received for:', req.params.s3Key);
-            
-            // Get token from query parameter
-            const token = req.query.token;
-            if (!token) {
-                return res.status(401).json({ error: 'No token provided' });
-            }
-
-            // Verify token
-            let userId;
-            try {
-                const decoded = jwt.verify(token, SECRET_KEY);
-                userId = decoded.userId;
-            } catch (error) {
-                console.error('Token verification failed:', error);
-                return res.status(403).json({ error: 'Invalid token' });
-            }
-
             const database = DatabaseService();
             const s3Key = decodeURIComponent(req.params.s3Key);
+            const userId = req.user.userId;
             
             console.log('Attempting download with:', { userId, s3Key });
             
@@ -538,6 +522,11 @@ try {
                     if (!res.headersSent) {
                         res.status(500).json({ error: 'Error downloading file' });
                     }
+                });
+
+                // Log completion
+                Body.on('end', () => {
+                    console.log('File download completed successfully');
                 });
             } catch (s3Error) {
                 console.error('Error downloading file from S3:', s3Error);
