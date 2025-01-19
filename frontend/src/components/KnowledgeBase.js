@@ -183,12 +183,16 @@ const KnowledgeBase = () => {
 
       // Create the full URL using window.location.origin
       const baseUrl = 'http://54.213.58.183:3000';
-      const downloadUrl = `${baseUrl}/api/documents/${encodeURIComponent(doc.s3_key)}/download`;
       
-      // Create a temporary link element
-      const link = document.createElement('a');
-      link.href = downloadUrl;
-      link.download = doc.filename;
+      // Remove any double slashes in the key except for http://
+      const cleanKey = doc.s3_key.replace(/([^:])\/+/g, '$1/');
+      const downloadUrl = `${baseUrl}/api/documents/${encodeURIComponent(cleanKey)}/download`;
+      
+      console.log('Attempting download with:', {
+        originalKey: doc.s3_key,
+        cleanKey,
+        downloadUrl
+      });
       
       // Set up headers for the request
       const headers = new Headers();
@@ -209,8 +213,10 @@ const KnowledgeBase = () => {
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       
-      // Update the link's href with the blob URL
+      // Create a temporary link element
+      const link = document.createElement('a');
       link.href = url;
+      link.download = doc.filename;
       
       // Trigger the download
       document.body.appendChild(link);

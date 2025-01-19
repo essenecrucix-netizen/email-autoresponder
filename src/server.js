@@ -492,7 +492,8 @@ try {
                 userId,
                 headers: req.headers,
                 query: req.query,
-                params: req.params
+                params: req.params,
+                decodedKey: decodeURIComponent(req.params.s3Key)
             });
 
             const database = DatabaseService();
@@ -503,27 +504,46 @@ try {
                 s3_key: s3Key
             };
             
-            console.log('Looking up document in DynamoDB with key:', lookupKey);
+            console.log('Looking up document in DynamoDB with key:', JSON.stringify(lookupKey, null, 2));
             
             const document = await database.getItem('user_knowledge_files', lookupKey);
             
             console.log('DynamoDB lookup result:', {
                 document,
-                lookupKey
+                lookupKey,
+                tableName: 'user_knowledge_files'
             });
             
             if (!document) {
-                console.log('Document not found in DynamoDB:', lookupKey);
-                return res.status(404).json({ error: 'Document not found in database' });
+                // Try alternative key format
+                const altLookupKey = {
+                    user_id: userId,
+                    s3_key: `${userId}/${s3Key}`
+                };
+                
+                console.log('Trying alternative lookup key:', JSON.stringify(altLookupKey, null, 2));
+                
+                const altDocument = await database.getItem('user_knowledge_files', altLookupKey);
+                
+                if (!altDocument) {
+                    console.log('Document not found in DynamoDB with either key:', {
+                        originalKey: lookupKey,
+                        alternativeKey: altLookupKey
+                    });
+                    return res.status(404).json({ error: 'Document not found in database' });
+                }
+                
+                console.log('Found document with alternative key:', altDocument);
+                document = altDocument;
             }
 
             // Get the file from S3
             const getObjectParams = {
                 Bucket: S3_BUCKET,
-                Key: s3Key
+                Key: document.s3_key // Use the key from the document record
             };
 
-            console.log('Fetching from S3:', getObjectParams);
+            console.log('Fetching from S3:', JSON.stringify(getObjectParams, null, 2));
 
             try {
                 const s3Response = await s3Client.send(new GetObjectCommand(getObjectParams));
@@ -552,7 +572,7 @@ try {
                 res.on('finish', () => {
                     console.log('File download completed successfully:', {
                         filename: document.filename,
-                        s3Key,
+                        s3Key: document.s3_key,
                         userId
                     });
                 });
