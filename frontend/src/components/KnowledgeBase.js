@@ -176,10 +176,18 @@ const KnowledgeBase = () => {
 
   const handleDownload = async (doc) => {
     try {
-      const response = await axios.get(`/api/documents/${encodeURIComponent(doc.s3_key)}/download`, {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('No authentication token found');
+      }
+
+      // Use axios instance with baseURL
+      const response = await axios({
+        method: 'GET',
+        url: `/api/documents/${encodeURIComponent(doc.s3_key)}/download`,
         responseType: 'blob',
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${token}`
         }
       });
       
@@ -200,7 +208,7 @@ const KnowledgeBase = () => {
       window.URL.revokeObjectURL(url);
     } catch (error) {
       console.error('Error downloading file:', error);
-      setError('Failed to download file. Please try again.');
+      alert('Failed to download file. Please try again.');
     }
   };
 
@@ -347,27 +355,27 @@ const KnowledgeBase = () => {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-3">
                     <td className="py-3 px-4">
-                      <div className="flex items-center space-x-2">
+                      <div className="flex items-center space-x-4">
                         <button
-                          className="p-1 hover:bg-gray-100 rounded"
-                          title="Preview"
                           onClick={() => handlePreview(doc)}
+                          className="p-2 hover:bg-gray-100 rounded"
+                          title="Preview"
                         >
-                          <span className="material-icons text-gray-600 text-xl">visibility</span>
+                          <span className="material-icons text-gray-600" style={{ fontSize: '24px' }}>visibility</span>
                         </button>
                         <button
-                          className="p-1 hover:bg-gray-100 rounded"
-                          title="Download"
                           onClick={() => handleDownload(doc)}
+                          className="p-2 hover:bg-gray-100 rounded"
+                          title="Download"
                         >
-                          <span className="material-icons text-gray-600 text-xl">download</span>
+                          <span className="material-icons text-gray-600" style={{ fontSize: '24px' }}>download</span>
                         </button>
                         <button
-                          className="p-1 hover:bg-gray-100 rounded"
-                          title="Delete"
                           onClick={() => handleDeleteClick(doc)}
+                          className="p-2 hover:bg-gray-100 rounded"
+                          title="Delete"
                         >
-                          <span className="material-icons text-gray-600 text-xl">delete</span>
+                          <span className="material-icons text-gray-600" style={{ fontSize: '24px' }}>delete</span>
                         </button>
                       </div>
                     </td>

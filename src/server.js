@@ -470,16 +470,18 @@ try {
         }
     });
 
-    // Add download endpoint
+    // Update download endpoint
     app.get('/api/documents/:s3Key(*)/download', authenticateToken, async (req, res) => {
         try {
             console.log('Download request received for:', req.params.s3Key);
             const database = DatabaseService();
             const s3Key = decodeURIComponent(req.params.s3Key);
             
-            // Get document metadata from DynamoDB
-            const documents = await database.getItemsByUserId('user_knowledge_files', req.user.userId);
-            const document = documents.find(doc => doc.s3_key === s3Key);
+            // Get document metadata from DynamoDB using the correct key structure
+            const document = await database.getItem('user_knowledge_files', {
+                user_id: req.user.userId,
+                s3_key: s3Key
+            });
             
             if (!document) {
                 console.log('Document not found:', s3Key);
@@ -494,14 +496,19 @@ try {
                 Key: s3Key
             };
 
-            const { Body, ContentType } = await s3Client.send(new GetObjectCommand(getObjectParams));
-            
-            // Set headers for file download
-            res.setHeader('Content-Type', ContentType || 'application/octet-stream');
-            res.setHeader('Content-Disposition', `attachment; filename="${document.filename}"`);
-            
-            // Stream the file to response
-            Body.pipe(res);
+            try {
+                const { Body, ContentType } = await s3Client.send(new GetObjectCommand(getObjectParams));
+                
+                // Set headers for file download
+                res.setHeader('Content-Type', ContentType || 'application/octet-stream');
+                res.setHeader('Content-Disposition', `attachment; filename="${document.filename}"`);
+                
+                // Stream the file to response
+                Body.pipe(res);
+            } catch (s3Error) {
+                console.error('Error fetching from S3:', s3Error);
+                res.status(500).json({ error: 'Failed to fetch file from storage' });
+            }
         } catch (error) {
             console.error('Error downloading file:', error);
             res.status(500).json({ error: 'Failed to download file', details: error.message });
