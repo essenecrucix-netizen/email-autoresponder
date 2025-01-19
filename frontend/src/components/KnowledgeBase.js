@@ -185,38 +185,44 @@ const KnowledgeBase = () => {
       const baseUrl = 'http://54.213.58.183:3000';
       const downloadUrl = `${baseUrl}/api/documents/${encodeURIComponent(doc.s3_key)}/download`;
       
-      // Create a hidden iframe for the download
-      const iframe = document.createElement('iframe');
-      iframe.style.display = 'none';
-      document.body.appendChild(iframe);
+      // Create a temporary link element
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.download = doc.filename;
       
-      // Set up the iframe document
-      const iframeDoc = iframe.contentWindow.document;
+      // Set up headers for the request
+      const headers = new Headers();
+      headers.append('Authorization', `Bearer ${token}`);
       
-      // Create a form with the proper headers
-      const form = iframeDoc.createElement('form');
-      form.method = 'GET';
-      form.action = downloadUrl;
+      // Make the request
+      const response = await fetch(downloadUrl, {
+        method: 'GET',
+        headers: headers,
+      });
       
-      // Add authorization header as a hidden input
-      const authInput = iframeDoc.createElement('input');
-      authInput.type = 'hidden';
-      authInput.name = 'Authorization';
-      authInput.value = `Bearer ${token}`;
-      form.appendChild(authInput);
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to download file');
+      }
       
-      // Submit the form
-      iframeDoc.body.appendChild(form);
-      form.submit();
+      // Get the blob from the response
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
       
-      // Clean up after a delay
-      setTimeout(() => {
-        document.body.removeChild(iframe);
-      }, 5000);
+      // Update the link's href with the blob URL
+      link.href = url;
+      
+      // Trigger the download
+      document.body.appendChild(link);
+      link.click();
+      
+      // Clean up
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
       
     } catch (error) {
       console.error('Error downloading file:', error);
-      alert(error.response?.data?.error || error.message || 'Failed to download file. Please try again.');
+      alert(error.message || 'Failed to download file. Please try again.');
     }
   };
 
