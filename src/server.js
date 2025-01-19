@@ -470,6 +470,40 @@ try {
         }
     });
 
+    // Add download endpoint
+    app.get('/api/documents/:s3Key(*)/download', authenticateToken, async (req, res) => {
+        try {
+            const database = DatabaseService();
+            const s3Key = decodeURIComponent(req.params.s3Key);
+            
+            // Get document metadata from DynamoDB
+            const documents = await database.getItemsByUserId('user_knowledge_files', req.user.userId);
+            const document = documents.find(doc => doc.s3_key === s3Key);
+            
+            if (!document) {
+                return res.status(404).json({ error: 'Document not found' });
+            }
+
+            // Get the file from S3
+            const getObjectParams = {
+                Bucket: S3_BUCKET,
+                Key: s3Key
+            };
+
+            const { Body, ContentType } = await s3Client.send(new GetObjectCommand(getObjectParams));
+            
+            // Set headers for file download
+            res.setHeader('Content-Type', ContentType);
+            res.setHeader('Content-Disposition', `attachment; filename="${document.filename}"`);
+            
+            // Stream the file to response
+            Body.pipe(res);
+        } catch (error) {
+            console.error('Error downloading file:', error);
+            res.status(500).json({ error: 'Failed to download file' });
+        }
+    });
+
     // Fallback to index.html for React routing - MOVED TO END
     app.get('/*', (req, res) => {
         res.sendFile(path.join(__dirname, '../frontend/build/index.html'));
