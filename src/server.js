@@ -502,31 +502,30 @@ try {
             };
 
             try {
-                const { Body, ContentType } = await s3Client.send(new GetObjectCommand(getObjectParams));
+                const s3Response = await s3Client.send(new GetObjectCommand(getObjectParams));
                 
-                if (!Body) {
+                if (!s3Response.Body) {
                     console.error('No file content received from S3');
                     return res.status(404).json({ error: 'File content not found' });
                 }
                 
                 // Set response headers
-                res.setHeader('Content-Type', ContentType || document.type || 'application/octet-stream');
+                res.setHeader('Content-Type', s3Response.ContentType || document.type || 'application/octet-stream');
                 res.setHeader('Content-Disposition', `attachment; filename="${document.filename}"`);
                 
-                // Stream the file directly to the response
-                Body.pipe(res);
-                
-                // Handle errors during streaming
-                Body.on('error', (error) => {
+                // Convert the readable stream to buffer and send
+                const chunks = [];
+                s3Response.Body.on('data', (chunk) => chunks.push(chunk));
+                s3Response.Body.on('end', () => {
+                    const fileBuffer = Buffer.concat(chunks);
+                    res.end(fileBuffer);
+                    console.log('File download completed successfully');
+                });
+                s3Response.Body.on('error', (error) => {
                     console.error('Error streaming file:', error);
                     if (!res.headersSent) {
                         res.status(500).json({ error: 'Error downloading file' });
                     }
-                });
-
-                // Log completion
-                Body.on('end', () => {
-                    console.log('File download completed successfully');
                 });
             } catch (s3Error) {
                 console.error('Error downloading file from S3:', s3Error);

@@ -181,26 +181,32 @@ const KnowledgeBase = () => {
         throw new Error('No authentication token found');
       }
 
-      const response = await axios({
-        method: 'GET',
-        url: `/api/documents/${encodeURIComponent(doc.s3_key)}/download`,
-        responseType: 'blob',
+      // Create a temporary anchor element
+      const link = document.createElement('a');
+      link.href = `/api/documents/${encodeURIComponent(doc.s3_key)}/download`;
+      link.download = doc.filename;
+      
+      // Add authorization header through a fetch request
+      fetch(link.href, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
+      })
+      .then(response => response.blob())
+      .then(blob => {
+        const url = window.URL.createObjectURL(blob);
+        link.href = url;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+      })
+      .catch(error => {
+        console.error('Error downloading file:', error);
+        alert('Failed to download file. Please try again.');
       });
-
-      // Create blob link to download
-      const url = window.URL.createObjectURL(new Blob([response.data]));
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute('download', doc.filename);
-      document.body.appendChild(link);
-      link.click();
-      link.parentNode.removeChild(link);
-      window.URL.revokeObjectURL(url);
     } catch (error) {
-      console.error('Error downloading file:', error);
+      console.error('Error initiating download:', error);
       alert('Failed to download file. Please try again.');
     }
   };
