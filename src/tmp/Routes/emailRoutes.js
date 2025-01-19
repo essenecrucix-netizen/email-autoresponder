@@ -1,5 +1,5 @@
 const express = require('express');
-const EmailService = require('../services/email/EmailService');
+const EmailService = require('../../services/email/EmailService');
 const authenticateToken = require('../middleware/authenticateToken'); // Middleware for token authentication
 
 const router = express.Router();

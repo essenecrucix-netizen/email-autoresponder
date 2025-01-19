@@ -1,5 +1,7 @@
 // Example Emails.js
 import React, { useState } from 'react';
+import Header from './Header';
+import Sidebar from './Sidebar';
 
 const Emails = () => {
   const [emails] = useState([
