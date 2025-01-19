@@ -29,11 +29,20 @@ try {
 
     // CORS configuration
     app.use(cors({
-        origin: ['http://54.213.58.183:3000', 'https://54.213.58.183:3000'],
+        origin: [
+            'http://54.213.58.183:3000',
+            'https://54.213.58.183:3000',
+            'http://localhost:3000',
+            'http://127.0.0.1:3000'
+        ],
         methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
         allowedHeaders: ['Content-Type', 'Authorization'],
+        exposedHeaders: ['Content-Disposition', 'Content-Length', 'Content-Type'],
         credentials: true
     }));
+
+    // Add OPTIONS handling for preflight requests
+    app.options('*', cors());
 
     // Middleware
     app.use(bodyParser.json());

@@ -181,8 +181,15 @@ const KnowledgeBase = () => {
         throw new Error('No authentication token found');
       }
 
+      // Create the full URL using window.location.origin
+      const baseUrl = window.location.protocol === 'https:' 
+        ? 'http://54.213.58.183:3000' 
+        : window.location.origin;
+      
+      const downloadUrl = `${baseUrl}/api/documents/${encodeURIComponent(doc.s3_key)}/download`;
+      
       // Use axios instead of fetch for consistent configuration
-      const response = await axios.get(`/api/documents/${encodeURIComponent(doc.s3_key)}/download`, {
+      const response = await axios.get(downloadUrl, {
         responseType: 'blob', // Important for handling file downloads
       });
 
