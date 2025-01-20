@@ -484,12 +484,14 @@ try {
     // Update download endpoint
     app.get('/api/documents/:s3Key(*)/download', authenticateToken, async (req, res) => {
         try {
-            const s3Key = decodeURIComponent(req.params.s3Key);
             const userId = req.user.userId;
+            const filename = req.params.s3Key;
+            const s3Key = `${userId}/${filename}`;
             
             console.log('Download request received:', {
-                s3Key,
                 userId,
+                filename,
+                s3Key,
                 headers: req.headers
             });
 

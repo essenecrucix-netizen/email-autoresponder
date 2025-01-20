@@ -181,10 +181,13 @@ const KnowledgeBase = () => {
         throw new Error('No authentication token found');
       }
 
+      // Remove the user prefix from s3_key if it exists
+      const s3Key = doc.s3_key.split('/').pop();
+      
       // Use axios for consistent handling of requests
       const response = await axios({
         method: 'GET',
-        url: `/api/documents/${encodeURIComponent(doc.s3_key)}/download`,
+        url: `/api/documents/${s3Key}/download`,
         responseType: 'blob',
         headers: {
           'Authorization': `Bearer ${token}`
