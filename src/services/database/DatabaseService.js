@@ -311,26 +311,6 @@ function DatabaseService() {
         }
     }
 
-    async function getContentFromS3(filename) {
-        if (!S3_BUCKET_NAME) {
-            console.error('S3_BUCKET_NAME not configured');
-            return null;
-        }
-
-        try {
-            const command = new GetObjectCommand({
-                Bucket: S3_BUCKET_NAME,
-                Key: filename
-            });
-
-            const response = await s3Client.send(command);
-            return await response.Body.transformToByteArray();
-        } catch (error) {
-            console.error(`Error fetching content for file ${filename}:`, error);
-            return null;
-        }
-    }
-
     async function getItemsByUserId(tableName, userId) {
         try {
             const params = {
@@ -376,7 +356,6 @@ function DatabaseService() {
         getThreadHistory,
         saveEmail,
         saveEmailResponse,
-        getContentFromS3,
         getItemsByUserId,
         deleteItem
     };

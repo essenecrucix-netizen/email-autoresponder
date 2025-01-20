@@ -174,43 +174,6 @@ const KnowledgeBase = () => {
     setDocumentToDelete(null);
   };
 
-  const handleDownload = async (doc) => {
-    try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        throw new Error('No authentication token found');
-      }
-
-      // Remove the user prefix from s3_key if it exists
-      const s3Key = doc.s3_key.split('/').pop();
-      
-      // Use axios for consistent handling of requests
-      const response = await axios({
-        method: 'GET',
-        url: `/api/documents/${s3Key}/download`,
-        responseType: 'blob',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-      
-      // Create download link
-      const url = window.URL.createObjectURL(new Blob([response.data]));
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute('download', doc.filename);
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
-      
-    } catch (error) {
-      console.error('Error downloading file:', error);
-      const errorMessage = error.response?.data?.error || error.message || 'Failed to download file';
-      alert(errorMessage);
-    }
-  };
-
   const DeleteConfirmationDialog = ({ isOpen, onClose, onConfirm, fileName }) => {
     if (!isOpen) return null;
 
@@ -353,31 +316,22 @@ const KnowledgeBase = () => {
                     {doc.uploaded_at ? new Date(doc.uploaded_at).toLocaleDateString() : 'N/A'}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-3">
-                    <td className="py-3 px-4">
-                      <div className="flex items-center space-x-4">
-                        <button
-                          onClick={() => handlePreview(doc)}
-                          className="p-2 hover:bg-gray-100 rounded"
-                          title="Preview"
-                        >
-                          <span className="material-icons text-gray-600" style={{ fontSize: '24px' }}>visibility</span>
-                        </button>
-                        <button
-                          onClick={() => handleDownload(doc)}
-                          className="p-2 hover:bg-gray-100 rounded"
-                          title="Download"
-                        >
-                          <span className="material-icons text-gray-600" style={{ fontSize: '24px' }}>download</span>
-                        </button>
-                        <button
-                          onClick={() => handleDeleteClick(doc)}
-                          className="p-2 hover:bg-gray-100 rounded"
-                          title="Delete"
-                        >
-                          <span className="material-icons text-gray-600" style={{ fontSize: '24px' }}>delete</span>
-                        </button>
-                      </div>
-                    </td>
+                    <div className="flex items-center space-x-4">
+                      <button
+                        onClick={() => handlePreview(doc)}
+                        className="p-2 hover:bg-gray-100 rounded"
+                        title="Preview"
+                      >
+                        <span className="material-icons text-gray-600" style={{ fontSize: '24px' }}>visibility</span>
+                      </button>
+                      <button
+                        onClick={() => handleDeleteClick(doc)}
+                        className="p-2 hover:bg-gray-100 rounded"
+                        title="Delete"
+                      >
+                        <span className="material-icons text-gray-600" style={{ fontSize: '24px' }}>delete</span>
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
