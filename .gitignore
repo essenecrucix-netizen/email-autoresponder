@@ -26,3 +26,6 @@ yarn-error.log*
 
 # Tailwind CSS
 /frontend/src/styles/main.css
+package-lock.json
+package.json
+package.json
