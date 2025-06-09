@@ -1,7 +1,7 @@
 # Erik Brisson
 
 ## 👋 About Me
-CEO of GFI Systems Inc. and passionate developer focused on creating intelligent automation solutions. Specializing in AI-powered applications that bridge the gap between business operations and cutting-edge technology.
+Passionate developer focused on creating intelligent automation solutions. Specializing in AI-powered applications that bridge the gap between business operations and cutting-edge technology.
 
 ## 🚀 Featured Project: Email Autoresponder
 Creator of an innovative AI-powered email automation system that revolutionizes business communication. This system combines OpenAI's GPT technology with sophisticated email handling to provide intelligent, context-aware responses while maintaining a consistent brand voice.
